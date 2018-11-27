@@ -29,10 +29,14 @@ g = generate_features(data,
                       nb_points=5000,
                       kdtree_leaf_size=1000)
 
-columns = ['a', 'b', 'radius', 'max_difference', 'std_deviation', 'density',
-           'verticality', 'curvature_change', 'linearity', 'planarity',
+columns = ['a', 'b',
+           'z', 'radius', 'z_range', 'std_deviation', 'density', 'verticality',
+           'curvature_change', 'linearity', 'planarity',
            'scattering', 'omnivariance', 'anisotropy',
            'eigenentropy', 'eigenvalue_sum',
+           'radius_2D', 'density_2D',
+           'eigenvalue_sum_2D', 'eigenvalue_ratio_2D',
+           'bin_density', 'bin_z_range', 'bin_z_std',
            'r', 'g', 'b']
 
 out_fpath = str(datapath / "features.csv")
