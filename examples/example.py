@@ -1,10 +1,8 @@
 import sys
 import argparse
-import laspy
-
 import numpy as np
 
-from geo3dfeatures.io import xyz as read_xyz, write_features
+from geo3dfeatures.io import xyz as read_xyz, las as read_las, write_features
 from geo3dfeatures.extract import generate_features
 
 

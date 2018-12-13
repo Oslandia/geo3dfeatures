@@ -3,7 +3,7 @@
 
 
 import csv
-
+import laspy
 import numpy as np
 
 
@@ -24,6 +24,27 @@ def xyz(fpath, names=None, header=True):
     np.array
     """
     return np.loadtxt(fpath, delimiter=' ', skiprows=header)
+
+
+def las(fpath):
+    """Read a .las file with ̀laspy` package
+
+    Parameters
+    ----------
+    fpath : str
+        Path of the input file
+
+    Returns
+    -------
+    pandas.DataFrame
+        x, y, z point coordinates as well as r, g, b color features stored in a
+    dataframe
+
+    """
+    input_file = laspy.file.File(str(fpath), mode="r")
+    data = np.array([input_file.x, input_file.y, input_file.z,
+                     input_file.red, input_file.green, input_file.blue]).T
+    return data
 
 
 def write_features(fpath, gen):
