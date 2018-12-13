@@ -1,5 +1,6 @@
 import sys
 import argparse
+import laspy
 
 import numpy as np
 
@@ -29,7 +30,13 @@ def _parse_args(args):
 def main(argv=sys.argv[1:]):
     opts = _parse_args(argv)
     print(f"read the file {opts.input_file}")
-    data = read_xyz(opts.input_file)
+    extension = str(opts.input_file).split(".")[-1]
+    if extension == "xyz":
+        data = read_xyz(opts.input_file)
+    elif extension == "las":
+        data = read_las(opts.input_file)
+    else:
+        raise ValueError("Wrong file extension, please send xyz or las file.")
     if opts.sample_points is not None:
         print("Work with a sample of points")
         sample_mask = np.random.choice(np.arange(data.shape[0]),
