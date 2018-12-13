@@ -15,6 +15,8 @@ if __name__=='__main__':
 
     parser = argparse.ArgumentParser(description=("3D point cloud geometric"
                                                   " feature extraction"))
+    parser.add_argument('-i', '--input-file', required=True,
+                        help="Input 3D point cloud file")
     parser.add_argument('-n', '--neighbors',
                         type=int, default=50,
                         help="Number of neighbors to consider")
@@ -29,15 +31,8 @@ if __name__=='__main__':
                         help="Number of leafs in KD-tree")
     args = parser.parse_args()
 
-    _here = Path(__file__).absolute().parent
-    datapath = _here / '..' / 'data'
-    # fname = "vegetation-segment.xyz"
-    # fname = "floor-segment.xyz"
-    fname = "scene.xyz"
-    fpath = str(datapath / fname)
-
-    print(f"read the file {fpath}")
-    data = read_xyz(str(fpath))
+    print(f"read the file {args.input_file}")
+    data = read_xyz(args.input_file)
 
     print(f"generate 3D features")
     g = generate_features(data,
