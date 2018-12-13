@@ -11,14 +11,6 @@ from pathlib import Path
 
 from sklearn.cluster import KMeans
 
-SEED = 1337
-
-_here = Path(__file__).absolute().parent
-datapath = _here / '..' / 'data'
-fname = "scene.xyz"
-fpath = str(datapath / fname)
-
-
 
 def standard_normalization(sample):
     """Normalize a set of points regarding mean and standard deviation
@@ -56,7 +48,7 @@ def normalize_features(df_features):
     return df_out
 
 
-def compute_cluster(df_features, nb_clusters=2):
+def compute_cluster(df_features, nb_clusters=2, seed=1337):
     """Compute a KMeans clustering on `df_features`
 
     Parameters
@@ -71,6 +63,6 @@ def compute_cluster(df_features, nb_clusters=2):
     sklearn.cluster.KMeans
         Clustering model applied on input features
     """
-    model = KMeans(nb_clusters, random_state=SEED)
+    model = KMeans(nb_clusters, random_state=seed)
     model.fit(df_features)
     return model

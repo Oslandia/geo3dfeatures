@@ -8,9 +8,6 @@ from sklearn.neighbors import KDTree
 from geo3dfeatures.io import xyz as read_xyz, write_features
 from geo3dfeatures.extract import generate_features
 
-SEED = 42
-np.random.seed(SEED)
-
 if __name__=='__main__':
 
     parser = argparse.ArgumentParser(description=("3D point cloud geometric"
