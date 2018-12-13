@@ -45,7 +45,7 @@ if __name__=='__main__':
                           nb_points=args.sample_points,
                           kdtree_leaf_size=args.kdtree_leafs)
 
-    columns = ['a', 'b',
+    columns = ['alpha', 'beta',
                'z', 'radius', 'z_range', 'std_deviation', 'density', 'verticality',
                'curvature_change', 'linearity', 'planarity',
                'scattering', 'omnivariance', 'anisotropy',
