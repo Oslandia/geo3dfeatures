@@ -8,8 +8,8 @@ from sklearn.neighbors import KDTree
 from geo3dfeatures.io import xyz as read_xyz, write_features
 from geo3dfeatures.extract import generate_features
 
-if __name__=='__main__':
 
+if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=("3D point cloud geometric"
                                                   " feature extraction"))
     parser.add_argument('-i', '--input-file', required=True,
@@ -18,16 +18,14 @@ if __name__=='__main__':
                         type=int, default=50,
                         help="Number of neighbors to consider")
     parser.add_argument('-o', '--output-file',
-                        default="data/features.csv",
+                        default="output_features.csv",
                         help="Output csv file name")
     parser.add_argument('-p', '--sample-points',
-                        type=int, default=1000,
-                        help="Number of sample points to evaluate")
+                        type=int, help="Number of sample points to evaluate")
     parser.add_argument('-t', '--kdtree-leafs',
                         type=int, default=1000,
                         help="Number of leafs in KD-tree")
     args = parser.parse_args()
-
     print(f"read the file {args.input_file}")
     data = read_xyz(args.input_file)
 
