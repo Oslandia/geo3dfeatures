@@ -1,5 +1,6 @@
 import sys
 import argparse
+
 import numpy as np
 
 from geo3dfeatures.io import xyz as read_xyz, las as read_las, write_features

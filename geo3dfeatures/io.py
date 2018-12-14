@@ -4,6 +4,7 @@
 
 import csv
 import laspy
+
 import numpy as np
 
 
@@ -36,9 +37,9 @@ def las(fpath):
 
     Returns
     -------
-    pandas.DataFrame
-        x, y, z point coordinates as well as r, g, b color features stored in a
-    dataframe
+    numpy.array
+        x, y, z point coordinates as well as r, g, b color features stored in
+    an array
 
     """
     input_file = laspy.file.File(str(fpath), mode="r")
