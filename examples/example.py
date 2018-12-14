@@ -1,15 +1,13 @@
-from pathlib import Path
-
+import sys
 import argparse
-import numpy as np
 
-from sklearn.neighbors import KDTree
+import numpy as np
 
 from geo3dfeatures.io import xyz as read_xyz, write_features
 from geo3dfeatures.extract import generate_features
 
 
-if __name__ == '__main__':
+def _parse_args(args):
     parser = argparse.ArgumentParser(description=("3D point cloud geometric"
                                                   " feature extraction"))
     parser.add_argument('-i', '--input-file', required=True,
