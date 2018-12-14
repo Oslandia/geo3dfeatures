@@ -19,7 +19,6 @@ import pandas as pd
 from sklearn.decomposition import PCA
 from sklearn.neighbors import KDTree
 
-
 def _pca(data, k=3):
     """Carry out a PCA on a set of 2D or 3D points. The number of components
     depends on the point cloud dimensionality
@@ -39,37 +38,6 @@ def _pca(data, k=3):
     """
     return PCA(n_components=k).fit(data)
 
-
-def standard_normalization(sample):
-    """Normalize a set of points regarding mean and standard deviation
-
-    Parameters
-    ----------
-    sample : numpy.array
-        Set of points to normalized; must be a 2D-shaped np.array
-
-    Returns
-    -------
-    np.array
-        Normalized (2D-shaped) set of points
-    """
-    return (sample - sample.mean(axis=0)) / sample.std(axis=0)
-
-def normalize_over_1(l):
-    """Normalized a list of values so as to get new values comprised between 0
-    and 1, and such that `sum(new_values)==1`
-
-    Parameters
-    ----------
-    l : list
-        Values that must be normalized
-
-    Returns
-    -------
-    list
-        Normalized values
-    """
-    return [item / sum(l) for item in l]
 
 def features3d(eigenvalues):
     """Compute barycentric coordinates of a point within the explained variance
@@ -164,7 +132,7 @@ def compute_3D_features(lbda):
         Eigenvalues of a point neighborhood
 
     """
-    e = normalize_over_1(lbda)
+    e = [item / sum(lbda) for item in lbda]
     curvature_change = e[2]
     linearity = (e[0] - e[1]) / e[0]
     planarity = (e[1] - e[2]) / e[0]
@@ -325,4 +293,4 @@ def generate_features(point_cloud, nb_neighbors, nb_points=None,
                + compute_2D_properties(xyz_data[:2], neighbors[:, :2])
                + compute_2D_features(lbda_2D)
                + retrieve_accumulation_features(xyz_data, acc_features)
-               + (rgb_data/255).tolist())
+               + rgb_data.tolist())
