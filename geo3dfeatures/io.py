@@ -1,6 +1,7 @@
 """I/O module to load/write some point clouds files
 """
 
+
 import numpy as np
 
 
@@ -36,7 +37,6 @@ def write_features(fpath, gen, columns, sep=","):
         Header of the .csv file
     sep : str
         Separator between data items used in the .csv file
-
     """
     with open(fpath, 'w') as fobj:
         fobj.write(sep.join(columns))

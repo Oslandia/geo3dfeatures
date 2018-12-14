@@ -1,13 +1,10 @@
-"""This module aims at classifying points that compose a 3D point cloud
+"""3D point clouds classification.
+
+This module aims at classifying points that compose a 3D point cloud
 regarding their spatial organization, and most specifically, the geometric
 structure of their neighborhood.
-
 """
 
-import math
-import numpy as np
-import pandas as pd
-from pathlib import Path
 
 from sklearn.cluster import KMeans
 
