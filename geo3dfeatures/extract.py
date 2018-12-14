@@ -12,6 +12,8 @@ vol 105, pp 286-304.
 
 
 import math
+from collections import OrderedDict
+
 import numpy as np
 import pandas as pd
 
@@ -86,8 +88,7 @@ def build_neighborhood(point, nb_neighbors, kd_tree):
     -------
     dict
         Neighborhood, decomposed as a mean distance between the reference point
-    and its neighbors and an array of neighbor indices within the point cloud
-
+        and its neighbors and an array of neighbor indices within the point cloud
     """
     dist, ind = kd_tree.query(np.expand_dims(point, 0), k=nb_neighbors)
     return {"distance": dist.squeeze(), "indices": ind.squeeze()}
@@ -129,7 +130,6 @@ def compute_3D_features(lbda):
     ----------
     lbda : numpy.array
         Eigenvalues of a point neighborhood
-
     """
     e = [item / sum(lbda) for item in lbda]
     curvature_change = e[2]
@@ -157,7 +157,6 @@ def compute_2D_properties(point, neighbors):
         Reference point 2D-coordinates
     neighbors : numpy.array
         Neighboring point 2D-coordinates (x, y)
-
     """
     xs, ys = neighbors[:, 0], neighbors[:, 1]
     distances = [math.sqrt((x-point[0])**2 + (y-point[1])**2)
@@ -175,7 +174,6 @@ def compute_2D_features(lbda):
     ----------
     lbda : numpy.array
         Eigenvalues of a point neighborhood
-
     """
     eigenvalues_sum_2D = sum(lbda)
     eigenvalues_ratio_2D = lbda[0] / lbda[1]
@@ -195,17 +193,14 @@ def build_accumulation_features(point_cloud, bin_size=0.25, buf=1e-3):
     point_cloud : numpy.array
         Coordinates of all points within the point cloud; must be a 3D-shaped
     bin_size : float
-        Size of each squared bin edge
+        Size of each squared bin edge (in meter)
     buf : float
-        Epsilon quantity used for expanding the largest bins and consider max
-    values
+        Epsilon quantity used for expanding the largest bins and consider max values
 
     Returns
     -------
     pandas.DataFrame
-        Set of features built through binning process, for each point within
-    the cloud
-
+        Set of features built through binning process, for each point within the cloud
     """
     assert point_cloud.shape[1] == 3
     df = pd.DataFrame(point_cloud, columns=["x", "y", "z"])
@@ -220,10 +215,10 @@ def build_accumulation_features(point_cloud, bin_size=0.25, buf=1e-3):
              .agg(["count", "min", "max", "std"])
              .reset_index())
     aggdf["z_range"] = aggdf["max"] - aggdf["min"]
-    aggdf.drop(["min", "max"], axis=1, inplace=True)
+    aggdf.drop(columns=["min", "max"], inplace=True)
     return (df
             .merge(aggdf, on=["xbin", "ybin"], how="left")
-            .drop(["xbin", "ybin"], axis=1))
+            .drop(columns=["xbin", "ybin"]))
 
 
 def retrieve_accumulation_features(point, features):
@@ -251,8 +246,7 @@ def retrieve_accumulation_features(point, features):
     return [acc_density, z_range, z_std]
 
 
-def generate_features(point_cloud, nb_neighbors, nb_points=None,
-                      kdtree_leaf_size=1000):
+def generate_features(point_cloud, nb_neighbors, kdtree_leaf_size=1000):
     """Build the point features for all (or for a sample of) points within
     the point cloud
 
@@ -260,40 +254,58 @@ def generate_features(point_cloud, nb_neighbors, nb_points=None,
     ----------
     point_cloud : numpy.array
         Coordinates of all points within the point cloud; must be a 2D-shaped
-    array with `point_cloud.shape[1] == 3`
+        array with `point_cloud.shape[1] == 3`
     nb_neighbors : int
         Number of points that must be consider within a neighborhod
-    nb_points : int
-        Number of sample points to consider; if None, all the points are
     considered
     kdtree_leaf_size : int
         Size of each kd-tree leaf (in number of points)
 
-    Yields
+    Returns
     ------
-    list
-        features for each point
+    list, OrderedDict generator (features for each point)
     """
     acc_features = build_accumulation_features(point_cloud[:, :3])
-    if nb_points is None:
-        sample_mask = range(point_cloud.shape[0])
-    else:
-        sample_mask = np.random.choice(np.arange(point_cloud.shape[0]),
-                                       size=nb_points,
-                                       replace=False)
-    sample = (point_cloud[idx] for idx in sample_mask)
     kd_tree = KDTree(point_cloud[:, :3], leaf_size=kdtree_leaf_size)
-    for point in sample:
+    for point in point_cloud:
         xyz_data, rgb_data = point[:3], point[3:]
         neighborhood = build_neighborhood(xyz_data, nb_neighbors, kd_tree)
         neighbors = point_cloud[neighborhood["indices"], :3]
         lbda_3D = _pca(neighbors, k=3).singular_values_
         lbda_2D = _pca(neighbors[:, :2], k=2).singular_values_
-        yield (features3d(lbda_3D)
-               + [xyz_data[2]]
-               + compute_3D_properties(neighbors[:, 2], neighborhood["distance"])
-               + compute_3D_features(lbda_3D)
-               + compute_2D_properties(xyz_data[:2], neighbors[:, :2])
-               + compute_2D_features(lbda_2D)
-               + retrieve_accumulation_features(xyz_data, acc_features)
-               + rgb_data.tolist())
+        alpha, beta = features3d(lbda_3D)
+        radius, z_range, std_deviation, density, verticality =\
+            compute_3D_properties(neighbors[:, 2], neighborhood["distance"])
+        curvature_change, linearity, planarity, scattering, omnivariance, anisotropy, eigenentropy, eigenvalue_sum = compute_3D_features(lbda_3D)
+        radius_2D, density_2D = compute_2D_properties(xyz_data[:2], neighbors[:, :2])
+        eigenvalue_sum_2D, eigenvalue_ratio_2D = compute_2D_features(lbda_2D)
+        bin_density, bin_z_range, bin_z_std =\
+            retrieve_accumulation_features(xyz_data, acc_features)
+        yield OrderedDict([("x", xyz_data[0]),
+                           ("y", xyz_data[1]),
+                           ("z", xyz_data[2]),
+                           ("alpha", alpha),
+                           ("beta", beta),
+                           ("radius", radius),
+                           ("z_range", z_range),
+                           ("std_dev", std_deviation),
+                           ("density", density),
+                           ("verticality", verticality),
+                           ("curvature_change", curvature_change),
+                           ("linearity", linearity),
+                           ("planarity", planarity),
+                           ("scattering", scattering),
+                           ("omnivariance", omnivariance),
+                           ("anisotropy", anisotropy),
+                           ("eigenentropy", eigenentropy),
+                           ("eigenvalue_sum", eigenvalue_sum),
+                           ("radius_2D", radius_2D),
+                           ("density_2D", density_2D),
+                           ("eigenvalue_sum_2D", eigenvalue_sum_2D),
+                           ("eigenvalue_ratio_2D", eigenvalue_ratio_2D),
+                           ("bin_density", bin_density),
+                           ("bin_z_range", bin_z_range),
+                           ("bin_z_std", bin_z_std),
+                           ("r", rgb_data[0]),
+                           ("g", rgb_data[1]),
+                           ("b", rgb_data[2])])

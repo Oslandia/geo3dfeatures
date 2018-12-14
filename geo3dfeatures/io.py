@@ -2,6 +2,8 @@
 """
 
 
+import csv
+
 import numpy as np
 
 
@@ -24,23 +26,21 @@ def xyz(fpath, names=None, header=True):
     return np.loadtxt(fpath, delimiter=' ', skiprows=header)
 
 
-def write_features(fpath, gen, columns, sep=","):
-    """Write the data contained into generator in a .csv file
+def write_features(fpath, gen):
+    """Write the fields from a data generator into a .csv file
 
     Parameters
     ----------
     fpath : str
-        Path of the file that must be written on the file system
+        Path of the output file
     gen : generator
-        Data stored as a generator
-    columns : list
-        Header of the .csv file
-    sep : str
-        Separator between data items used in the .csv file
+        Data stored as an ordered dict
     """
     with open(fpath, 'w') as fobj:
-        fobj.write(sep.join(columns))
-        fobj.write("\n")
+        # get the first data to get the field names
+        first = next(gen)
+        writer = csv.DictWriter(fobj, first.keys())
+        writer.writeheader()
+        writer.writerow(first)
         for row in gen:
-            fobj.write(sep.join(str(x) for x in row))
-            fobj.write("\n")
+            writer.writerow(row)
