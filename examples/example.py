@@ -23,26 +23,28 @@ def _parse_args(args):
     parser.add_argument('-t', '--kdtree-leafs',
                         type=int, default=1000,
                         help="Number of leafs in KD-tree")
-    args = parser.parse_args()
-    print(f"read the file {args.input_file}")
-    data = read_xyz(args.input_file)
+    return parser.parse_args(args)
+
+
+def main(argv=sys.argv[1:]):
+    opts = _parse_args(argv)
+    print(f"read the file {opts.input_file}")
+    data = read_xyz(opts.input_file)
+    if opts.sample_points is not None:
+        print("Work with a sample of points")
+        sample_mask = np.random.choice(np.arange(data.shape[0]),
+                                       size=opts.sample_points,
+                                       replace=False)
+        data = data[sample_mask]
 
     print(f"generate 3D features")
-    g = generate_features(data,
-                          nb_neighbors=args.neighbors,
-                          nb_points=args.sample_points,
-                          kdtree_leaf_size=args.kdtree_leafs)
+    gen = generate_features(data,
+                            nb_neighbors=opts.neighbors,
+                            kdtree_leaf_size=opts.kdtree_leafs)
 
-    columns = ['alpha', 'beta',
-               'z', 'radius', 'z_range', 'std_deviation', 'density', 'verticality',
-               'curvature_change', 'linearity', 'planarity',
-               'scattering', 'omnivariance', 'anisotropy',
-               'eigenentropy', 'eigenvalue_sum',
-               'radius_2D', 'density_2D',
-               'eigenvalue_sum_2D', 'eigenvalue_ratio_2D',
-               'bin_density', 'bin_z_range', 'bin_z_std',
-               'r', 'g', 'b']
+    print(f"compute and write some geo features in {opts.output_file}")
+    write_features(opts.output_file, gen)
 
-    out_fpath = args.output_file
-    print(f"compute and write some geo features in {out_fpath}")
-    write_features(out_fpath, g, columns)
+
+if __name__ == '__main__':
+    main()
