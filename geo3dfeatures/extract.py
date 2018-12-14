@@ -8,9 +8,8 @@ criterion: applications in geomorphology. arXiV:1107.0550.
 point cloud interpretation based on optimal neighborhoods, relevant features
 and efficient classifiers. ISPRS Journal of Photogrammetry and Remote Sensing,
 vol 105, pp 286-304.
-
-
 """
+
 
 import math
 import numpy as np
@@ -18,6 +17,7 @@ import pandas as pd
 
 from sklearn.decomposition import PCA
 from sklearn.neighbors import KDTree
+
 
 def _pca(data, k=3):
     """Carry out a PCA on a set of 2D or 3D points. The number of components
@@ -34,7 +34,6 @@ def _pca(data, k=3):
     -------
     sklearn.decomposition.PCA
         Principle component analysis done on input data
-
     """
     return PCA(n_components=k).fit(data)
 
@@ -160,7 +159,7 @@ def compute_2D_properties(point, neighbors):
         Neighboring point 2D-coordinates (x, y)
 
     """
-    xs, ys = neighbors[:,0], neighbors[:,1]
+    xs, ys = neighbors[:, 0], neighbors[:, 1]
     distances = [math.sqrt((x-point[0])**2 + (y-point[1])**2)
                  for x, y in zip(xs, ys)]
     radius_2D = max(distances)
@@ -210,8 +209,8 @@ def build_accumulation_features(point_cloud, bin_size=0.25, buf=1e-3):
     """
     assert point_cloud.shape[1] == 3
     df = pd.DataFrame(point_cloud, columns=["x", "y", "z"])
-    xmin, xmax = np.min(point_cloud[:,0]), np.max(point_cloud[:,0])
-    ymin, ymax = np.min(point_cloud[:,1]), np.max(point_cloud[:,1])
+    xmin, xmax = np.min(point_cloud[:, 0]), np.max(point_cloud[:, 0])
+    ymin, ymax = np.min(point_cloud[:, 1]), np.max(point_cloud[:, 1])
     xbins = np.arange(xmin, xmax+bin_size+buf, bin_size)
     df["xbin"] = pd.cut(df.x, xbins, right=False)
     ybins = np.arange(ymin, ymax+bin_size+buf, bin_size)
@@ -242,7 +241,6 @@ def retrieve_accumulation_features(point, features):
     -------
     list
         Accumulation features
-
     """
     point_x, point_y, point_z = point
     point_features = features.query("x==@point_x & y==@point_y & z==@point_z")
@@ -251,6 +249,7 @@ def retrieve_accumulation_features(point, features):
     z_range = point_features.iloc[0]["z_range"]
     z_std = point_features.iloc[0]["std"]
     return [acc_density, z_range, z_std]
+
 
 def generate_features(point_cloud, nb_neighbors, nb_points=None,
                       kdtree_leaf_size=1000):
@@ -270,8 +269,12 @@ def generate_features(point_cloud, nb_neighbors, nb_points=None,
     kdtree_leaf_size : int
         Size of each kd-tree leaf (in number of points)
 
+    Yields
+    ------
+    list
+        features for each point
     """
-    acc_features = build_accumulation_features(point_cloud[:,:3])
+    acc_features = build_accumulation_features(point_cloud[:, :3])
     if nb_points is None:
         sample_mask = range(point_cloud.shape[0])
     else:
@@ -285,10 +288,10 @@ def generate_features(point_cloud, nb_neighbors, nb_points=None,
         neighborhood = build_neighborhood(xyz_data, nb_neighbors, kd_tree)
         neighbors = point_cloud[neighborhood["indices"], :3]
         lbda_3D = _pca(neighbors, k=3).singular_values_
-        lbda_2D = _pca(neighbors[:,:2], k=2).singular_values_
+        lbda_2D = _pca(neighbors[:, :2], k=2).singular_values_
         yield (features3d(lbda_3D)
                + [xyz_data[2]]
-               + compute_3D_properties(neighbors[:,2], neighborhood["distance"])
+               + compute_3D_properties(neighbors[:, 2], neighborhood["distance"])
                + compute_3D_features(lbda_3D)
                + compute_2D_properties(xyz_data[:2], neighbors[:, :2])
                + compute_2D_features(lbda_2D)
