@@ -88,8 +88,7 @@ def build_neighborhood(point, nb_neighbors, kd_tree):
     -------
     dict
         Neighborhood, decomposed as a mean distance between the reference point
-    and its neighbors and an array of neighbor indices within the point cloud
-
+        and its neighbors and an array of neighbor indices within the point cloud
     """
     dist, ind = kd_tree.query(np.expand_dims(point, 0), k=nb_neighbors)
     return {"distance": dist.squeeze(), "indices": ind.squeeze()}
@@ -131,7 +130,6 @@ def compute_3D_features(lbda):
     ----------
     lbda : numpy.array
         Eigenvalues of a point neighborhood
-
     """
     e = [item / sum(lbda) for item in lbda]
     curvature_change = e[2]
@@ -159,7 +157,6 @@ def compute_2D_properties(point, neighbors):
         Reference point 2D-coordinates
     neighbors : numpy.array
         Neighboring point 2D-coordinates (x, y)
-
     """
     xs, ys = neighbors[:, 0], neighbors[:, 1]
     distances = [math.sqrt((x-point[0])**2 + (y-point[1])**2)
@@ -177,7 +174,6 @@ def compute_2D_features(lbda):
     ----------
     lbda : numpy.array
         Eigenvalues of a point neighborhood
-
     """
     eigenvalues_sum_2D = sum(lbda)
     eigenvalues_ratio_2D = lbda[0] / lbda[1]
@@ -197,17 +193,14 @@ def build_accumulation_features(point_cloud, bin_size=0.25, buf=1e-3):
     point_cloud : numpy.array
         Coordinates of all points within the point cloud; must be a 3D-shaped
     bin_size : float
-        Size of each squared bin edge
+        Size of each squared bin edge (in meter)
     buf : float
-        Epsilon quantity used for expanding the largest bins and consider max
-    values
+        Epsilon quantity used for expanding the largest bins and consider max values
 
     Returns
     -------
     pandas.DataFrame
-        Set of features built through binning process, for each point within
-    the cloud
-
+        Set of features built through binning process, for each point within the cloud
     """
     assert point_cloud.shape[1] == 3
     df = pd.DataFrame(point_cloud, columns=["x", "y", "z"])
@@ -222,10 +215,10 @@ def build_accumulation_features(point_cloud, bin_size=0.25, buf=1e-3):
              .agg(["count", "min", "max", "std"])
              .reset_index())
     aggdf["z_range"] = aggdf["max"] - aggdf["min"]
-    aggdf.drop(["min", "max"], axis=1, inplace=True)
+    aggdf.drop(columns=["min", "max"], inplace=True)
     return (df
             .merge(aggdf, on=["xbin", "ybin"], how="left")
-            .drop(["xbin", "ybin"], axis=1))
+            .drop(columns=["xbin", "ybin"]))
 
 
 def retrieve_accumulation_features(point, features):
