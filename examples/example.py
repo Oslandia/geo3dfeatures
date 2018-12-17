@@ -1,5 +1,6 @@
 import sys
 import argparse
+from pathlib import Path
 
 import numpy as np
 
@@ -29,11 +30,11 @@ def _parse_args(args):
 def main(argv=sys.argv[1:]):
     opts = _parse_args(argv)
     print(f"read the file {opts.input_file}")
-    extension = str(opts.input_file).split(".")[-1]
-    if extension == "xyz":
-        data = read_xyz(opts.input_file)
-    elif extension == "las":
-        data = read_las(opts.input_file)
+    input_path = Path(opts.input_file)
+    if input_path.suffix == ".xyz":
+        data = read_xyz(str(input_path))
+    elif input_path.suffix == ".las":
+        data = read_las(str(input_path))
     else:
         raise ValueError("Wrong file extension, please send xyz or las file.")
     if opts.sample_points is not None:
@@ -49,7 +50,7 @@ def main(argv=sys.argv[1:]):
                             kdtree_leaf_size=opts.kdtree_leafs)
 
     print(f"compute and write some geo features in {opts.output_file}")
-    write_features(opts.output_file, gen)
+    write_features(str(input_path), gen)
 
 
 if __name__ == '__main__':
