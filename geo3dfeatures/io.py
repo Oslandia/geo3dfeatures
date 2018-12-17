@@ -28,7 +28,7 @@ def xyz(fpath, names=None, header=True):
 
 
 def las(fpath):
-    """Read a .las file with ̀laspy` package
+    """Read a .las file with `laspy` package
 
     Parameters
     ----------
@@ -40,12 +40,11 @@ def las(fpath):
     numpy.array
         x, y, z point coordinates as well as r, g, b color features stored in
     an array
-
     """
-    input_file = laspy.file.File(str(fpath), mode="r")
-    data = np.array([input_file.x, input_file.y, input_file.z,
-                     input_file.red, input_file.green, input_file.blue]).T
-    return data
+    input_file = laspy.file.File(fpath, mode="r")
+    data = np.vstack((input_file.x, input_file.y, input_file.z,
+                      input_file.red, input_file.green, input_file.blue))
+    return data.transpose()
 
 
 def write_features(fpath, gen):
