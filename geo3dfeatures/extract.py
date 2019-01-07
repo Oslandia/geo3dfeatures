@@ -19,7 +19,7 @@ import numpy as np
 from sklearn.decomposition import PCA
 from sklearn.neighbors import KDTree
 
-from geo3dfeatures.features import accumulation_2d_neighborhood
+from geo3dfeatures.features import accumulation_2d_neighborhood, triangle_variance_space
 
 
 def _pca(data, k=3):
@@ -39,38 +39,6 @@ def _pca(data, k=3):
         Principle component analysis done on input data
     """
     return PCA(n_components=k).fit(data)
-
-
-def features3d(eigenvalues):
-    """Compute barycentric coordinates of a point within the explained variance
-    space, knowing the PCA eigenvalues
-
-    See Brodu, N., Lague D., 2011. 3D Terrestrial lidar data classification of
-    complex natural scenes using a multi-scale dimensionality criterion:
-    applications in geomorphology. arXiV:1107.0550v3.
-
-    Extract of C++ code by N. Brodu:
-
-        // Use barycentric coordinates : a for 1D, b for 2D and c for 3D
-        // Formula on wikipedia page for barycentric coordinates
-        // using directly the triangle in %variance space, they simplify a lot
-        //FloatType c = 1 - a - b; // they sum to 1
-        a = svalues[0] - svalues[1];
-        b = 2 * svalues[0] + 4 * svalues[1] - 2;
-
-    Parameters
-    ----------
-    eigenvalues : list
-        Normalized eigenvalues given by the neighborhood PCA
-
-    Returns
-    -------
-    list
-        3D features that express the point within the variance space
-    """
-    a = eigenvalues[0] - eigenvalues[1]
-    b = 2 * eigenvalues[0] + 4 * eigenvalues[1] - 2
-    return [a, b]
 
 
 def build_neighborhood(point, nb_neighbors, kd_tree):
@@ -243,7 +211,7 @@ def generate_features(point_cloud, nb_neighbors, kdtree_leaf_size=1000):
         neighbors = point_cloud[neighborhood["indices"], :3]
         lbda_3D = _pca(neighbors, k=3).singular_values_
         lbda_2D = _pca(neighbors[:, :2], k=2).singular_values_
-        alpha, beta = features3d(lbda_3D)
+        alpha, beta = triangle_variance_space(lbda_3D)
         radius, z_range, std_deviation, density, verticality = compute_3D_properties(
             neighbors[:, 2], neighborhood["distance"]
         )

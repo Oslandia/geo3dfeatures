@@ -1,4 +1,6 @@
-"""List of functions which extracts 1D, 2D or 3D geometry features from point clouds.
+"""Geometry features.
+
+List of functions which extracts 1D, 2D or 3D geometry features from point clouds.
 """
 
 import numpy as np
@@ -45,3 +47,35 @@ def accumulation_2d_neighborhood(point_cloud, bin_size=0.25, buf=1e-3):
     return df.merge(aggdf, on=["xbin", "ybin"], how="left").drop(
         columns=["xbin", "ybin"]
     )
+
+
+def triangle_variance_space(eigenvalues):
+    """Compute barycentric coordinates of a point within the explained variance
+    space, knowing the PCA eigenvalues
+
+    See Brodu, N., Lague D., 2011. 3D Terrestrial lidar data classification of
+    complex natural scenes using a multi-scale dimensionality criterion:
+    applications in geomorphology. arXiV:1107.0550v3.
+
+    Extract of C++ code by N. Brodu:
+
+        // Use barycentric coordinates : a for 1D, b for 2D and c for 3D
+        // Formula on wikipedia page for barycentric coordinates
+        // using directly the triangle in %variance space, they simplify a lot
+        //FloatType c = 1 - a - b; // they sum to 1
+        a = svalues[0] - svalues[1];
+        b = 2 * svalues[0] + 4 * svalues[1] - 2;
+
+    Parameters
+    ----------
+    eigenvalues : list
+        Normalized eigenvalues given by the neighborhood PCA
+
+    Returns
+    -------
+    list
+        First two barycentric coordinates in the variance space (triangle)
+    """
+    a = eigenvalues[0] - eigenvalues[1]
+    b = 2 * eigenvalues[0] + 4 * eigenvalues[1] - 2
+    return [a, b]
