@@ -2,7 +2,7 @@ import pytest
 
 import numpy as np
 
-from geo3dfeatures.extract import build_accumulation_features
+from geo3dfeatures.features import accumulation_2d_neighborhood
 
 
 SEED = 1337
@@ -48,10 +48,10 @@ def sphere(size=SIZE):
     return data[d <= 1.0][:size]
 
 
-def test_accumulation_features(line, plane, sphere):
-    acc1D = build_accumulation_features(line)
-    acc2D = build_accumulation_features(plane)
-    acc3D = build_accumulation_features(sphere)
+def test_accumulation_2d_features(line, plane, sphere):
+    acc1D = accumulation_2d_neighborhood(line)
+    acc2D = accumulation_2d_neighborhood(plane)
+    acc3D = accumulation_2d_neighborhood(sphere)
     # a large density of points for the line
     assert acc1D["count"].mean() > acc2D["count"].mean()
     assert acc1D["count"].mean() > acc3D["count"].mean()
