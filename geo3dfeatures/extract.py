@@ -19,6 +19,8 @@ import numpy as np
 from sklearn.decomposition import PCA
 from sklearn.neighbors import KDTree
 
+from geo3dfeatures.features import accumulation_2d_neighborhood
+
 
 def _pca(data, k=3):
     """Carry out a PCA on a set of 2D or 3D points. The number of components
@@ -233,7 +235,7 @@ def generate_features(point_cloud, nb_neighbors, kdtree_leaf_size=1000):
     ------
     list, OrderedDict generator (features for each point)
     """
-    acc_features = build_accumulation_features(point_cloud[:, :3])
+    acc_features = accumulation_2d_neighborhood(point_cloud[:, :3])
     kd_tree = KDTree(point_cloud[:, :3], leaf_size=kdtree_leaf_size)
     for point in point_cloud:
         xyz_data, rgb_data = point[:3], point[3:]
