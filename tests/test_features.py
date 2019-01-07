@@ -7,7 +7,7 @@ from geo3dfeatures.extract import build_accumulation_features
 
 SEED = 1337
 np.random.seed(SEED)
-SIZE = 5_000
+SIZE = 5000
 
 
 @pytest.fixture
