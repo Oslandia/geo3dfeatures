@@ -84,6 +84,17 @@ def triangle_variance_space(pca):
         a = svalues[0] - svalues[1];
         b = 2 * svalues[0] + 4 * svalues[1] - 2;
 
+    See the wikipedia page
+    https://en.wikipedia.org/wiki/Barycentric_coordinate_system#Conversion_between_barycentric_and_Cartesian_coordinates
+
+    If you project the three normalized eigenvalues on a 2D plane, i.e. (λ1, λ2), you
+    get the triangle with these following coordinates:
+
+    (1/3, 1/3), (1/2, 1/2), (1, 0)
+
+    Thus you can build the T matrix and get the barycentric coordinates with the
+    T^{-1}(r - r_3) formula.
+
     Parameters
     ----------
     pca : sklearn.decomposition.PCA
