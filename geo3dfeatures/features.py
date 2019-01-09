@@ -49,7 +49,25 @@ def accumulation_2d_neighborhood(point_cloud, bin_size=0.25, buf=1e-3):
     )
 
 
-def triangle_variance_space(eigenvalues):
+def normalized_eigenvalues(pca):
+    """Compute and normalized the eigenvalues from a fitted PCA.
+
+    The singular values stored in a PCA instance are the squarred root of
+    eigenvalues.
+
+    Parameters
+    ----------
+    pca : sklearn.decomposition.PCA
+
+    Returns
+    -------
+    np.ndarray
+    """
+    eigenvalues = pca.singular_values_ * pca.singular_values_
+    return eigenvalues / eigenvalues.sum()
+
+
+def triangle_variance_space(pca):
     """Compute barycentric coordinates of a point within the explained variance
     space, knowing the PCA eigenvalues
 
@@ -68,14 +86,14 @@ def triangle_variance_space(eigenvalues):
 
     Parameters
     ----------
-    eigenvalues : list
-        Normalized eigenvalues given by the neighborhood PCA
+    pca : sklearn.decomposition.PCA
 
     Returns
     -------
     list
         First two barycentric coordinates in the variance space (triangle)
     """
+    eigenvalues = normalized_eigenvalues(pca)
     a = eigenvalues[0] - eigenvalues[1]
     b = 2 * eigenvalues[0] + 4 * eigenvalues[1] - 2
     return [a, b]

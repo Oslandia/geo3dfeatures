@@ -2,7 +2,8 @@ import pytest
 
 import numpy as np
 
-from geo3dfeatures.features import accumulation_2d_neighborhood
+from geo3dfeatures.extract import _pca
+from geo3dfeatures.features import accumulation_2d_neighborhood, triangle_variance_space
 
 
 SEED = 1337
@@ -62,3 +63,14 @@ def test_accumulation_2d_features(line, plane, sphere):
     assert acc3D["std"].mean() > acc2D["std"].mean()
     assert acc3D["z_range"].mean() > acc1D["z_range"].mean()
     assert acc3D["z_range"].mean() > acc2D["z_range"].mean()
+
+
+def test_triangle_variance_space(plane):
+    """Test the values of the barycentric coordinates (variance space).
+
+    The function returns the first two barycentric coordinates but you should have
+    `a + b + c = 1`
+    """
+    pca = _pca(plane, k=3)
+    a, b = triangle_variance_space(pca)
+    assert a + b <= 1.0
