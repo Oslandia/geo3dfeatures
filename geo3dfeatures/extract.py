@@ -209,9 +209,10 @@ def generate_features(point_cloud, nb_neighbors, kdtree_leaf_size=1000):
         xyz_data, rgb_data = point[:3], point[3:]
         neighborhood = build_neighborhood(xyz_data, nb_neighbors, kd_tree)
         neighbors = point_cloud[neighborhood["indices"], :3]
+        pca = _pca(neighbors, k=3)
         lbda_3D = _pca(neighbors, k=3).singular_values_
         lbda_2D = _pca(neighbors[:, :2], k=2).singular_values_
-        alpha, beta = triangle_variance_space(lbda_3D)
+        alpha, beta = triangle_variance_space(pca)
         radius, z_range, std_deviation, density, verticality = compute_3D_properties(
             neighbors[:, 2], neighborhood["distance"]
         )
