@@ -50,7 +50,7 @@ def main(argv=sys.argv[1:]):
                             kdtree_leaf_size=opts.kdtree_leafs)
 
     print(f"compute and write some geo features in {opts.output_file}")
-    write_features(str(input_path), gen)
+    write_features(opts.output_file, gen)
 
 
 if __name__ == '__main__':
