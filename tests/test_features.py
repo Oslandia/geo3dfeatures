@@ -39,11 +39,11 @@ def plane(size=SIZE):
 def sphere(size=SIZE):
     """Build x,y,z point clouds as a sphere for 3D features
     """
-    size = size * 2
-    data = np.zeros((size, 3))
-    data[:, 0] = 2 * np.random.uniform(size=size) - 1  # x
-    data[:, 1] = 2 * np.random.uniform(size=size) - 1  # y
-    data[:, 2] = 2 * np.random.uniform(size=size) - 1  # z
+    maxsize = size * 2
+    data = np.zeros((maxsize, 3))
+    data[:, 0] = 2 * np.random.uniform(size=maxsize) - 1  # x
+    data[:, 1] = 2 * np.random.uniform(size=maxsize) - 1  # y
+    data[:, 2] = 2 * np.random.uniform(size=maxsize) - 1  # z
     d = data[:, 0] * data[:, 0] + data[:, 1] * data[:, 1] + data[:, 2] * data[:, 2]
     # keep just point inside the sphere
     return data[d <= 1.0][:size]
