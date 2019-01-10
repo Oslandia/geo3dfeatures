@@ -29,9 +29,9 @@ def plane(size=SIZE):
     """Build x,y,z point clouds as a plane for 2D features
     """
     data = np.zeros((size, 3))
-    data[:, 0] = 2 * np.random.uniform(size=size) - 1  # x
-    data[:, 1] = 2 * np.random.uniform(size=size) - 1  # y
-    data[:, 2] = np.random.normal(loc=0, scale=0.002, size=size)  # z close to zero
+    data[:, 0] = 20 + 2 * np.random.uniform(size=size) - 1  # x
+    data[:, 1] = 40 + 2 * np.random.uniform(size=size) - 1  # y
+    data[:, 2] = 5 + np.random.normal(loc=0, scale=0.002, size=size)  # z close to zero
     return data
 
 
