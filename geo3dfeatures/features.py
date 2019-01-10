@@ -105,6 +105,6 @@ def triangle_variance_space(pca):
         First two barycentric coordinates in the variance space (triangle)
     """
     eigenvalues = normalized_eigenvalues(pca)
-    a = eigenvalues[0] - eigenvalues[1]
-    b = 2 * eigenvalues[0] + 4 * eigenvalues[1] - 2
-    return [a, b]
+    alpha = eigenvalues[0] - eigenvalues[1]
+    beta = 2 * eigenvalues[0] + 4 * eigenvalues[1] - 2
+    return [alpha, beta]

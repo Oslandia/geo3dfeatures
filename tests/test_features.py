@@ -65,12 +65,45 @@ def test_accumulation_2d_features(line, plane, sphere):
     assert acc3D["z_range"].mean() > acc2D["z_range"].mean()
 
 
-def test_triangle_variance_space(plane):
+def test_sum_triangle_variance_space(plane):
     """Test the values of the barycentric coordinates (variance space).
 
     The function returns the first two barycentric coordinates but you should have
-    `a + b + c = 1`
+    `alpha + beta + gamma = 1`
     """
     pca = _pca(plane, k=3)
-    a, b = triangle_variance_space(pca)
-    assert a + b <= 1.0
+    alpha, beta = triangle_variance_space(pca)
+    assert alpha + beta <= 1.0
+
+
+def test_triangle_variance_space_1D_case(line):
+    """Test the values of the barycentric coordinates (variance space).
+
+    'alpha' must be >> to 'beta'
+    """
+    pca = _pca(line, k=3)
+    alpha, beta = triangle_variance_space(pca)
+    assert alpha > beta
+    assert abs(alpha - 1) < 1e-3
+
+
+def test_triangle_variance_space_2D_case(plane):
+    """Test the values of the barycentric coordinates (variance space).
+
+    beta must be > alpha and close to 1.0
+    """
+    pca = _pca(plane, k=3)
+    alpha, beta = triangle_variance_space(pca)
+    assert alpha < beta
+    assert beta >= 0.95
+
+
+def test_triangle_variance_space_3D_case(sphere):
+    """Test the values of the barycentric coordinates (variance space).
+
+    alpha and beta must be close to 0. (so gamme close to 1.)
+    """
+    pca = _pca(sphere, k=3)
+    alpha, beta = triangle_variance_space(pca)
+    assert 1 - (alpha + beta) >= 0.95
+
