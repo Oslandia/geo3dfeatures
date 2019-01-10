@@ -3,7 +3,10 @@
 
 
 import csv
+
 import laspy
+
+from plyfile import PlyData
 
 import numpy as np
 
@@ -39,12 +42,33 @@ def las(fpath):
     -------
     numpy.array
         x, y, z point coordinates as well as r, g, b color features stored in
-    an array
+        an array
     """
     input_file = laspy.file.File(fpath, mode="r")
     data = np.vstack((input_file.x, input_file.y, input_file.z,
                       input_file.red, input_file.green, input_file.blue))
     return data.transpose()
+
+
+def ply(fpath):
+    """Read .ply file with 'plyfile'.
+
+    For now, just read the (x, y, z) coordinates.
+
+    Parameters
+    ----------
+    fpath : str
+        Path of the input file
+
+    Returns
+    -------
+    numpy.array
+        x, y, z point coordinates
+    """
+    reader = PlyData.read(fpath)
+    vertex = reader["vertex"]
+    result = np.array([vertex["x"], vertex["y"], vertex["z"]])
+    return np.transpose(result)
 
 
 def write_features(fpath, gen):
