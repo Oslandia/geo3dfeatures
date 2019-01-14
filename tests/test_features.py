@@ -2,7 +2,8 @@ import pytest
 
 import numpy as np
 
-from geo3dfeatures.extract import _pca
+from sklearn.decomposition import PCA
+
 from geo3dfeatures.features import accumulation_2d_neighborhood, triangle_variance_space
 
 
@@ -71,7 +72,7 @@ def test_sum_triangle_variance_space(plane):
     The function returns the first two barycentric coordinates but you should have
     `alpha + beta + gamma = 1`
     """
-    pca = _pca(plane, k=3)
+    pca = PCA().fit(plane)
     alpha, beta = triangle_variance_space(pca)
     assert alpha + beta <= 1.0
 
@@ -81,7 +82,7 @@ def test_triangle_variance_space_1D_case(line):
 
     'alpha' must be >> to 'beta'
     """
-    pca = _pca(line, k=3)
+    pca = PCA().fit(line)
     alpha, beta = triangle_variance_space(pca)
     assert alpha > beta
     assert abs(alpha - 1) < 1e-3
@@ -92,7 +93,7 @@ def test_triangle_variance_space_2D_case(plane):
 
     beta must be > alpha and close to 1.0
     """
-    pca = _pca(plane, k=3)
+    pca = PCA().fit(plane)
     alpha, beta = triangle_variance_space(pca)
     assert alpha < beta
     assert beta >= 0.95
@@ -103,7 +104,7 @@ def test_triangle_variance_space_3D_case(sphere):
 
     alpha and beta must be close to 0. (so gamme close to 1.)
     """
-    pca = _pca(sphere, k=3)
+    pca = PCA().fit(sphere)
     alpha, beta = triangle_variance_space(pca)
     assert 1 - (alpha + beta) >= 0.95
 

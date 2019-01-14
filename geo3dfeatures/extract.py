@@ -22,25 +22,6 @@ from sklearn.neighbors import KDTree
 from geo3dfeatures.features import accumulation_2d_neighborhood, triangle_variance_space
 
 
-def _pca(data, k=3):
-    """Carry out a PCA on a set of 2D or 3D points. The number of components
-    depends on the point cloud dimensionality
-
-    Parameters
-    ----------
-    data : numpy.array
-        Raw data to which a PCA must be applied
-    k : int
-        Number of PCA components
-
-    Returns
-    -------
-    sklearn.decomposition.PCA
-        Principle component analysis done on input data
-    """
-    return PCA(n_components=k).fit(data)
-
-
 def build_neighborhood(point, nb_neighbors, kd_tree):
     """Extract a point neighborhood by the way of a KDTree method
 
