@@ -19,7 +19,7 @@ import numpy as np
 from sklearn.decomposition import PCA
 from sklearn.neighbors import KDTree
 
-from geo3dfeatures.features import accumulation_2d_neighborhood, triangle_variance_space
+from geo3dfeatures.features import (accumulation_2d_neighborhood, triangle_variance_space, compute_3D_features)
 
 
 def build_neighborhood(point, nb_neighbors, kd_tree):
@@ -73,37 +73,6 @@ def compute_3D_properties(z_neighbors, distances):
     return [radius, z_range, std_deviation, density, verticality]
 
 
-def compute_3D_features(pca):
-    """Build the set of 3D features for a typical 3D point within a local
-    neighborhood represented through PCA eigenvalues
-
-    Parameters
-    ----------
-    pca : sklearn.decompositions.PCA
-        PCA computed on the x,y,z coords
-    """
-    assert pca.n_components_ == 3
-    lbda = pca.singular_values_
-    e = [item / sum(lbda) for item in lbda]
-    curvature_change = e[2]
-    linearity = (e[0] - e[1]) / e[0]
-    planarity = (e[1] - e[2]) / e[0]
-    scattering = e[2] / e[0]
-    omnivariance = (e[0] * e[1] * e[2]) ** (1 / 3)
-    anisotropy = (e[0] - e[2]) / e[0]
-    eigenentropy = -1 * np.sum([i * math.log(i) for i in e])
-    eigenvalue_sum = np.sum(lbda)
-    return [
-        curvature_change,
-        linearity,
-        planarity,
-        scattering,
-        omnivariance,
-        anisotropy,
-        eigenentropy,
-        eigenvalue_sum,
-    ]
-
 
 def compute_2D_properties(point, neighbors):
     """Compute 2D geometric features according to (Lari & Habib, 2012) quoted
@@ -138,7 +107,7 @@ def compute_2D_features(pca):
         PCA computed on the x,y coords.
     """
     assert pca.n_components_ == 2
-    lbda = pca.singular_values_
+    lbda = pca.singular_values_ ** 2
     eigenvalues_sum_2D = sum(lbda)
     eigenvalues_ratio_2D = lbda[0] / lbda[1]
     return [eigenvalues_sum_2D, eigenvalues_ratio_2D]
@@ -196,11 +165,12 @@ def generate_features(point_cloud, nb_neighbors, kdtree_leaf_size=1000):
         neighbors = point_cloud[neighborhood["indices"], :3]
         pca = PCA().fit(neighbors)  # PCA on the x,y,z coords
         pca_2d = PCA().fit(neighbors[:, :2])  # PCA just on the x,y coords
+        eigenvalue_sum = (pca.singular_values_ ** 2).sum()
         alpha, beta = triangle_variance_space(pca)
         radius, z_range, std_deviation, density, verticality = compute_3D_properties(
             neighbors[:, 2], neighborhood["distance"]
         )
-        curvature_change, linearity, planarity, scattering, omnivariance, anisotropy, eigenentropy, eigenvalue_sum = compute_3D_features(
+        curvature_change, linearity, planarity, scattering, omnivariance, anisotropy, eigenentropy = compute_3D_features(
             pca
         )
         radius_2D, density_2D = compute_2D_properties(xyz_data[:2], neighbors[:, :2])

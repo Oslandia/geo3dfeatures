@@ -4,7 +4,8 @@ import numpy as np
 
 from sklearn.decomposition import PCA
 
-from geo3dfeatures.features import accumulation_2d_neighborhood, triangle_variance_space
+from geo3dfeatures.features import (accumulation_2d_neighborhood, triangle_variance_space,
+                                    compute_3D_features)
 
 
 SEED = 1337
@@ -108,3 +109,49 @@ def test_triangle_variance_space_3D_case(sphere):
     alpha, beta = triangle_variance_space(pca)
     assert 1 - (alpha + beta) >= 0.95
 
+
+def test_3d_features_line(line):
+    """Test curvature change, linearity, planarity and scattering for a line.
+    """
+    pca = PCA().fit(line)
+    curvature_change, linearity, planarity, scattering, *rest = compute_3D_features(
+        pca
+        )
+    # close to 1
+    assert linearity >= 0.95
+    # close to zero
+    assert curvature_change <= 5e-3
+    assert planarity <= 0.05
+    scattering <= 0.05
+
+
+def test_volume_features_plane(plane):
+    """Test curvature change, linearity, planarity and scattering for a plane.
+    """
+    pca = PCA().fit(plane)
+    curvature_change, linearity, planarity, scattering, *rest = compute_3D_features(
+        pca
+        )
+    # close to zero
+    assert curvature_change <= 5e-3
+    # close to 1
+    assert planarity >= 0.95
+    # close to 0
+    linearity <= 0.05
+    scattering <= 0.05
+
+
+def test_3d_features_sphere(sphere):
+    """Test curvature change, linearity, planarity and scattering for a sphere.
+    """
+    pca = PCA().fit(sphere)
+    curvature_change, linearity, planarity, scattering, *rest = compute_3D_features(
+        pca
+        )
+    # close to 1/3
+    assert abs(curvature_change - 1/3) <= 5e-3
+    # close to 1
+    assert scattering >= 0.95
+    # close to 0
+    linearity <= 0.05
+    planarity <= 0.05

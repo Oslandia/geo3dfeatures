@@ -3,6 +3,8 @@
 List of functions which extracts 1D, 2D or 3D geometry features from point clouds.
 """
 
+import math
+
 import numpy as np
 import pandas as pd
 
@@ -108,3 +110,37 @@ def triangle_variance_space(pca):
     alpha = eigenvalues[0] - eigenvalues[1]
     beta = 2 * eigenvalues[0] + 4 * eigenvalues[1] - 2
     return [alpha, beta]
+
+
+def compute_3D_features(pca):
+    """Build the set of 3D features for a typical 3D point within a local
+    neighborhood represented through PCA eigenvalues
+
+    Parameters
+    ----------
+    pca : sklearn.decompositions.PCA
+        PCA computed on the x,y,z coords
+
+    Returns
+    -------
+    list
+    """
+    assert pca.n_components_ == 3
+    lbda = pca.singular_values_
+    e = [item / sum(lbda) for item in lbda]
+    curvature_change = e[2]
+    linearity = (e[0] - e[1]) / e[0]
+    planarity = (e[1] - e[2]) / e[0]
+    scattering = e[2] / e[0]
+    omnivariance = (e[0] * e[1] * e[2]) ** (1 / 3)
+    anisotropy = (e[0] - e[2]) / e[0]
+    eigenentropy = -1 * np.sum([i * math.log(i) for i in e])
+    return [
+        curvature_change,
+        linearity,
+        planarity,
+        scattering,
+        omnivariance,
+        anisotropy,
+        eigenentropy
+    ]
