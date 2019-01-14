@@ -219,13 +219,13 @@ def test_2d_features_ztube(ztube):
 def test_2d_features_wall(wall):
     """Projection on (x,y) look like a straight line
 
-    - High first eigen values. A very big lambda_1 / lambda_2 ratio.
+    - High first eigen values. A very low lambda_2 / lambda_1 ratio.
     - The value of the sum is quite close to the first eigen value.
     """
     pca = PCA().fit(wall[:, :2])
     eigenvalues = pca.singular_values_ ** 2
     eigensum, ratio = compute_2D_features(pca)
-    assert ratio > 1e10
+    assert ratio <= 1e-5
     assert abs(eigensum - eigenvalues[0]) <= 0.05
 
 
