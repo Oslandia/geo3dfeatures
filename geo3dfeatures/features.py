@@ -126,15 +126,14 @@ def compute_3D_features(pca):
     list
     """
     assert pca.n_components_ == 3
-    lbda = pca.singular_values_
-    e = [item / sum(lbda) for item in lbda]
+    e = normalized_eigenvalues(pca)
     curvature_change = e[2]
     linearity = (e[0] - e[1]) / e[0]
     planarity = (e[1] - e[2]) / e[0]
     scattering = e[2] / e[0]
-    omnivariance = (e[0] * e[1] * e[2]) ** (1 / 3)
+    omnivariance = e.prod() ** (1 / 3)
     anisotropy = (e[0] - e[2]) / e[0]
-    eigenentropy = -1 * np.sum([i * math.log(i) for i in e])
+    eigenentropy = -1 * np.sum(e * np.log(e))
     return [
         curvature_change,
         linearity,

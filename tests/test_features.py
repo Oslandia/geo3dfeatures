@@ -149,7 +149,7 @@ def test_3d_features_sphere(sphere):
         pca
         )
     # close to 1/3
-    assert abs(curvature_change - 1/3) <= 5e-3
+    assert abs(curvature_change - 1/3) <= 0.05
     # close to 1
     assert scattering >= 0.95
     # close to 0
