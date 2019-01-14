@@ -73,15 +73,17 @@ def compute_3D_properties(z_neighbors, distances):
     return [radius, z_range, std_deviation, density, verticality]
 
 
-def compute_3D_features(lbda):
+def compute_3D_features(pca):
     """Build the set of 3D features for a typical 3D point within a local
     neighborhood represented through PCA eigenvalues
 
     Parameters
     ----------
-    lbda : numpy.array
-        Eigenvalues of a point neighborhood
+    pca : sklearn.decompositions.PCA
+        PCA computed on the x,y,z coords
     """
+    assert pca.n_components_ == 3
+    lbda = pca.singular_values_
     e = [item / sum(lbda) for item in lbda]
     curvature_change = e[2]
     linearity = (e[0] - e[1]) / e[0]
@@ -126,15 +128,17 @@ def compute_2D_properties(point, neighbors):
     return [radius_2D, density_2D]
 
 
-def compute_2D_features(lbda):
+def compute_2D_features(pca):
     """Build the set of 2D features for a typical 2D point within a local
     neighborhood represented through PCA eigenvalues
 
     Parameters
     ----------
-    lbda : numpy.array
-        Eigenvalues of a point neighborhood
+    pca : sklearn.decompositions.PCA
+        PCA computed on the x,y coords.
     """
+    assert pca.n_components_ == 2
+    lbda = pca.singular_values_
     eigenvalues_sum_2D = sum(lbda)
     eigenvalues_ratio_2D = lbda[0] / lbda[1]
     return [eigenvalues_sum_2D, eigenvalues_ratio_2D]
@@ -190,18 +194,17 @@ def generate_features(point_cloud, nb_neighbors, kdtree_leaf_size=1000):
         xyz_data, rgb_data = point[:3], point[3:]
         neighborhood = build_neighborhood(xyz_data, nb_neighbors, kd_tree)
         neighbors = point_cloud[neighborhood["indices"], :3]
-        pca = _pca(neighbors, k=3)
-        lbda_3D = _pca(neighbors, k=3).singular_values_
-        lbda_2D = _pca(neighbors[:, :2], k=2).singular_values_
+        pca = PCA().fit(neighbors)  # PCA on the x,y,z coords
+        pca_2d = PCA().fit(neighbors[:, :2])  # PCA just on the x,y coords
         alpha, beta = triangle_variance_space(pca)
         radius, z_range, std_deviation, density, verticality = compute_3D_properties(
             neighbors[:, 2], neighborhood["distance"]
         )
         curvature_change, linearity, planarity, scattering, omnivariance, anisotropy, eigenentropy, eigenvalue_sum = compute_3D_features(
-            lbda_3D
+            pca
         )
         radius_2D, density_2D = compute_2D_properties(xyz_data[:2], neighbors[:, :2])
-        eigenvalue_sum_2D, eigenvalue_ratio_2D = compute_2D_features(lbda_2D)
+        eigenvalue_sum_2D, eigenvalue_ratio_2D = compute_2D_features(pca_2d)
         bin_density, bin_z_range, bin_z_std = retrieve_accumulation_features(
             xyz_data, acc_features
         )
