@@ -159,7 +159,7 @@ def compute_2D_features(pca):
     list
     """
     assert pca.n_components_ == 2
-    lbda = pca.singular_values_ ** 2
-    eigenvalues_sum_2D = sum(lbda)
-    eigenvalues_ratio_2D = lbda[0] / lbda[1]
+    eigenvalues = pca.singular_values_ ** 2
+    eigenvalues_sum_2D = sum(eigenvalues)
+    eigenvalues_ratio_2D = eigenvalues[0] / eigenvalues[1]
     return [eigenvalues_sum_2D, eigenvalues_ratio_2D]

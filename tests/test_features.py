@@ -5,7 +5,7 @@ import numpy as np
 from sklearn.decomposition import PCA
 
 from geo3dfeatures.features import (accumulation_2d_neighborhood, triangle_variance_space,
-                                    compute_3D_features)
+                                    compute_3D_features, compute_2D_features)
 
 
 SEED = 1337
@@ -49,6 +49,52 @@ def sphere(size=SIZE):
     d = data[:, 0] * data[:, 0] + data[:, 1] * data[:, 1] + data[:, 2] * data[:, 2]
     # keep just point inside the sphere
     return data[d <= 1.0][:size]
+
+
+@pytest.fixture
+def ztube(size=SIZE):
+    """small x,y variations along z-axis
+    """
+    data = np.zeros((size, 3))
+    # small x variations
+    data[:, 0] = np.random.normal(loc=5, scale=0.002, size=size)
+    # small y variations
+    data[:, 1] = np.random.normal(loc=10, scale=0.002, size=size)
+    data[:, 2] = 10 + 4 * np.random.uniform(size=size) - 1  # z
+    return data
+
+
+@pytest.fixture
+def wall(size=SIZE):
+    """High verticality. Plane projection on (x,y) should look like to a straight line.
+    """
+    data = np.zeros((size, 3))
+    data[:, 0] = 2 + np.random.uniform(size=size) - 1
+    data[:, 1] = 2 + 0.5 * data[:, 0]
+    data[:, 2] = 10 + 10 * np.random.uniform(size=size) - 1
+    return data
+
+
+@pytest.fixture
+def roof(size=SIZE):
+    """Looks like a roof.
+
+    - high elevation
+    - plane projection on (x,y) looks like a plane (even a square since max-min are the same of x and y)
+    """
+    data = np.zeros((size, 3))
+    data[:size//2, 0] = 10 + 6 * np.random.uniform(size=size // 2) - 1  # x
+    data[:size//2, 1] = 20 + 3 * np.random.uniform(size=size // 2) - 1  # y
+    # increase according to y (linearly)
+    z0 = 2.
+    data[:size//2, 2] = z0 + 1/3 * data[:size//2, 1]
+    # translation over y and minus z
+    data[size//2:, 0] = 10 + 6 * np.random.uniform(size=size // 2) - 1
+    # data[size//2:, 0] = data[:size//2, 0]
+    data[size//2:, 1] = 3 + data[:size//2, 1]
+    zmax = data[:size//2, 2].max()
+    data[size//2:, 2] = 2 * zmax - z0 - 1/3 * data[size//2:, 1]
+    return data
 
 
 def test_accumulation_2d_features(line, plane, sphere):
@@ -122,7 +168,7 @@ def test_3d_features_line(line):
     # close to zero
     assert curvature_change <= 5e-3
     assert planarity <= 0.05
-    scattering <= 0.05
+    assert scattering <= 0.05
 
 
 def test_volume_features_plane(plane):
@@ -137,8 +183,8 @@ def test_volume_features_plane(plane):
     # close to 1
     assert planarity >= 0.95
     # close to 0
-    linearity <= 0.05
-    scattering <= 0.05
+    assert linearity <= 0.05
+    assert scattering <= 0.05
 
 
 def test_3d_features_sphere(sphere):
@@ -153,5 +199,42 @@ def test_3d_features_sphere(sphere):
     # close to 1
     assert scattering >= 0.95
     # close to 0
-    linearity <= 0.05
-    planarity <= 0.05
+    assert linearity <= 0.05
+    assert planarity <= 0.05
+
+
+def test_2d_features_ztube(ztube):
+    """Projection on (x,y) look like  a tiny noisy circle
+
+    Low and close eigenvalues
+    """
+    pca = PCA().fit(ztube[:, :2])
+    eigensum, ratio = compute_2D_features(pca)
+    assert eigensum < 1.0
+    assert abs(ratio - 1) <= 0.05
+
+
+def test_2d_features_wall(wall):
+    """Projection on (x,y) look like a straight line
+
+    - High first eigen values. A very big lambda_1 / lambda_2 ratio.
+    - The value of the sum is quite close to the first eigen value.
+    """
+    pca = PCA().fit(wall[:, :2])
+    eigenvalues = pca.singular_values_ ** 2
+    eigensum, ratio = compute_2D_features(pca)
+    assert ratio > 1e10
+    assert abs(eigensum - eigenvalues[0]) <= 0.05
+
+
+def test_2d_features_roof(roof):
+    """Projection on (x,y) look like a plane
+
+    - The sum of eigen values is quite high
+    - The values of the eigenvalues are almost equal. The ratio is close to 1
+    """
+    pca = PCA().fit(roof[:, :2])
+    eigensum, ratio = compute_2D_features(pca)
+    assert abs(ratio - 1) <= 0.05
+    assert eigensum > 1000
+
