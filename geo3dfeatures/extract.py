@@ -20,7 +20,8 @@ from sklearn.decomposition import PCA
 from sklearn.neighbors import KDTree
 
 from geo3dfeatures.features import (accumulation_2d_neighborhood, triangle_variance_space,
-                                    compute_3D_features, compute_2D_features)
+                                    compute_3D_features, compute_2D_features,
+                                    compute_3D_properties, compute_2D_properties)
 
 
 def build_neighborhood(point, nb_neighbors, kd_tree):
@@ -44,58 +45,6 @@ def build_neighborhood(point, nb_neighbors, kd_tree):
     """
     dist, ind = kd_tree.query(np.expand_dims(point, 0), k=nb_neighbors + 1)
     return {"distance": dist.squeeze(), "indices": ind.squeeze()}
-
-
-def compute_3D_properties(z_neighbors, distances):
-    """Compute some geometric properties of a local point cloud
-
-    See: Martin Weinmann, Boris Jutzi, Stefan Hinz, Clément Mallet,
-    2015. Semantic point cloud interpretation based on optimal neighborhoods,
-    relevant features and efficient classifiers. ISPRS Journal of
-    Photogrammetry and Remote Sensing, vol 105, pp 286-304.
-
-    Parameters
-    ----------
-    z_neighbors : numpy.array
-        Neighboring point z-coordinates
-    distances : numpy.array
-        Distance of each neighboring points to the reference point
-
-    Returns
-    -------
-    list
-        3D geometric properties
-    """
-    radius = np.max(distances)
-    z_range = np.ptp(z_neighbors)
-    std_deviation = np.std(z_neighbors)
-    density = (len(distances) + 1) / ((4 / 3) * math.pi * radius ** 3)
-    verticality = np.nan
-    return [radius, z_range, std_deviation, density, verticality]
-
-
-
-def compute_2D_properties(point, neighbors):
-    """Compute 2D geometric features according to (Lari & Habib, 2012) quoted
-    by (Weinmann *et al.*, 2015)
-
-    For sake of consistency, (Weinmann *et al.*, 2015) uses 3D neighborhood to
-    compute these 2D metrics. We apply this hypothesis here.
-
-    Parameters
-    ----------
-    point : numpy.array
-        Reference point 2D-coordinates
-    neighbors : numpy.array
-        Neighboring point 2D-coordinates (x, y)
-    """
-    xs, ys = neighbors[:, 0], neighbors[:, 1]
-    distances = [
-        math.sqrt((x - point[0]) ** 2 + (y - point[1]) ** 2) for x, y in zip(xs, ys)
-    ]
-    radius_2D = max(distances)
-    density_2D = (len(distances) + 1) / (math.pi * radius_2D ** 2)
-    return [radius_2D, density_2D]
 
 
 def retrieve_accumulation_features(point, features):
