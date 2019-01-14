@@ -27,7 +27,7 @@ def xyz(fpath, names=None, header=True):
     -------
     np.array
     """
-    return np.loadtxt(fpath, delimiter=' ', skiprows=header)
+    return np.loadtxt(fpath, delimiter=" ", skiprows=header)
 
 
 def las(fpath):
@@ -45,8 +45,16 @@ def las(fpath):
         an array
     """
     input_file = laspy.file.File(fpath, mode="r")
-    data = np.vstack((input_file.x, input_file.y, input_file.z,
-                      input_file.red, input_file.green, input_file.blue))
+    data = np.vstack(
+        (
+            input_file.x,
+            input_file.y,
+            input_file.z,
+            input_file.red,
+            input_file.green,
+            input_file.blue,
+        )
+    )
     return data.transpose()
 
 
@@ -81,7 +89,7 @@ def write_features(fpath, gen):
     gen : generator
         Data stored as an ordered dict
     """
-    with open(fpath, 'w') as fobj:
+    with open(fpath, "w") as fobj:
         # get the first data to get the field names
         first = next(gen)
         writer = csv.DictWriter(fobj, first.keys())

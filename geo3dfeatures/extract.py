@@ -15,10 +15,11 @@ import math
 from collections import OrderedDict
 
 import numpy as np
-import pandas as pd
 
 from sklearn.decomposition import PCA
 from sklearn.neighbors import KDTree
+
+from geo3dfeatures.features import accumulation_2d_neighborhood, triangle_variance_space
 
 
 def _pca(data, k=3):
@@ -38,38 +39,6 @@ def _pca(data, k=3):
         Principle component analysis done on input data
     """
     return PCA(n_components=k).fit(data)
-
-
-def features3d(eigenvalues):
-    """Compute barycentric coordinates of a point within the explained variance
-    space, knowing the PCA eigenvalues
-
-    See Brodu, N., Lague D., 2011. 3D Terrestrial lidar data classification of
-    complex natural scenes using a multi-scale dimensionality criterion:
-    applications in geomorphology. arXiV:1107.0550v3.
-
-    Extract of C++ code by N. Brodu:
-
-        // Use barycentric coordinates : a for 1D, b for 2D and c for 3D
-        // Formula on wikipedia page for barycentric coordinates
-        // using directly the triangle in %variance space, they simplify a lot
-        //FloatType c = 1 - a - b; // they sum to 1
-        a = svalues[0] - svalues[1];
-        b = 2 * svalues[0] + 4 * svalues[1] - 2;
-
-    Parameters
-    ----------
-    eigenvalues : list
-        Normalized eigenvalues given by the neighborhood PCA
-
-    Returns
-    -------
-    list
-        3D features that express the point within the variance space
-    """
-    a = eigenvalues[0] - eigenvalues[1]
-    b = 2 * eigenvalues[0] + 4 * eigenvalues[1] - 2
-    return [a, b]
 
 
 def build_neighborhood(point, nb_neighbors, kd_tree):
@@ -118,7 +87,7 @@ def compute_3D_properties(z_neighbors, distances):
     radius = np.max(distances)
     z_range = np.ptp(z_neighbors)
     std_deviation = np.std(z_neighbors)
-    density = (len(distances) + 1) / ((4/3) * math.pi * radius ** 3)
+    density = (len(distances) + 1) / ((4 / 3) * math.pi * radius ** 3)
     verticality = np.nan
     return [radius, z_range, std_deviation, density, verticality]
 
@@ -137,12 +106,20 @@ def compute_3D_features(lbda):
     linearity = (e[0] - e[1]) / e[0]
     planarity = (e[1] - e[2]) / e[0]
     scattering = e[2] / e[0]
-    omnivariance = (e[0] * e[1] * e[2]) ** (1/3)
+    omnivariance = (e[0] * e[1] * e[2]) ** (1 / 3)
     anisotropy = (e[0] - e[2]) / e[0]
     eigenentropy = -1 * np.sum([i * math.log(i) for i in e])
     eigenvalue_sum = np.sum(lbda)
-    return [curvature_change, linearity, planarity, scattering,
-            omnivariance, anisotropy, eigenentropy, eigenvalue_sum]
+    return [
+        curvature_change,
+        linearity,
+        planarity,
+        scattering,
+        omnivariance,
+        anisotropy,
+        eigenentropy,
+        eigenvalue_sum,
+    ]
 
 
 def compute_2D_properties(point, neighbors):
@@ -160,8 +137,9 @@ def compute_2D_properties(point, neighbors):
         Neighboring point 2D-coordinates (x, y)
     """
     xs, ys = neighbors[:, 0], neighbors[:, 1]
-    distances = [math.sqrt((x-point[0])**2 + (y-point[1])**2)
-                 for x, y in zip(xs, ys)]
+    distances = [
+        math.sqrt((x - point[0]) ** 2 + (y - point[1]) ** 2) for x, y in zip(xs, ys)
+    ]
     radius_2D = max(distances)
     density_2D = (len(distances) + 1) / (math.pi * radius_2D ** 2)
     return [radius_2D, density_2D]
@@ -179,47 +157,6 @@ def compute_2D_features(lbda):
     eigenvalues_sum_2D = sum(lbda)
     eigenvalues_ratio_2D = lbda[0] / lbda[1]
     return [eigenvalues_sum_2D, eigenvalues_ratio_2D]
-
-
-def build_accumulation_features(point_cloud, bin_size=0.25, buf=1e-3):
-    """Compute accumulation features as a new way of designing a 2D-neighborhood,
-    following the description of (Weinmann *et al.*, 2015): such features are
-    built by binning the 2D-space, and evaluating the number of points
-    contained, the Z-range and the Z-standard deviation in each bin. The
-    features are then assigned to the points regarding the bin that they belong
-    to.
-
-    Parameters
-    ----------
-    point_cloud : numpy.array
-        Coordinates of all points within the point cloud; must be a 3D-shaped
-    bin_size : float
-        Size of each squared bin edge (in meter)
-    buf : float
-        Epsilon quantity used for expanding the largest bins and consider max values
-
-    Returns
-    -------
-    pandas.DataFrame
-        Set of features built through binning process, for each point within the cloud
-    """
-    assert point_cloud.shape[1] == 3
-    df = pd.DataFrame(point_cloud, columns=["x", "y", "z"])
-    xmin, xmax = np.min(point_cloud[:, 0]), np.max(point_cloud[:, 0])
-    ymin, ymax = np.min(point_cloud[:, 1]), np.max(point_cloud[:, 1])
-    xbins = np.arange(xmin, xmax+bin_size+buf, bin_size)
-    df["xbin"] = pd.cut(df.x, xbins, right=False)
-    ybins = np.arange(ymin, ymax+bin_size+buf, bin_size)
-    df["ybin"] = pd.cut(df.y, ybins, right=False)
-    aggdf = (df
-             .groupby(["xbin", "ybin"])["z"]
-             .agg(["count", "min", "max", "std"])
-             .reset_index())
-    aggdf["z_range"] = aggdf["max"] - aggdf["min"]
-    aggdf.drop(columns=["min", "max"], inplace=True)
-    return (df
-            .merge(aggdf, on=["xbin", "ybin"], how="left")
-            .drop(columns=["xbin", "ybin"]))
 
 
 def retrieve_accumulation_features(point, features):
@@ -266,47 +203,56 @@ def generate_features(point_cloud, nb_neighbors, kdtree_leaf_size=1000):
     ------
     list, OrderedDict generator (features for each point)
     """
-    acc_features = build_accumulation_features(point_cloud[:, :3])
+    acc_features = accumulation_2d_neighborhood(point_cloud[:, :3])
     kd_tree = KDTree(point_cloud[:, :3], leaf_size=kdtree_leaf_size)
     for point in point_cloud:
         xyz_data, rgb_data = point[:3], point[3:]
         neighborhood = build_neighborhood(xyz_data, nb_neighbors, kd_tree)
         neighbors = point_cloud[neighborhood["indices"], :3]
+        pca = _pca(neighbors, k=3)
         lbda_3D = _pca(neighbors, k=3).singular_values_
         lbda_2D = _pca(neighbors[:, :2], k=2).singular_values_
-        alpha, beta = features3d(lbda_3D)
-        radius, z_range, std_deviation, density, verticality =\
-            compute_3D_properties(neighbors[:, 2], neighborhood["distance"])
-        curvature_change, linearity, planarity, scattering, omnivariance, anisotropy, eigenentropy, eigenvalue_sum = compute_3D_features(lbda_3D)
+        alpha, beta = triangle_variance_space(pca)
+        radius, z_range, std_deviation, density, verticality = compute_3D_properties(
+            neighbors[:, 2], neighborhood["distance"]
+        )
+        curvature_change, linearity, planarity, scattering, omnivariance, anisotropy, eigenentropy, eigenvalue_sum = compute_3D_features(
+            lbda_3D
+        )
         radius_2D, density_2D = compute_2D_properties(xyz_data[:2], neighbors[:, :2])
         eigenvalue_sum_2D, eigenvalue_ratio_2D = compute_2D_features(lbda_2D)
-        bin_density, bin_z_range, bin_z_std =\
-            retrieve_accumulation_features(xyz_data, acc_features)
-        yield OrderedDict([("x", xyz_data[0]),
-                           ("y", xyz_data[1]),
-                           ("z", xyz_data[2]),
-                           ("alpha", alpha),
-                           ("beta", beta),
-                           ("radius", radius),
-                           ("z_range", z_range),
-                           ("std_dev", std_deviation),
-                           ("density", density),
-                           ("verticality", verticality),
-                           ("curvature_change", curvature_change),
-                           ("linearity", linearity),
-                           ("planarity", planarity),
-                           ("scattering", scattering),
-                           ("omnivariance", omnivariance),
-                           ("anisotropy", anisotropy),
-                           ("eigenentropy", eigenentropy),
-                           ("eigenvalue_sum", eigenvalue_sum),
-                           ("radius_2D", radius_2D),
-                           ("density_2D", density_2D),
-                           ("eigenvalue_sum_2D", eigenvalue_sum_2D),
-                           ("eigenvalue_ratio_2D", eigenvalue_ratio_2D),
-                           ("bin_density", bin_density),
-                           ("bin_z_range", bin_z_range),
-                           ("bin_z_std", bin_z_std),
-                           ("r", rgb_data[0]),
-                           ("g", rgb_data[1]),
-                           ("b", rgb_data[2])])
+        bin_density, bin_z_range, bin_z_std = retrieve_accumulation_features(
+            xyz_data, acc_features
+        )
+        yield OrderedDict(
+            [
+                ("x", xyz_data[0]),
+                ("y", xyz_data[1]),
+                ("z", xyz_data[2]),
+                ("alpha", alpha),
+                ("beta", beta),
+                ("radius", radius),
+                ("z_range", z_range),
+                ("std_dev", std_deviation),
+                ("density", density),
+                ("verticality", verticality),
+                ("curvature_change", curvature_change),
+                ("linearity", linearity),
+                ("planarity", planarity),
+                ("scattering", scattering),
+                ("omnivariance", omnivariance),
+                ("anisotropy", anisotropy),
+                ("eigenentropy", eigenentropy),
+                ("eigenvalue_sum", eigenvalue_sum),
+                ("radius_2D", radius_2D),
+                ("density_2D", density_2D),
+                ("eigenvalue_sum_2D", eigenvalue_sum_2D),
+                ("eigenvalue_ratio_2D", eigenvalue_ratio_2D),
+                ("bin_density", bin_density),
+                ("bin_z_range", bin_z_range),
+                ("bin_z_std", bin_z_std),
+                ("r", rgb_data[0]),
+                ("g", rgb_data[1]),
+                ("b", rgb_data[2]),
+            ]
+        )
