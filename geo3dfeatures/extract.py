@@ -19,7 +19,8 @@ import numpy as np
 from sklearn.decomposition import PCA
 from sklearn.neighbors import KDTree
 
-from geo3dfeatures.features import (accumulation_2d_neighborhood, triangle_variance_space, compute_3D_features)
+from geo3dfeatures.features import (accumulation_2d_neighborhood, triangle_variance_space,
+                                    compute_3D_features, compute_2D_features)
 
 
 def build_neighborhood(point, nb_neighbors, kd_tree):
@@ -95,22 +96,6 @@ def compute_2D_properties(point, neighbors):
     radius_2D = max(distances)
     density_2D = (len(distances) + 1) / (math.pi * radius_2D ** 2)
     return [radius_2D, density_2D]
-
-
-def compute_2D_features(pca):
-    """Build the set of 2D features for a typical 2D point within a local
-    neighborhood represented through PCA eigenvalues
-
-    Parameters
-    ----------
-    pca : sklearn.decompositions.PCA
-        PCA computed on the x,y coords.
-    """
-    assert pca.n_components_ == 2
-    lbda = pca.singular_values_ ** 2
-    eigenvalues_sum_2D = sum(lbda)
-    eigenvalues_ratio_2D = lbda[0] / lbda[1]
-    return [eigenvalues_sum_2D, eigenvalues_ratio_2D]
 
 
 def retrieve_accumulation_features(point, features):

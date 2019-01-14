@@ -143,3 +143,23 @@ def compute_3D_features(pca):
         anisotropy,
         eigenentropy
     ]
+
+
+def compute_2D_features(pca):
+    """Build the set of 2D features for a typical 2D point within a local
+    neighborhood represented through PCA eigenvalues
+
+    Parameters
+    ----------
+    pca : sklearn.decompositions.PCA
+        PCA computed on the x,y coords.
+
+    Returns
+    -------
+    list
+    """
+    assert pca.n_components_ == 2
+    lbda = pca.singular_values_ ** 2
+    eigenvalues_sum_2D = sum(lbda)
+    eigenvalues_ratio_2D = lbda[0] / lbda[1]
+    return [eigenvalues_sum_2D, eigenvalues_ratio_2D]
