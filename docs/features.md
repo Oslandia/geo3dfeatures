@@ -4,8 +4,7 @@
 
 3D data are first characterized with their relative positioning into the global
 point cloud. This positioning is expressed as three basic coordinates into the
-Cartesian coordinate system : `x`, `y` and `z` respectively for abscissa,
-ordinates and applicate.
+Cartesian coordinate system, along `x`-, `y`- and `z`-axis.
 
 See [Wikipedia](https://en.wikipedia.org/wiki/Cartesian_coordinate_system) for
 more details on this coordinate system.
@@ -16,14 +15,17 @@ cloud, one can compute the set covariance matrix over the three dimensions `x`,
 covariance matrix eigenvalues $`\lambda_i`$, $`\forall i \in {1, 2, 3}`$, and
 their normalized version $`e_i`$, where
 $`e_i=\frac{\lambda_i}{\sum_{j\in{1, 2, 3}}{\lambda_j}}`$, $`\forall
-i \in {1, 2, 3}`$
+i \in {1, 2, 3}`$.
+
+As a remark, PCA software outputs correspond to singular values $`s_i`$, with
+$`\lambda_i = s_i^2`$ (*ex* `sklearn` in Python).
 
 ## Barycentric coordinates
 
 The importance of these features was first highlighted
 by [Brodu et al (2011)](#references).
 
-$`\alpha`$ and $`\beta`$ denotes the barycentric coordinates of
+$`\alpha`$ and $`\beta`$ denotes the barycentric coordinates of normalized
 eigenvalues. Some theoretical elements on the conversion between Cartesian and
 barycentric coordinates are detailed
 on
@@ -37,9 +39,8 @@ geo3dfeatures.features.triangle_variance_space(pca)
 
 ## 3D properties
 
-Given the applicate coordinate of all points `z` and the distances `dist`
-between the point of interest and its neighbors, one can compute the feature
-set with:
+Given the `z` coordinates for all points and the distances `dist` between the
+point of interest and its neighbors, one can compute the 3D property set with:
 ```python
 geo3dfeatures.extract.compute_3D_properties(z, dist)
 ```
@@ -110,11 +111,11 @@ $`C_{\lambda} = \frac{e_1-e_3}{e_1}`$
 
 ### eigenentropy
 
-$`E_{\lambda} = - \sum_{i=1}^{3}{\ln{e_i}}`$
+$`E_{\lambda} = - \sum_{i=1}^{3}{e_i*\ln{e_i}}`$
 
 ### sum of eigenvalues
 
-$`\Sigma_{\lambda} = e_1 + e_2 + e_3`$
+$`\Sigma_{\lambda} = \lambda_1 + \lambda_2 + \lambda_3`$
 
 ## 2D properties
 
@@ -158,11 +159,11 @@ It returns a list with both considered features.
 
 ### sum of eigenvalues
 
-$`\Sigma_{\lambda, 2D} = e_1 + e_2`$
+$`\Sigma_{\lambda, 2D} = \lambda_1 + \lambda_2`$
 
 ### ratio of eigenvalues
 
-$`R_{\lambda, 2D} = \frac{e_1}{e_2}`$
+$`R_{\lambda, 2D} = \frac{e_2}{e_1}`$
 
 ## Accumulation features
 
