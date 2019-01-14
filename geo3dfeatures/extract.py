@@ -87,10 +87,11 @@ def build_neighborhood(point, nb_neighbors, kd_tree):
     Returns
     -------
     dict
-        Neighborhood, decomposed as a mean distance between the reference point
-        and its neighbors and an array of neighbor indices within the point cloud
+        Neighborhood, decomposed as a mean distance between the reference point and
+        its neighbors and an array of neighbor indices within the point cloud. Get
+        `nb_neighborhood + 1` in order to have the reference point and its k neighbors.
     """
-    dist, ind = kd_tree.query(np.expand_dims(point, 0), k=nb_neighbors)
+    dist, ind = kd_tree.query(np.expand_dims(point, 0), k=nb_neighbors + 1)
     return {"distance": dist.squeeze(), "indices": ind.squeeze()}
 
 
