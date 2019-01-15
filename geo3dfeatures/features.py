@@ -214,3 +214,34 @@ def compute_2D_properties(point, neighbors):
     radius_2D = max(distances)
     density_2D = (len(distances) + 1) / (math.pi * radius_2D ** 2)
     return [radius_2D, density_2D]
+
+
+def verticality_coefficient(pca):
+    """Verticality score aiming at evaluating how vertical a 3D-point cloud is,
+    by considering its decomposition through a PCA.
+
+    See:
+    - Martin Weinmann, Boris Jutzi, Stefan Hinz, Clément Mallet,
+    2015. Semantic point cloud interpretation based on optimal neighborhoods,
+    relevant features and efficient classifiers. ISPRS Journal of
+    Photogrammetry and Remote Sensing, vol 105, pp 286-304.
+    - Jerome Demantke, Bruno Vallet, Nicolas Paparotidis, 2012. Streamed
+    Vertical Rectangle Detection in Terrestrial Laser Scans for Facade Database
+    Productions. In ISPRS Annals of the Photogrammetry, Remote Sensing and
+    Spatial Information Sciences, Volume 1-3, pp99-104.
+
+    Parameters
+    ----------
+    pca : sklearn.decomposition.PCA
+        Principle Component Analysis output; must have a `.components_`
+    attribute that contains decomposition axes in 3D space
+
+    Returns
+    -------
+    float
+        Verticality coefficient, as defined in (Demantke et al, 2012) and
+    (Weinmann et al, 2015)
+    """
+    decomposition_axes = pca.components_
+    assert decomposition_axes.shape[1] == 3
+    return 1 - abs(decomposition_axes[2, 2])
