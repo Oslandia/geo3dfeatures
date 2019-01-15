@@ -3,14 +3,28 @@ import pytest
 import numpy as np
 
 from sklearn.decomposition import PCA
+from sklearn.neighbors import KDTree
 
 from geo3dfeatures.features import (accumulation_2d_neighborhood, triangle_variance_space,
-                                    compute_3D_features, compute_2D_features)
+                                    compute_3D_features, compute_2D_features,
+                                    compute_3D_properties, compute_2D_properties)
+from geo3dfeatures.extract import build_neighborhood
 
 
 SEED = 1337
 np.random.seed(SEED)
 SIZE = 5000
+
+
+
+def _neighbors(data, reference_point, neighbors_size=50, leaf_size=100):
+    """Compute the closest neighbors with a kd-tree.
+
+    Return the neighborhood and the distance
+    """
+    kd_tree = KDTree(data, leaf_size=leaf_size)
+    neighborhood = build_neighborhood(reference_point, neighbors_size, kd_tree)
+    return data[neighborhood["indices"]], neighborhood["distance"]
 
 
 @pytest.fixture
@@ -239,4 +253,24 @@ def test_2d_features_roof(roof):
     eigensum, ratio = compute_2D_features(pca)
     assert abs(ratio - 1) <= 0.05
     assert eigensum > 1000
+
+
+def test_3D_properties_plane_and_sphere_comparison(plane, sphere):
+    """Compare all 3D properties between a sphere and a plane.
+
+    TODO Verticality. For now it's nan.
+    """
+    index = 42
+    reference_point_plane = plane[index]
+    reference_point_sphere = sphere[index]
+    neighborhood_plane, distance_plane = _neighbors(plane, reference_point_plane)
+    neighborhood_sphere, distance_sphere = _neighbors(sphere, reference_point_sphere)
+    radius_plane, z_range_plane, std_deviation_plane, density_plane, verticality_plane = compute_3D_properties(
+        neighborhood_plane[:, 2], distance_plane)
+    radius_sphere, z_range_sphere, std_deviation_sphere, density_sphere, verticality_sphere = compute_3D_properties(
+        neighborhood_sphere[:, 2], distance_sphere)
+    assert radius_sphere > radius_plane
+    assert z_range_sphere > z_range_plane
+    assert std_deviation_sphere > std_deviation_plane
+    assert density_plane > density_sphere
 
