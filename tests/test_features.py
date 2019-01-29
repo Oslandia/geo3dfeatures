@@ -1,13 +1,18 @@
 import pytest
 
 import numpy as np
+from sklearn.decomposition import PCA
 
 from sklearn.decomposition import PCA
 from sklearn.neighbors import KDTree
 
-from geo3dfeatures.features import (accumulation_2d_neighborhood, triangle_variance_space,
-                                    compute_3D_features, compute_2D_features,
-                                    compute_3D_properties, compute_2D_properties)
+from geo3dfeatures.features import (accumulation_2d_neighborhood,
+                                    triangle_variance_space,
+                                    compute_3D_features,
+                                    compute_2D_features,
+                                    compute_3D_properties,
+                                    compute_2D_properties,
+                                    verticality_coefficient)
 from geo3dfeatures.extract import build_neighborhood
 
 
@@ -265,12 +270,86 @@ def test_3D_properties_plane_and_sphere_comparison(plane, sphere):
     reference_point_sphere = sphere[index]
     neighborhood_plane, distance_plane = _neighbors(plane, reference_point_plane)
     neighborhood_sphere, distance_sphere = _neighbors(sphere, reference_point_sphere)
-    radius_plane, z_range_plane, std_deviation_plane, density_plane, verticality_plane = compute_3D_properties(
+    radius_plane, z_range_plane, std_deviation_plane, density_plane = compute_3D_properties(
         neighborhood_plane[:, 2], distance_plane)
-    radius_sphere, z_range_sphere, std_deviation_sphere, density_sphere, verticality_sphere = compute_3D_properties(
+    radius_sphere, z_range_sphere, std_deviation_sphere, density_sphere = compute_3D_properties(
         neighborhood_sphere[:, 2], distance_sphere)
     assert radius_sphere > radius_plane
     assert z_range_sphere > z_range_plane
     assert std_deviation_sphere > std_deviation_plane
     assert density_plane > density_sphere
 
+
+def test_verticality_coefficient_line(line):
+    """Test verticality coefficient for a line-shaped point cloud
+
+    As the point cloud is constrained only over the x-axis, the first
+    eigenvector is strongly influenced by the x-components. However the other
+    eigenvectors may have any shape, hence the verticality coefficient may take
+    any value between 0 and 1. The test scope is limited to the definition
+    domain.
+    """
+    pca = PCA().fit(line)
+    vcoef = verticality_coefficient(pca)
+    assert vcoef >= 0 and vcoef <= 1
+
+
+def test_verticality_coefficient_plane(plane):
+    """Test verticality coefficient for a plane-shaped point cloud
+
+    As data are spread over x and y-axis, the two first eigenvectors are
+    supposed to have small z-components, hence the third eigenvector has a high
+    z-component. So the verticality coefficient must be small (let say, smaller
+    than 0.01).
+    """
+    pca = PCA().fit(plane)
+    vcoef = verticality_coefficient(pca)
+    assert vcoef >= 0 and vcoef < 0.01
+
+
+def test_verticality_coefficient_sphere(sphere):
+    """Test verticality coefficient for a sphere-shaped point cloud
+
+    As the point cloud is not constrained over x-, y- or z- axis, the
+    verticality coefficient may take any value between 0 and 1. The test scope
+    is limited to the definition domain.
+    """
+    pca = PCA().fit(sphere)
+    vcoef = verticality_coefficient(pca)
+    assert vcoef >= 0 and vcoef <= 1
+
+
+def test_verticality_coefficient_ztube(ztube):
+    """Test verticality coefficient for a ztube-shaped point cloud
+
+    As the point cloud is not constrained over x-, y- or z- axis, the
+    verticality coefficient may take any value between 0 and 1. The test scope
+    is limited to the definition domain.
+    """
+    pca = PCA().fit(ztube)
+    vcoef = verticality_coefficient(pca)
+    assert vcoef <= 1 and vcoef > 1 - 0.01
+
+
+def test_verticality_coefficient_wall(wall):
+    """Test verticality coefficient for a sphere-shaped point cloud
+
+    As the point cloud is not constrained over x-, y- or z- axis, the
+    verticality coefficient may take any value between 0 and 1. The test scope
+    is limited to the definition domain.
+    """
+    pca = PCA().fit(wall)
+    vcoef = verticality_coefficient(pca)
+    assert vcoef <= 1 and vcoef > 1 - 0.01
+
+
+def test_verticality_coefficient_roof(roof):
+    """Test verticality coefficient for a sphere-shaped point cloud
+
+    As the point cloud is not constrained over x-, y- or z- axis, the
+    verticality coefficient may take any value between 0 and 1. The test scope
+    is limited to the definition domain.
+    """
+    pca = PCA().fit(roof)
+    vcoef = verticality_coefficient(pca)
+    assert vcoef >= 0 and vcoef <= 0.01
