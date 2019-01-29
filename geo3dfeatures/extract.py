@@ -78,9 +78,12 @@ def retrieve_accumulation_features(point, features):
     return [acc_density, z_range, z_std]
 
 
-def generate_features(point_cloud, nb_neighbors, kdtree_leaf_size=1000):
-    """Build the point features for all (or for a sample of) points within
-    the point cloud
+def alphabeta_features(point_cloud, nb_neighbors, kdtree_leaf_size=1000):
+    """Compute 'alpha' and 'beta' features within 'point_cloud', a set of 3D
+    points, according to Brodu et al (2012)
+
+    Apart from the point cloud base features (x, y, z, r, g, b), one has two
+    additional features ('alpha' and 'beta').
 
     Parameters
     ----------
@@ -96,6 +99,105 @@ def generate_features(point_cloud, nb_neighbors, kdtree_leaf_size=1000):
     Returns
     ------
     list, OrderedDict generator (features for each point)
+    """
+    kd_tree = KDTree(point_cloud[:, :3], leaf_size=kdtree_leaf_size)
+    for point in point_cloud:
+        xyz_data, rgb_data = point[:3], point[3:]
+        neighborhood = build_neighborhood(xyz_data, nb_neighbors, kd_tree)
+        neighbors = point_cloud[neighborhood["indices"], :3]
+        pca = PCA().fit(neighbors)  # PCA on the x,y,z coords
+        alpha, beta = triangle_variance_space(pca)
+        yield OrderedDict(
+            [
+                ("x", xyz_data[0]),
+                ("y", xyz_data[1]),
+                ("z", xyz_data[2]),
+                ("alpha", alpha),
+                ("beta", beta),
+                ("r", rgb_data[0]),
+                ("g", rgb_data[1]),
+                ("b", rgb_data[2]),
+            ]
+        )
+
+
+def eigen_features(point_cloud, nb_neighbors, kdtree_leaf_size=1000):
+    """Compute 'alpha' and 'beta' features within 'point_cloud', a set of 3D
+    points, according to Brodu et al (2012), as well as neighborhood attributes
+    based on eigenvalues (see Weinmann et al, 2015, for details about such
+    metrics)
+
+    Apart from the point cloud base features (x, y, z, r, g, b), one has eight
+    additional features: 'alpha' and 'beta', plus 'curvature_change',
+    'linearity', 'planarity', 'scattering', 'omnivariance', 'anisotropy',
+    'eigenentropy' and 'eigenvalue_sum'.
+
+    Parameters
+    ----------
+    point_cloud : numpy.array
+        Coordinates of all points within the point cloud; must be a 2D-shaped
+        array with `point_cloud.shape[1] == 3`
+    nb_neighbors : int
+        Number of points that must be consider within a neighborhod
+    considered
+    kdtree_leaf_size : int
+        Size of each kd-tree leaf (in number of points)
+
+    Returns
+    ------
+    list, OrderedDict generator (features for each point)
+    """
+    kd_tree = KDTree(point_cloud[:, :3], leaf_size=kdtree_leaf_size)
+    for point in point_cloud:
+        xyz_data, rgb_data = point[:3], point[3:]
+        neighborhood = build_neighborhood(xyz_data, nb_neighbors, kd_tree)
+        neighbors = point_cloud[neighborhood["indices"], :3]
+        pca = PCA().fit(neighbors)  # PCA on the x,y,z coords
+        eigenvalue_sum = (pca.singular_values_ ** 2).sum()
+        alpha, beta = triangle_variance_space(pca)
+        curvature_change, linearity, planarity, scattering, omnivariance, anisotropy, eigenentropy = compute_3D_features(
+            pca
+        )
+        yield OrderedDict(
+            [
+                ("x", xyz_data[0]),
+                ("y", xyz_data[1]),
+                ("z", xyz_data[2]),
+                ("alpha", alpha),
+                ("beta", beta),
+                ("curvature_change", curvature_change),
+                ("linearity", linearity),
+                ("planarity", planarity),
+                ("scattering", scattering),
+                ("omnivariance", omnivariance),
+                ("anisotropy", anisotropy),
+                ("eigenentropy", eigenentropy),
+                ("eigenvalue_sum", eigenvalue_sum),
+                ("r", rgb_data[0]),
+                ("g", rgb_data[1]),
+                ("b", rgb_data[2]),
+            ]
+        )
+
+
+def all_features(point_cloud, nb_neighbors, kdtree_leaf_size=1000):
+    """Build the full feature set for all points within the point cloud
+
+    Parameters
+    ----------
+    point_cloud : numpy.array
+        Coordinates of all points within the point cloud; must be a 2D-shaped
+        array with `point_cloud.shape[1] == 3`
+    nb_neighbors : int
+        Number of points that must be consider within a neighborhod
+    considered
+    kdtree_leaf_size : int
+        Size of each kd-tree leaf (in number of points)
+
+    Returns
+    ------
+    list, OrderedDict generator (features for each point)
+
     """
     acc_features = accumulation_2d_neighborhood(point_cloud[:, :3])
     kd_tree = KDTree(point_cloud[:, :3], leaf_size=kdtree_leaf_size)
