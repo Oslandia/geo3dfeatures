@@ -11,6 +11,8 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 from sklearn.decomposition import PCA
 
+from geo3dfeatures import features
+
 SIZE = 5000
 
 def line(size=SIZE):
@@ -93,7 +95,38 @@ def roof(size=SIZE):
     return data
 
 
-def plot_fixture(fixture):
+def select_fixture(fixture, size=SIZE):
+    """Starting from the fixture name, provide accurate point cloud as a
+    numpy.array
+
+    Parameters
+    ----------
+    fixture : str
+        Name of the fixture, amongst 'line', 'plane', 'sphere', 'ztube', 'wall'
+    or 'roof'
+    size : int
+        Number of points in the point cloud
+
+    Returns
+    -------
+    numpy.array
+        Point cloud data, as x-, y- and z- coordinates
+    """
+    if fixture == "line":
+        return line(size)
+    elif fixture == "plane":
+        return plane(size)
+    elif fixture == "sphere":
+        return sphere(size)
+    elif fixture == "ztube":
+        return ztube(size)
+    elif fixture == "wall":
+        return wall(size)
+    elif fixture == "roof":
+        return roof(size)
+
+
+def plot_fixture(fixture, size=SIZE):
     """Plot a scatter plot that illustrates the fixture representation
     as a 3d point cloud
 
@@ -113,19 +146,10 @@ def plot_fixture(fixture):
     fixture : str
         Name of the fixture, amongst 'line', 'plane', 'sphere', 'ztube',
     'wall' or 'roof'
+    size : int
+        Number of points in the point cloud
     """
-    if fixture == "line":
-        data = line()
-    elif fixture == "plane":
-        data = plane()
-    elif fixture == "sphere":
-        data = sphere()
-    elif fixture == "ztube":
-        data = ztube()
-    elif fixture == "wall":
-        data = wall()
-    elif fixture == "roof":
-        data = roof()
+    data = select_fixture(fixture, size)
     fig = plt.figure()
     ax = fig.add_subplot(111, projection='3d')
     zord = 1
@@ -165,3 +189,32 @@ def plot_fixture(fixture):
     fig.tight_layout()
     fixture_path = Path("docs", "images", fixture + ".png")
     fig.savefig(fixture_path)
+
+
+def explore_verticality_coef(fixture, draw, bins, size=SIZE):
+    """
+
+    Parameters
+    ----------
+    fixture : str
+        Name of the fixture, amongst 'line', 'plane', 'sphere', 'ztube', 'wall'
+    or 'roof'
+    draw : int
+        Number of random point cloud draws
+    bins : numpy.array
+        Returned histogram categories
+    size : int
+        Number of points in the point cloud
+
+    Returns
+    -------
+    numpy.array
+        Distribution of the verticality coefficient metric over a sample of
+    point cloud
+    """
+    verticality_coef_list = []
+    for d in range(draw):
+        data = select_fixture(fixture, size)
+        pca = PCA().fit(data)
+        verticality_coef_list.append(features.verticality_coefficient(pca))
+    return np.histogram(verticality_coef_list, bins=bins)
