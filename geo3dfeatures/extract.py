@@ -19,26 +19,9 @@ import numpy as np
 from sklearn.decomposition import PCA
 from sklearn.neighbors import KDTree
 
-from geo3dfeatures.features import accumulation_2d_neighborhood, triangle_variance_space
-
-
-def _pca(data, k=3):
-    """Carry out a PCA on a set of 2D or 3D points. The number of components
-    depends on the point cloud dimensionality
-
-    Parameters
-    ----------
-    data : numpy.array
-        Raw data to which a PCA must be applied
-    k : int
-        Number of PCA components
-
-    Returns
-    -------
-    sklearn.decomposition.PCA
-        Principle component analysis done on input data
-    """
-    return PCA(n_components=k).fit(data)
+from geo3dfeatures.features import (accumulation_2d_neighborhood, triangle_variance_space,
+                                    compute_3D_features, compute_2D_features,
+                                    compute_3D_properties, compute_2D_properties)
 
 
 def build_neighborhood(point, nb_neighbors, kd_tree):
@@ -62,101 +45,6 @@ def build_neighborhood(point, nb_neighbors, kd_tree):
     """
     dist, ind = kd_tree.query(np.expand_dims(point, 0), k=nb_neighbors + 1)
     return {"distance": dist.squeeze(), "indices": ind.squeeze()}
-
-
-def compute_3D_properties(z_neighbors, distances):
-    """Compute some geometric properties of a local point cloud
-
-    See: Martin Weinmann, Boris Jutzi, Stefan Hinz, Clément Mallet,
-    2015. Semantic point cloud interpretation based on optimal neighborhoods,
-    relevant features and efficient classifiers. ISPRS Journal of
-    Photogrammetry and Remote Sensing, vol 105, pp 286-304.
-
-    Parameters
-    ----------
-    z_neighbors : numpy.array
-        Neighboring point z-coordinates
-    distances : numpy.array
-        Distance of each neighboring points to the reference point
-
-    Returns
-    -------
-    list
-        3D geometric properties
-    """
-    radius = np.max(distances)
-    z_range = np.ptp(z_neighbors)
-    std_deviation = np.std(z_neighbors)
-    density = (len(distances) + 1) / ((4 / 3) * math.pi * radius ** 3)
-    verticality = np.nan
-    return [radius, z_range, std_deviation, density, verticality]
-
-
-def compute_3D_features(lbda):
-    """Build the set of 3D features for a typical 3D point within a local
-    neighborhood represented through PCA eigenvalues
-
-    Parameters
-    ----------
-    lbda : numpy.array
-        Eigenvalues of a point neighborhood
-    """
-    e = [item / sum(lbda) for item in lbda]
-    curvature_change = e[2]
-    linearity = (e[0] - e[1]) / e[0]
-    planarity = (e[1] - e[2]) / e[0]
-    scattering = e[2] / e[0]
-    omnivariance = (e[0] * e[1] * e[2]) ** (1 / 3)
-    anisotropy = (e[0] - e[2]) / e[0]
-    eigenentropy = -1 * np.sum([i * math.log(i) for i in e])
-    eigenvalue_sum = np.sum(lbda)
-    return [
-        curvature_change,
-        linearity,
-        planarity,
-        scattering,
-        omnivariance,
-        anisotropy,
-        eigenentropy,
-        eigenvalue_sum,
-    ]
-
-
-def compute_2D_properties(point, neighbors):
-    """Compute 2D geometric features according to (Lari & Habib, 2012) quoted
-    by (Weinmann *et al.*, 2015)
-
-    For sake of consistency, (Weinmann *et al.*, 2015) uses 3D neighborhood to
-    compute these 2D metrics. We apply this hypothesis here.
-
-    Parameters
-    ----------
-    point : numpy.array
-        Reference point 2D-coordinates
-    neighbors : numpy.array
-        Neighboring point 2D-coordinates (x, y)
-    """
-    xs, ys = neighbors[:, 0], neighbors[:, 1]
-    distances = [
-        math.sqrt((x - point[0]) ** 2 + (y - point[1]) ** 2) for x, y in zip(xs, ys)
-    ]
-    radius_2D = max(distances)
-    density_2D = (len(distances) + 1) / (math.pi * radius_2D ** 2)
-    return [radius_2D, density_2D]
-
-
-def compute_2D_features(lbda):
-    """Build the set of 2D features for a typical 2D point within a local
-    neighborhood represented through PCA eigenvalues
-
-    Parameters
-    ----------
-    lbda : numpy.array
-        Eigenvalues of a point neighborhood
-    """
-    eigenvalues_sum_2D = sum(lbda)
-    eigenvalues_ratio_2D = lbda[0] / lbda[1]
-    return [eigenvalues_sum_2D, eigenvalues_ratio_2D]
 
 
 def retrieve_accumulation_features(point, features):
@@ -209,18 +97,18 @@ def generate_features(point_cloud, nb_neighbors, kdtree_leaf_size=1000):
         xyz_data, rgb_data = point[:3], point[3:]
         neighborhood = build_neighborhood(xyz_data, nb_neighbors, kd_tree)
         neighbors = point_cloud[neighborhood["indices"], :3]
-        pca = _pca(neighbors, k=3)
-        lbda_3D = _pca(neighbors, k=3).singular_values_
-        lbda_2D = _pca(neighbors[:, :2], k=2).singular_values_
+        pca = PCA().fit(neighbors)  # PCA on the x,y,z coords
+        pca_2d = PCA().fit(neighbors[:, :2])  # PCA just on the x,y coords
+        eigenvalue_sum = (pca.singular_values_ ** 2).sum()
         alpha, beta = triangle_variance_space(pca)
         radius, z_range, std_deviation, density, verticality = compute_3D_properties(
             neighbors[:, 2], neighborhood["distance"]
         )
-        curvature_change, linearity, planarity, scattering, omnivariance, anisotropy, eigenentropy, eigenvalue_sum = compute_3D_features(
-            lbda_3D
+        curvature_change, linearity, planarity, scattering, omnivariance, anisotropy, eigenentropy = compute_3D_features(
+            pca
         )
         radius_2D, density_2D = compute_2D_properties(xyz_data[:2], neighbors[:, :2])
-        eigenvalue_sum_2D, eigenvalue_ratio_2D = compute_2D_features(lbda_2D)
+        eigenvalue_sum_2D, eigenvalue_ratio_2D = compute_2D_features(pca_2d)
         bin_density, bin_z_range, bin_z_std = retrieve_accumulation_features(
             xyz_data, acc_features
         )

@@ -3,6 +3,8 @@
 List of functions which extracts 1D, 2D or 3D geometry features from point clouds.
 """
 
+import math
+
 import numpy as np
 import pandas as pd
 
@@ -108,3 +110,107 @@ def triangle_variance_space(pca):
     alpha = eigenvalues[0] - eigenvalues[1]
     beta = 2 * eigenvalues[0] + 4 * eigenvalues[1] - 2
     return [alpha, beta]
+
+
+def compute_3D_features(pca):
+    """Build the set of 3D features for a typical 3D point within a local
+    neighborhood represented through PCA eigenvalues
+
+    Parameters
+    ----------
+    pca : sklearn.decompositions.PCA
+        PCA computed on the x,y,z coords
+
+    Returns
+    -------
+    list
+    """
+    assert pca.n_components_ == 3
+    e = normalized_eigenvalues(pca)
+    curvature_change = e[2]
+    linearity = (e[0] - e[1]) / e[0]
+    planarity = (e[1] - e[2]) / e[0]
+    scattering = e[2] / e[0]
+    omnivariance = e.prod() ** (1 / 3)
+    anisotropy = (e[0] - e[2]) / e[0]
+    eigenentropy = -1 * np.sum(e * np.log(e))
+    return [
+        curvature_change,
+        linearity,
+        planarity,
+        scattering,
+        omnivariance,
+        anisotropy,
+        eigenentropy
+    ]
+
+
+def compute_2D_features(pca):
+    """Build the set of 2D features for a typical 2D point within a local
+    neighborhood represented through PCA eigenvalues
+
+    Parameters
+    ----------
+    pca : sklearn.decompositions.PCA
+        PCA computed on the x,y coords.
+
+    Returns
+    -------
+    list
+    """
+    assert pca.n_components_ == 2
+    eigenvalues = pca.singular_values_ ** 2
+    eigenvalue_sum_2D = sum(eigenvalues)
+    eigenvalue_ratio_2D = eigenvalues[1] / eigenvalues[0]
+    return [eigenvalue_sum_2D, eigenvalue_ratio_2D]
+
+
+def compute_3D_properties(z_neighbors, distances):
+    """Compute some geometric properties of a local point cloud
+
+    See: Martin Weinmann, Boris Jutzi, Stefan Hinz, Clément Mallet,
+    2015. Semantic point cloud interpretation based on optimal neighborhoods,
+    relevant features and efficient classifiers. ISPRS Journal of
+    Photogrammetry and Remote Sensing, vol 105, pp 286-304.
+
+    Parameters
+    ----------
+    z_neighbors : numpy.array
+        Neighboring point z-coordinates
+    distances : numpy.array
+        Distance of each neighboring points to the reference point
+
+    Returns
+    -------
+    list
+        3D geometric properties
+    """
+    radius = np.max(distances)
+    z_range = np.ptp(z_neighbors)
+    std_deviation = np.std(z_neighbors)
+    density = (len(distances) + 1) / ((4 / 3) * math.pi * radius ** 3)
+    verticality = np.nan
+    return [radius, z_range, std_deviation, density, verticality]
+
+
+def compute_2D_properties(point, neighbors):
+    """Compute 2D geometric features according to (Lari & Habib, 2012) quoted
+    by (Weinmann *et al.*, 2015)
+
+    For sake of consistency, (Weinmann *et al.*, 2015) uses 3D neighborhood to
+    compute these 2D metrics. We apply this hypothesis here.
+
+    Parameters
+    ----------
+    point : numpy.array
+        Reference point 2D-coordinates
+    neighbors : numpy.array
+        Neighboring point 2D-coordinates (x, y)
+    """
+    xs, ys = neighbors[:, 0], neighbors[:, 1]
+    distances = [
+        math.sqrt((x - point[0]) ** 2 + (y - point[1]) ** 2) for x, y in zip(xs, ys)
+    ]
+    radius_2D = max(distances)
+    density_2D = (len(distances) + 1) / (math.pi * radius_2D ** 2)
+    return [radius_2D, density_2D]
