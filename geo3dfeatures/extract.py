@@ -19,9 +19,15 @@ import numpy as np
 from sklearn.decomposition import PCA
 from sklearn.neighbors import KDTree
 
-from geo3dfeatures.features import (accumulation_2d_neighborhood, triangle_variance_space,
-                                    compute_3D_features, compute_2D_features,
-                                    compute_3D_properties, compute_2D_properties)
+from geo3dfeatures.features import (
+    accumulation_2d_neighborhood,
+    triangle_variance_space,
+    compute_3D_features,
+    compute_2D_features,
+    compute_3D_properties,
+    compute_2D_properties,
+    verticality_coefficient
+)
 
 
 def build_neighborhood(point, nb_neighbors, kd_tree):
@@ -101,9 +107,10 @@ def generate_features(point_cloud, nb_neighbors, kdtree_leaf_size=1000):
         pca_2d = PCA().fit(neighbors[:, :2])  # PCA just on the x,y coords
         eigenvalue_sum = (pca.singular_values_ ** 2).sum()
         alpha, beta = triangle_variance_space(pca)
-        radius, z_range, std_deviation, density, verticality = compute_3D_properties(
+        radius, z_range, std_deviation, density = compute_3D_properties(
             neighbors[:, 2], neighborhood["distance"]
         )
+        verticality = verticality_coefficient(pca)
         curvature_change, linearity, planarity, scattering, omnivariance, anisotropy, eigenentropy = compute_3D_features(
             pca
         )

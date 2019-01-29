@@ -270,9 +270,9 @@ def test_3D_properties_plane_and_sphere_comparison(plane, sphere):
     reference_point_sphere = sphere[index]
     neighborhood_plane, distance_plane = _neighbors(plane, reference_point_plane)
     neighborhood_sphere, distance_sphere = _neighbors(sphere, reference_point_sphere)
-    radius_plane, z_range_plane, std_deviation_plane, density_plane, verticality_plane = compute_3D_properties(
+    radius_plane, z_range_plane, std_deviation_plane, density_plane = compute_3D_properties(
         neighborhood_plane[:, 2], distance_plane)
-    radius_sphere, z_range_sphere, std_deviation_sphere, density_sphere, verticality_sphere = compute_3D_properties(
+    radius_sphere, z_range_sphere, std_deviation_sphere, density_sphere = compute_3D_properties(
         neighborhood_sphere[:, 2], distance_sphere)
     assert radius_sphere > radius_plane
     assert z_range_sphere > z_range_plane

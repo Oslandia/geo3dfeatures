@@ -189,8 +189,7 @@ def compute_3D_properties(z_neighbors, distances):
     z_range = np.ptp(z_neighbors)
     std_deviation = np.std(z_neighbors)
     density = (len(distances) + 1) / ((4 / 3) * math.pi * radius ** 3)
-    verticality = np.nan
-    return [radius, z_range, std_deviation, density, verticality]
+    return [radius, z_range, std_deviation, density]
 
 
 def compute_2D_properties(point, neighbors):
