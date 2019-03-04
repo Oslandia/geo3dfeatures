@@ -17,7 +17,8 @@ from collections import OrderedDict
 import numpy as np
 
 from sklearn.decomposition import PCA
-from sklearn.neighbors import KDTree
+#from sklearn.neighbors import KDTree
+from scipy.spatial import cKDTree as KDTree
 
 from geo3dfeatures.features import (
     accumulation_2d_neighborhood,
@@ -28,6 +29,21 @@ from geo3dfeatures.features import (
     compute_2D_properties,
     verticality_coefficient
 )
+
+
+def compute_tree(point_cloud, leaf_size):
+    """Compute the KDTree structure
+
+    Parameters
+    ----------
+    point_cloud : numpy.array
+    leaf_size : int
+
+    Returns
+    -------
+    sklearn.neighbors.KDTree (or scipy.spatial.KDTree)
+    """
+    return KDTree(point_cloud, leaf_size)
 
 
 def build_neighborhood(point, nb_neighbors, kd_tree):
@@ -51,6 +67,23 @@ def build_neighborhood(point, nb_neighbors, kd_tree):
     """
     dist, ind = kd_tree.query(np.expand_dims(point, 0), k=nb_neighbors + 1)
     return {"distance": dist.squeeze(), "indices": ind.squeeze()}
+
+
+def fitted_pca(point_cloud):
+    """Fit a PCA model on a 3D point cloud characterized by x-, y- and
+    z-coordinates
+
+    Parameters
+    ----------
+    point_cloud : numpy.array
+        Array of (x, y, z) points
+
+    Returns
+    -------
+    sklearn.decomposition.PCA
+        Principle Component Analysis model fitted to the input data
+    """
+    return PCA().fit(point_cloud)
 
 
 def retrieve_accumulation_features(point, features):
@@ -102,12 +135,12 @@ def alphabeta_features(point_cloud, nb_neighbors, kdtree_leaf_size=1000):
     ------
     list, OrderedDict generator (features for each point)
     """
-    kd_tree = KDTree(point_cloud[:, :3], leaf_size=kdtree_leaf_size)
+    kd_tree = compute_tree(point_cloud[:, :3], leaf_size=kdtree_leaf_size)
     for point in point_cloud:
         xyz_data, rgb_data = point[:3], point[3:]
         neighborhood = build_neighborhood(xyz_data, nb_neighbors, kd_tree)
         neighbors = point_cloud[neighborhood["indices"], :3]
-        pca = PCA().fit(neighbors)  # PCA on the x,y,z coords
+        pca = fitted_pca(neighbors)  # PCA on the x,y,z coords
         alpha, beta = triangle_variance_space(pca)
         yield OrderedDict(
             [
@@ -149,12 +182,12 @@ def eigen_features(point_cloud, nb_neighbors, kdtree_leaf_size=1000):
     ------
     list, OrderedDict generator (features for each point)
     """
-    kd_tree = KDTree(point_cloud[:, :3], leaf_size=kdtree_leaf_size)
+    kd_tree = compute_tree(point_cloud[:, :3], leaf_size=kdtree_leaf_size)
     for point in point_cloud:
         xyz_data, rgb_data = point[:3], point[3:]
         neighborhood = build_neighborhood(xyz_data, nb_neighbors, kd_tree)
         neighbors = point_cloud[neighborhood["indices"], :3]
-        pca = PCA().fit(neighbors)  # PCA on the x,y,z coords
+        pca = fitted_pca(neighbors)  # PCA on the x,y,z coords
         eigenvalue_sum = (pca.singular_values_ ** 2).sum()
         alpha, beta = triangle_variance_space(pca)
         curvature_change, linearity, planarity, scattering, omnivariance, anisotropy, eigenentropy = compute_3D_features(
@@ -202,13 +235,12 @@ def all_features(point_cloud, nb_neighbors, kdtree_leaf_size=1000):
 
     """
     acc_features = accumulation_2d_neighborhood(point_cloud[:, :3])
-    kd_tree = KDTree(point_cloud[:, :3], leaf_size=kdtree_leaf_size)
+    kd_tree = compute_tree(point_cloud[:, :3], leaf_size=kdtree_leaf_size)
     for point in point_cloud:
         xyz_data, rgb_data = point[:3], point[3:]
         neighborhood = build_neighborhood(xyz_data, nb_neighbors, kd_tree)
         neighbors = point_cloud[neighborhood["indices"], :3]
-        pca = PCA().fit(neighbors)  # PCA on the x,y,z coords
-        pca_2d = PCA().fit(neighbors[:, :2])  # PCA just on the x,y coords
+        pca = fitted_pca(neighbors)  # PCA on the x,y,z coords
         eigenvalue_sum = (pca.singular_values_ ** 2).sum()
         alpha, beta = triangle_variance_space(pca)
         radius, z_range, std_deviation, density = compute_3D_properties(
@@ -219,6 +251,7 @@ def all_features(point_cloud, nb_neighbors, kdtree_leaf_size=1000):
             pca
         )
         radius_2D, density_2D = compute_2D_properties(xyz_data[:2], neighbors[:, :2])
+        pca_2d = fitted_pca(neighbors[:, :2])  # PCA just on the x,y coords
         eigenvalue_sum_2D, eigenvalue_ratio_2D = compute_2D_features(pca_2d)
         bin_density, bin_z_range, bin_z_std = retrieve_accumulation_features(
             xyz_data, acc_features
