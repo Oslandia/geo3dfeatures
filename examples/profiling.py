@@ -54,7 +54,7 @@ def export_timer_to_csv():
     columns = [
         "function", "nb_points", "nb_neighbors", "feature_set",
         "nb_calls", "total_time", "total_time_per_call",
-        "cum_tume", "cum_time_per_call"
+        "cum_time", "cum_time_per_call"
     ]
     for profiling_path in profiling_in_folder.iterdir():
         stats = []
