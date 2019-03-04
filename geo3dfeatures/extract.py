@@ -70,7 +70,9 @@ def retrieve_accumulation_features(point, features):
         Accumulation features
     """
     point_x, point_y, point_z = point
-    point_features = features.query("x==@point_x & y==@point_y & z==@point_z")
+    point_features = features.loc[(features["x"] == point_x)
+                                  & (features["y"] == point_y)
+                                  & (features["z"] == point_z)]
     assert point_features.shape[0] == 1
     acc_density = point_features.iloc[0]["count"]
     z_range = point_features.iloc[0]["z_range"]
