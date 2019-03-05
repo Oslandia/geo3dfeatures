@@ -17,7 +17,7 @@ from collections import OrderedDict
 import numpy as np
 
 from sklearn.decomposition import PCA
-from sklearn.neighbors import KDTree
+from scipy.spatial import cKDTree as KDTree
 
 from geo3dfeatures.features import (
     accumulation_2d_neighborhood,
@@ -28,6 +28,21 @@ from geo3dfeatures.features import (
     compute_2D_properties,
     verticality_coefficient
 )
+
+
+def compute_tree(point_cloud, leaf_size):
+    """Compute the KDTree structure
+
+    Parameters
+    ----------
+    point_cloud : numpy.array
+    leaf_size : int
+
+    Returns
+    -------
+    sklearn.neighbors.KDTree (or scipy.spatial.KDTree)
+    """
+    return KDTree(point_cloud, leaf_size)
 
 
 def build_neighborhood(point, nb_neighbors, kd_tree):
@@ -53,34 +68,29 @@ def build_neighborhood(point, nb_neighbors, kd_tree):
     return {"distance": dist.squeeze(), "indices": ind.squeeze()}
 
 
-def retrieve_accumulation_features(point, features):
-    """Get the accumulation features for given `point`, by querying the pandas
-    dataframe containing the information for every point cloud item.
+def fitted_pca(point_cloud):
+    """Fit a PCA model on a 3D point cloud characterized by x-, y- and
+    z-coordinates
 
     Parameters
     ----------
-    point : numpy.array
-        Coordinates of the point of interest, for identification purpose
-    features : pandas.DataFrame
-        Collection of point features
+    point_cloud : numpy.array
+        Array of (x, y, z) points
 
     Returns
     -------
-    list
-        Accumulation features
+    sklearn.decomposition.PCA
+        Principle Component Analysis model fitted to the input data
     """
-    point_x, point_y, point_z = point
-    point_features = features.query("x==@point_x & y==@point_y & z==@point_z")
-    assert point_features.shape[0] == 1
-    acc_density = point_features.iloc[0]["count"]
-    z_range = point_features.iloc[0]["z_range"]
-    z_std = point_features.iloc[0]["std"]
-    return [acc_density, z_range, z_std]
+    return PCA().fit(point_cloud)
 
 
-def generate_features(point_cloud, nb_neighbors, kdtree_leaf_size=1000):
-    """Build the point features for all (or for a sample of) points within
-    the point cloud
+def alphabeta_features(point_cloud, nb_neighbors, kdtree_leaf_size=1000):
+    """Compute 'alpha' and 'beta' features within 'point_cloud', a set of 3D
+    points, according to Brodu et al (2012)
+
+    Apart from the point cloud base features (x, y, z, r, g, b), one has two
+    additional features ('alpha' and 'beta').
 
     Parameters
     ----------
@@ -97,14 +107,112 @@ def generate_features(point_cloud, nb_neighbors, kdtree_leaf_size=1000):
     ------
     list, OrderedDict generator (features for each point)
     """
-    acc_features = accumulation_2d_neighborhood(point_cloud[:, :3])
-    kd_tree = KDTree(point_cloud[:, :3], leaf_size=kdtree_leaf_size)
+    kd_tree = compute_tree(point_cloud[:, :3], leaf_size=kdtree_leaf_size)
     for point in point_cloud:
-        xyz_data, rgb_data = point[:3], point[3:]
+        xyz_data = point[:3]
         neighborhood = build_neighborhood(xyz_data, nb_neighbors, kd_tree)
         neighbors = point_cloud[neighborhood["indices"], :3]
-        pca = PCA().fit(neighbors)  # PCA on the x,y,z coords
-        pca_2d = PCA().fit(neighbors[:, :2])  # PCA just on the x,y coords
+        pca = fitted_pca(neighbors)  # PCA on the x,y,z coords
+        alpha, beta = triangle_variance_space(pca)
+        yield OrderedDict(
+            [
+                ("x", xyz_data[0]),
+                ("y", xyz_data[1]),
+                ("z", xyz_data[2]),
+                ("alpha", alpha),
+                ("beta", beta),
+                ("r", point[3]),
+                ("g", point[4]),
+                ("b", point[5]),
+            ]
+        )
+
+
+def eigen_features(point_cloud, nb_neighbors, kdtree_leaf_size=1000):
+    """Compute 'alpha' and 'beta' features within 'point_cloud', a set of 3D
+    points, according to Brodu et al (2012), as well as neighborhood attributes
+    based on eigenvalues (see Weinmann et al, 2015, for details about such
+    metrics)
+
+    Apart from the point cloud base features (x, y, z, r, g, b), one has eight
+    additional features: 'alpha' and 'beta', plus 'curvature_change',
+    'linearity', 'planarity', 'scattering', 'omnivariance', 'anisotropy',
+    'eigenentropy' and 'eigenvalue_sum'.
+
+    Parameters
+    ----------
+    point_cloud : numpy.array
+        Coordinates of all points within the point cloud; must be a 2D-shaped
+        array with `point_cloud.shape[1] == 3`
+    nb_neighbors : int
+        Number of points that must be consider within a neighborhod
+    considered
+    kdtree_leaf_size : int
+        Size of each kd-tree leaf (in number of points)
+
+    Returns
+    ------
+    list, OrderedDict generator (features for each point)
+    """
+    kd_tree = compute_tree(point_cloud[:, :3], leaf_size=kdtree_leaf_size)
+    for point in point_cloud:
+        xyz_data = point[:3]
+        neighborhood = build_neighborhood(xyz_data, nb_neighbors, kd_tree)
+        neighbors = point_cloud[neighborhood["indices"], :3]
+        pca = fitted_pca(neighbors)  # PCA on the x,y,z coords
+        eigenvalue_sum = (pca.singular_values_ ** 2).sum()
+        alpha, beta = triangle_variance_space(pca)
+        curvature_change, linearity, planarity, scattering, omnivariance, anisotropy, eigenentropy = compute_3D_features(
+            pca
+        )
+        yield OrderedDict(
+            [
+                ("x", xyz_data[0]),
+                ("y", xyz_data[1]),
+                ("z", xyz_data[2]),
+                ("alpha", alpha),
+                ("beta", beta),
+                ("curvature_change", curvature_change),
+                ("linearity", linearity),
+                ("planarity", planarity),
+                ("scattering", scattering),
+                ("omnivariance", omnivariance),
+                ("anisotropy", anisotropy),
+                ("eigenentropy", eigenentropy),
+                ("eigenvalue_sum", eigenvalue_sum),
+                ("r", point[3]),
+                ("g", point[4]),
+                ("b", point[5]),
+            ]
+        )
+
+
+def all_features(point_cloud, nb_neighbors, kdtree_leaf_size=1000):
+    """Build the full feature set for all points within the point cloud
+
+    Parameters
+    ----------
+    point_cloud : numpy.array
+        Coordinates of all points within the point cloud; must be a 2D-shaped
+        array with `point_cloud.shape[1] == 3`
+    nb_neighbors : int
+        Number of points that must be consider within a neighborhod
+    considered
+    kdtree_leaf_size : int
+        Size of each kd-tree leaf (in number of points)
+
+    Returns
+    ------
+    list, OrderedDict generator (features for each point)
+
+    """
+    acc_features = accumulation_2d_neighborhood(point_cloud)
+    kd_tree = compute_tree(point_cloud[:, :3], leaf_size=kdtree_leaf_size)
+    for point in acc_features.values:
+        xyz_data = point[:3]
+        neighborhood = build_neighborhood(xyz_data, nb_neighbors, kd_tree)
+        neighbors = point_cloud[neighborhood["indices"], :3]
+        pca = fitted_pca(neighbors)  # PCA on the x,y,z coords
         eigenvalue_sum = (pca.singular_values_ ** 2).sum()
         alpha, beta = triangle_variance_space(pca)
         radius, z_range, std_deviation, density = compute_3D_properties(
@@ -115,10 +223,8 @@ def generate_features(point_cloud, nb_neighbors, kdtree_leaf_size=1000):
             pca
         )
         radius_2D, density_2D = compute_2D_properties(xyz_data[:2], neighbors[:, :2])
+        pca_2d = fitted_pca(neighbors[:, :2])  # PCA just on the x,y coords
         eigenvalue_sum_2D, eigenvalue_ratio_2D = compute_2D_features(pca_2d)
-        bin_density, bin_z_range, bin_z_std = retrieve_accumulation_features(
-            xyz_data, acc_features
-        )
         yield OrderedDict(
             [
                 ("x", xyz_data[0]),
@@ -143,11 +249,11 @@ def generate_features(point_cloud, nb_neighbors, kdtree_leaf_size=1000):
                 ("density_2D", density_2D),
                 ("eigenvalue_sum_2D", eigenvalue_sum_2D),
                 ("eigenvalue_ratio_2D", eigenvalue_ratio_2D),
-                ("bin_density", bin_density),
-                ("bin_z_range", bin_z_range),
-                ("bin_z_std", bin_z_std),
-                ("r", rgb_data[0]),
-                ("g", rgb_data[1]),
-                ("b", rgb_data[2]),
+                ("bin_density", point[6]),
+                ("bin_z_range", point[7]),
+                ("bin_z_std", point[8]),
+                ("r", point[3]),
+                ("g", point[4]),
+                ("b", point[5]),
             ]
         )
