@@ -18,6 +18,7 @@ echo "Feature sets: $4"
 xp_name=$1
 mkdir -p data/$xp_name/profiling
 mkdir -p data/$xp_name/out
+mkdir -p data/$xp_name/timers
 
 for points in $2 # '1000 5000 10000 50000'
 do
