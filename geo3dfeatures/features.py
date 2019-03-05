@@ -31,7 +31,7 @@ def accumulation_2d_neighborhood(point_cloud, bin_size=0.25, buf=1e-3):
     pandas.DataFrame
         Set of features built through binning process, for each point within the cloud
     """
-    df = pd.DataFrame(point_cloud, columns=["x", "y", "z", "r", "g", "b"])
+    df = pd.DataFrame(point_cloud, columns=["x", "y", "z"])
     xmin, xmax = np.min(point_cloud[:, 0]), np.max(point_cloud[:, 0])
     ymin, ymax = np.min(point_cloud[:, 1]), np.max(point_cloud[:, 1])
     xbins = np.arange(xmin, xmax + bin_size + buf, bin_size)

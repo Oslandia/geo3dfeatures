@@ -107,23 +107,19 @@ def alphabeta_features(point_cloud, nb_neighbors, kdtree_leaf_size=1000):
     ------
     list, OrderedDict generator (features for each point)
     """
-    kd_tree = compute_tree(point_cloud[:, :3], leaf_size=kdtree_leaf_size)
+    kd_tree = compute_tree(point_cloud, leaf_size=kdtree_leaf_size)
     for point in point_cloud:
-        xyz_data = point[:3]
-        neighborhood = build_neighborhood(xyz_data, nb_neighbors, kd_tree)
-        neighbors = point_cloud[neighborhood["indices"], :3]
+        neighborhood = build_neighborhood(point, nb_neighbors, kd_tree)
+        neighbors = point_cloud[neighborhood["indices"]]
         pca = fitted_pca(neighbors)  # PCA on the x,y,z coords
         alpha, beta = triangle_variance_space(pca)
         yield OrderedDict(
             [
-                ("x", xyz_data[0]),
-                ("y", xyz_data[1]),
-                ("z", xyz_data[2]),
+                ("x", point[0]),
+                ("y", point[1]),
+                ("z", point[2]),
                 ("alpha", alpha),
                 ("beta", beta),
-                ("r", point[3]),
-                ("g", point[4]),
-                ("b", point[5]),
             ]
         )
 
@@ -154,11 +150,10 @@ def eigen_features(point_cloud, nb_neighbors, kdtree_leaf_size=1000):
     ------
     list, OrderedDict generator (features for each point)
     """
-    kd_tree = compute_tree(point_cloud[:, :3], leaf_size=kdtree_leaf_size)
+    kd_tree = compute_tree(point_cloud, leaf_size=kdtree_leaf_size)
     for point in point_cloud:
-        xyz_data = point[:3]
-        neighborhood = build_neighborhood(xyz_data, nb_neighbors, kd_tree)
-        neighbors = point_cloud[neighborhood["indices"], :3]
+        neighborhood = build_neighborhood(point, nb_neighbors, kd_tree)
+        neighbors = point_cloud[neighborhood["indices"]]
         pca = fitted_pca(neighbors)  # PCA on the x,y,z coords
         eigenvalue_sum = (pca.singular_values_ ** 2).sum()
         alpha, beta = triangle_variance_space(pca)
@@ -167,9 +162,9 @@ def eigen_features(point_cloud, nb_neighbors, kdtree_leaf_size=1000):
         )
         yield OrderedDict(
             [
-                ("x", xyz_data[0]),
-                ("y", xyz_data[1]),
-                ("z", xyz_data[2]),
+                ("x", point[0]),
+                ("y", point[1]),
+                ("z", point[2]),
                 ("alpha", alpha),
                 ("beta", beta),
                 ("curvature_change", curvature_change),
@@ -180,9 +175,6 @@ def eigen_features(point_cloud, nb_neighbors, kdtree_leaf_size=1000):
                 ("anisotropy", anisotropy),
                 ("eigenentropy", eigenentropy),
                 ("eigenvalue_sum", eigenvalue_sum),
-                ("r", point[3]),
-                ("g", point[4]),
-                ("b", point[5]),
             ]
         )
 
@@ -207,11 +199,10 @@ def all_features(point_cloud, nb_neighbors, kdtree_leaf_size=1000):
 
     """
     acc_features = accumulation_2d_neighborhood(point_cloud)
-    kd_tree = compute_tree(point_cloud[:, :3], leaf_size=kdtree_leaf_size)
+    kd_tree = compute_tree(point_cloud, leaf_size=kdtree_leaf_size)
     for point in acc_features.values:
-        xyz_data = point[:3]
-        neighborhood = build_neighborhood(xyz_data, nb_neighbors, kd_tree)
-        neighbors = point_cloud[neighborhood["indices"], :3]
+        neighborhood = build_neighborhood(point[:3], nb_neighbors, kd_tree)
+        neighbors = point_cloud[neighborhood["indices"]]
         pca = fitted_pca(neighbors)  # PCA on the x,y,z coords
         eigenvalue_sum = (pca.singular_values_ ** 2).sum()
         alpha, beta = triangle_variance_space(pca)
@@ -222,14 +213,14 @@ def all_features(point_cloud, nb_neighbors, kdtree_leaf_size=1000):
         curvature_change, linearity, planarity, scattering, omnivariance, anisotropy, eigenentropy = compute_3D_features(
             pca
         )
-        radius_2D, density_2D = compute_2D_properties(xyz_data[:2], neighbors[:, :2])
+        radius_2D, density_2D = compute_2D_properties(point[:2], neighbors[:, :2])
         pca_2d = fitted_pca(neighbors[:, :2])  # PCA just on the x,y coords
         eigenvalue_sum_2D, eigenvalue_ratio_2D = compute_2D_features(pca_2d)
         yield OrderedDict(
             [
-                ("x", xyz_data[0]),
-                ("y", xyz_data[1]),
-                ("z", xyz_data[2]),
+                ("x", point[0]),
+                ("y", point[1]),
+                ("z", point[2]),
                 ("alpha", alpha),
                 ("beta", beta),
                 ("radius", radius),
@@ -249,11 +240,8 @@ def all_features(point_cloud, nb_neighbors, kdtree_leaf_size=1000):
                 ("density_2D", density_2D),
                 ("eigenvalue_sum_2D", eigenvalue_sum_2D),
                 ("eigenvalue_ratio_2D", eigenvalue_ratio_2D),
-                ("bin_density", point[6]),
-                ("bin_z_range", point[7]),
-                ("bin_z_std", point[8]),
-                ("r", point[3]),
-                ("g", point[4]),
-                ("b", point[5]),
+                ("bin_density", point[-3]),
+                ("bin_z_range", point[-2]),
+                ("bin_z_std", point[-1]),
             ]
         )
