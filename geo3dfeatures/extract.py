@@ -17,7 +17,6 @@ from collections import OrderedDict
 import numpy as np
 
 from sklearn.decomposition import PCA
-#from sklearn.neighbors import KDTree
 from scipy.spatial import cKDTree as KDTree
 
 from geo3dfeatures.features import (

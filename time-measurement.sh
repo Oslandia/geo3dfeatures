@@ -1,13 +1,17 @@
 #!/bin/bash
 
+# Run a set of experiments on feature generation,
+# to measure the impact of point quantity, neighborhood size, and feature set.
+# /!\ This program supposes to be inside the project virtual env
+
 set -e
 set -u
 
-export PATH=$HOME/.virtualenvs/univers/bin:$PATH
-
-here="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-export PYTHONPATH=$here
-cd $here
+if [ "$#" -ne 4 ]; then
+    echo "Wrong number of parameters. The command must be run as follows:"
+    echo "./time-measurement.sh [experiment name] [point quantity] [neighborhood size] [feature set]"
+    exit 1
+fi
 
 echo "Run time profiler on examples/example.py"
 echo "Experiment name: $1"
