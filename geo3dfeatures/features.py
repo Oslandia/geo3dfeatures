@@ -20,7 +20,7 @@ def accumulation_2d_neighborhood(point_cloud, bin_size=0.25, buf=1e-3):
     Parameters
     ----------
     point_cloud : numpy.array
-        Coordinates of all points within the point cloud; must be a 3D-shaped
+        Coordinates of all points within the point cloud
     bin_size : float
         Size of each squared bin edge (in meter)
     buf : float
@@ -31,8 +31,7 @@ def accumulation_2d_neighborhood(point_cloud, bin_size=0.25, buf=1e-3):
     pandas.DataFrame
         Set of features built through binning process, for each point within the cloud
     """
-    assert point_cloud.shape[1] == 3
-    df = pd.DataFrame(point_cloud, columns=["x", "y", "z"])
+    df = pd.DataFrame(point_cloud, columns=["x", "y", "z", "r", "g", "b"])
     xmin, xmax = np.min(point_cloud[:, 0]), np.max(point_cloud[:, 0])
     ymin, ymax = np.min(point_cloud[:, 1]), np.max(point_cloud[:, 1])
     xbins = np.arange(xmin, xmax + bin_size + buf, bin_size)

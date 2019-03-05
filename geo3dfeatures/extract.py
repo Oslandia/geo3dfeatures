@@ -86,33 +86,6 @@ def fitted_pca(point_cloud):
     return PCA().fit(point_cloud)
 
 
-def retrieve_accumulation_features(point, features):
-    """Get the accumulation features for given `point`, by querying the pandas
-    dataframe containing the information for every point cloud item.
-
-    Parameters
-    ----------
-    point : numpy.array
-        Coordinates of the point of interest, for identification purpose
-    features : pandas.DataFrame
-        Collection of point features
-
-    Returns
-    -------
-    list
-        Accumulation features
-    """
-    point_x, point_y, point_z = point
-    point_features = features.loc[(features["x"] == point_x)
-                                  & (features["y"] == point_y)
-                                  & (features["z"] == point_z)]
-    assert point_features.shape[0] == 1
-    acc_density = point_features.iloc[0]["count"]
-    z_range = point_features.iloc[0]["z_range"]
-    z_std = point_features.iloc[0]["std"]
-    return [acc_density, z_range, z_std]
-
-
 def alphabeta_features(point_cloud, nb_neighbors, kdtree_leaf_size=1000):
     """Compute 'alpha' and 'beta' features within 'point_cloud', a set of 3D
     points, according to Brodu et al (2012)
@@ -137,7 +110,7 @@ def alphabeta_features(point_cloud, nb_neighbors, kdtree_leaf_size=1000):
     """
     kd_tree = compute_tree(point_cloud[:, :3], leaf_size=kdtree_leaf_size)
     for point in point_cloud:
-        xyz_data, rgb_data = point[:3], point[3:]
+        xyz_data = point[:3]
         neighborhood = build_neighborhood(xyz_data, nb_neighbors, kd_tree)
         neighbors = point_cloud[neighborhood["indices"], :3]
         pca = fitted_pca(neighbors)  # PCA on the x,y,z coords
@@ -149,9 +122,9 @@ def alphabeta_features(point_cloud, nb_neighbors, kdtree_leaf_size=1000):
                 ("z", xyz_data[2]),
                 ("alpha", alpha),
                 ("beta", beta),
-                ("r", rgb_data[0]),
-                ("g", rgb_data[1]),
-                ("b", rgb_data[2]),
+                ("r", point[3]),
+                ("g", point[4]),
+                ("b", point[5]),
             ]
         )
 
@@ -184,7 +157,7 @@ def eigen_features(point_cloud, nb_neighbors, kdtree_leaf_size=1000):
     """
     kd_tree = compute_tree(point_cloud[:, :3], leaf_size=kdtree_leaf_size)
     for point in point_cloud:
-        xyz_data, rgb_data = point[:3], point[3:]
+        xyz_data = point[:3]
         neighborhood = build_neighborhood(xyz_data, nb_neighbors, kd_tree)
         neighbors = point_cloud[neighborhood["indices"], :3]
         pca = fitted_pca(neighbors)  # PCA on the x,y,z coords
@@ -208,9 +181,9 @@ def eigen_features(point_cloud, nb_neighbors, kdtree_leaf_size=1000):
                 ("anisotropy", anisotropy),
                 ("eigenentropy", eigenentropy),
                 ("eigenvalue_sum", eigenvalue_sum),
-                ("r", rgb_data[0]),
-                ("g", rgb_data[1]),
-                ("b", rgb_data[2]),
+                ("r", point[3]),
+                ("g", point[4]),
+                ("b", point[5]),
             ]
         )
 
@@ -234,10 +207,10 @@ def all_features(point_cloud, nb_neighbors, kdtree_leaf_size=1000):
     list, OrderedDict generator (features for each point)
 
     """
-    acc_features = accumulation_2d_neighborhood(point_cloud[:, :3])
+    acc_features = accumulation_2d_neighborhood(point_cloud)
     kd_tree = compute_tree(point_cloud[:, :3], leaf_size=kdtree_leaf_size)
-    for point in point_cloud:
-        xyz_data, rgb_data = point[:3], point[3:]
+    for point in acc_features.values:
+        xyz_data = point[:3]
         neighborhood = build_neighborhood(xyz_data, nb_neighbors, kd_tree)
         neighbors = point_cloud[neighborhood["indices"], :3]
         pca = fitted_pca(neighbors)  # PCA on the x,y,z coords
@@ -253,9 +226,6 @@ def all_features(point_cloud, nb_neighbors, kdtree_leaf_size=1000):
         radius_2D, density_2D = compute_2D_properties(xyz_data[:2], neighbors[:, :2])
         pca_2d = fitted_pca(neighbors[:, :2])  # PCA just on the x,y coords
         eigenvalue_sum_2D, eigenvalue_ratio_2D = compute_2D_features(pca_2d)
-        bin_density, bin_z_range, bin_z_std = retrieve_accumulation_features(
-            xyz_data, acc_features
-        )
         yield OrderedDict(
             [
                 ("x", xyz_data[0]),
@@ -280,11 +250,11 @@ def all_features(point_cloud, nb_neighbors, kdtree_leaf_size=1000):
                 ("density_2D", density_2D),
                 ("eigenvalue_sum_2D", eigenvalue_sum_2D),
                 ("eigenvalue_ratio_2D", eigenvalue_ratio_2D),
-                ("bin_density", bin_density),
-                ("bin_z_range", bin_z_range),
-                ("bin_z_std", bin_z_std),
-                ("r", rgb_data[0]),
-                ("g", rgb_data[1]),
-                ("b", rgb_data[2]),
+                ("bin_density", point[6]),
+                ("bin_z_range", point[7]),
+                ("bin_z_std", point[8]),
+                ("r", point[3]),
+                ("g", point[4]),
+                ("b", point[5]),
             ]
         )
