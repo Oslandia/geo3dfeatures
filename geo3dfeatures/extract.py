@@ -22,11 +22,11 @@ from scipy.spatial import cKDTree as KDTree
 from geo3dfeatures.features import (
     accumulation_2d_neighborhood,
     triangle_variance_space,
-    compute_3D_features,
-    compute_2D_features,
-    compute_3D_properties,
-    compute_2D_properties,
-    verticality_coefficient
+    normalize, val_sum, val_range, std_deviation,
+    curvature_change, linearity, planarity, scattering,
+    omnivariance, anisotropy, eigenentropy, verticality_coefficient,
+    eigenvalue_ratio_2D,
+    radius_2D, radius_3D, density_2D, density_3D
 )
 
 
@@ -45,7 +45,7 @@ def compute_tree(point_cloud, leaf_size):
     return KDTree(point_cloud, leaf_size)
 
 
-def build_neighborhood(point, nb_neighbors, kd_tree):
+def request_tree(point, nb_neighbors, kd_tree):
     """Extract a point neighborhood by the way of a KDTree method
 
     Parameters
@@ -54,21 +54,20 @@ def build_neighborhood(point, nb_neighbors, kd_tree):
         Coordinates of the reference point (x, y, z)
     nb_neighborhood : int
         Number of neighboring points to consider
-    tree : sklearn.neighbors.kd_tree.KDTree
+    tree : scipy.spatial.KDTree
         Tree representation of the point cloud
 
     Returns
     -------
-    dict
+    tuple
         Neighborhood, decomposed as a mean distance between the reference point and
         its neighbors and an array of neighbor indices within the point cloud. Get
         `nb_neighborhood + 1` in order to have the reference point and its k neighbors.
     """
-    dist, ind = kd_tree.query(np.expand_dims(point, 0), k=nb_neighbors + 1)
-    return {"distance": dist.squeeze(), "indices": ind.squeeze()}
+    return kd_tree.query(point, k=nb_neighbors + 1)
 
 
-def fitted_pca(point_cloud):
+def fit_pca(point_cloud):
     """Fit a PCA model on a 3D point cloud characterized by x-, y- and
     z-coordinates
 
@@ -109,9 +108,9 @@ def alphabeta_features(point_cloud, nb_neighbors, kdtree_leaf_size=1000):
     """
     kd_tree = compute_tree(point_cloud, leaf_size=kdtree_leaf_size)
     for point in point_cloud:
-        neighborhood = build_neighborhood(point, nb_neighbors, kd_tree)
-        neighbors = point_cloud[neighborhood["indices"]]
-        pca = fitted_pca(neighbors)  # PCA on the x,y,z coords
+        _, neighbor_idx = request_tree(point, nb_neighbors, kd_tree)
+        neighbors = point_cloud[neighbor_idx]
+        pca = fit_pca(neighbors)  # PCA on the x,y,z coords
         alpha, beta = triangle_variance_space(pca)
         yield OrderedDict(
             [
@@ -152,9 +151,9 @@ def eigen_features(point_cloud, nb_neighbors, kdtree_leaf_size=1000):
     """
     kd_tree = compute_tree(point_cloud, leaf_size=kdtree_leaf_size)
     for point in point_cloud:
-        neighborhood = build_neighborhood(point, nb_neighbors, kd_tree)
-        neighbors = point_cloud[neighborhood["indices"]]
-        pca = fitted_pca(neighbors)  # PCA on the x,y,z coords
+        _, neighbor_idx = request_tree(point, nb_neighbors, kd_tree)
+        neighbors = point_cloud[neighbor_idx]
+        pca = fit_pca(neighbors)  # PCA on the x,y,z coords
         eigenvalue_sum = (pca.singular_values_ ** 2).sum()
         alpha, beta = triangle_variance_space(pca)
         curvature_change, linearity, planarity, scattering, omnivariance, anisotropy, eigenentropy = compute_3D_features(
@@ -201,21 +200,16 @@ def all_features(point_cloud, nb_neighbors, kdtree_leaf_size=1000):
     acc_features = accumulation_2d_neighborhood(point_cloud)
     kd_tree = compute_tree(point_cloud, leaf_size=kdtree_leaf_size)
     for point in acc_features.values:
-        neighborhood = build_neighborhood(point[:3], nb_neighbors, kd_tree)
-        neighbors = point_cloud[neighborhood["indices"]]
-        pca = fitted_pca(neighbors)  # PCA on the x,y,z coords
-        eigenvalue_sum = (pca.singular_values_ ** 2).sum()
-        alpha, beta = triangle_variance_space(pca)
-        radius, z_range, std_deviation, density = compute_3D_properties(
-            neighbors[:, 2], neighborhood["distance"]
-        )
-        verticality = verticality_coefficient(pca)
-        curvature_change, linearity, planarity, scattering, omnivariance, anisotropy, eigenentropy = compute_3D_features(
-            pca
-        )
-        radius_2D, density_2D = compute_2D_properties(point[:2], neighbors[:, :2])
-        pca_2d = fitted_pca(neighbors[:, :2])  # PCA just on the x,y coords
-        eigenvalue_sum_2D, eigenvalue_ratio_2D = compute_2D_features(pca_2d)
+        distance, neighbor_idx = request_tree(point[:3], nb_neighbors, kd_tree)
+        neighbors = point_cloud[neighbor_idx]
+        pca = fit_pca(neighbors)  # PCA on the x,y,z coords
+        eigenvalues_3D = pca.singular_values_ ** 2
+        norm_eigenvalues_3D = normalize(eigenvalues_3D)
+        alpha, beta = triangle_variance_space(norm_eigenvalues_3D)
+        rad_3D = radius_3D(distance)
+        pca_2d = fit_pca(neighbors[:, :2])  # PCA just on the x,y coords
+        eigenvalues_2D = pca_2d.singular_values_ ** 2
+        rad_2D = radius_2D(point[:2], neighbors[:, :2])
         yield OrderedDict(
             [
                 ("x", point[0]),
@@ -223,23 +217,23 @@ def all_features(point_cloud, nb_neighbors, kdtree_leaf_size=1000):
                 ("z", point[2]),
                 ("alpha", alpha),
                 ("beta", beta),
-                ("radius", radius),
-                ("z_range", z_range),
-                ("std_dev", std_deviation),
-                ("density", density),
-                ("verticality", verticality),
-                ("curvature_change", curvature_change),
-                ("linearity", linearity),
-                ("planarity", planarity),
-                ("scattering", scattering),
-                ("omnivariance", omnivariance),
-                ("anisotropy", anisotropy),
-                ("eigenentropy", eigenentropy),
-                ("eigenvalue_sum", eigenvalue_sum),
-                ("radius_2D", radius_2D),
-                ("density_2D", density_2D),
-                ("eigenvalue_sum_2D", eigenvalue_sum_2D),
-                ("eigenvalue_ratio_2D", eigenvalue_ratio_2D),
+                ("radius", rad_3D),
+                ("z_range", val_range(neighbors[:, 2])),
+                ("std_dev", std_deviation(neighbors[:, 2])),
+                ("density", density_3D(rad_3D, nb_neighbors)),
+                ("verticality", verticality_coefficient(pca)),
+                ("curvature_change", curvature_change(norm_eigenvalues_3D)),
+                ("linearity", linearity(norm_eigenvalues_3D)),
+                ("planarity", planarity(norm_eigenvalues_3D)),
+                ("scattering", scattering(norm_eigenvalues_3D)),
+                ("omnivariance", omnivariance(norm_eigenvalues_3D)),
+                ("anisotropy", anisotropy(norm_eigenvalues_3D)),
+                ("eigenentropy", eigenentropy(norm_eigenvalues_3D)),
+                ("eigenvalue_sum", val_sum(eigenvalues_3D)),
+                ("radius_2D", rad_2D),
+                ("density_2D", density_2D(rad_2D, nb_neighbors)),
+                ("eigenvalue_sum_2D", val_sum(eigenvalues_2D)),
+                ("eigenvalue_ratio_2D", eigenvalue_ratio_2D(eigenvalues_2D)),
                 ("bin_density", point[-3]),
                 ("bin_z_range", point[-2]),
                 ("bin_z_std", point[-1]),

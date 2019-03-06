@@ -1,6 +1,18 @@
 """Geometry features.
 
-List of functions which extracts 1D, 2D or 3D geometry features from point clouds.
+List of functions which extracts 1D, 2D or 3D geometry features from point
+clouds.
+
+See:
+- Martin Weinmann, Boris Jutzi, Stefan Hinz, Clément Mallet,
+2015. Semantic point cloud interpretation based on optimal neighborhoods,
+relevant features and efficient classifiers. ISPRS Journal of
+Photogrammetry and Remote Sensing, vol 105, pp 286-304.
+- Brodu, N., Lague D., 2011. 3D Terrestrial lidar data classification of
+complex natural scenes using a multi-scale dimensionality criterion:
+applications in geomorphology. arXiV:1107.0550v3.
+
+
 """
 
 import math
@@ -50,6 +62,20 @@ def accumulation_2d_neighborhood(point_cloud, bin_size=0.25, buf=1e-3):
     )
 
 
+def normalize(a):
+    """Compute and normalize values in "a".
+
+    Parameters
+    ----------
+    a : numpy.array
+
+    Returns
+    -------
+    numpy.array
+    """
+    return a / np.sum(a)
+
+
 def normalized_eigenvalues(pca):
     """Compute and normalized the eigenvalues from a fitted PCA.
 
@@ -68,7 +94,7 @@ def normalized_eigenvalues(pca):
     return eigenvalues / eigenvalues.sum()
 
 
-def triangle_variance_space(pca):
+def triangle_variance_space(eigenvalues):
     """Compute barycentric coordinates of a point within the explained variance
     space, knowing the PCA eigenvalues
 
@@ -98,120 +124,273 @@ def triangle_variance_space(pca):
 
     Parameters
     ----------
-    pca : sklearn.decomposition.PCA
+    eigenvalues : numpy.array
+        Set of normalized eigenvalues; must be (1, 3)-shaped
 
     Returns
     -------
     list
         First two barycentric coordinates in the variance space (triangle)
     """
-    eigenvalues = normalized_eigenvalues(pca)
     alpha = eigenvalues[0] - eigenvalues[1]
     beta = 2 * eigenvalues[0] + 4 * eigenvalues[1] - 2
     return [alpha, beta]
 
 
-def compute_3D_features(pca):
-    """Build the set of 3D features for a typical 3D point within a local
-    neighborhood represented through PCA eigenvalues
+def curvature_change(eigenvalues):
+    """Compute the curvature change in the local dataset
+
+    See (Weinmann et al, 2015)
 
     Parameters
     ----------
-    pca : sklearn.decompositions.PCA
-        PCA computed on the x,y,z coords
+    eigenvalues : numpy.array
+        Set of normalized eigenvalues; must be (1, 3)-shaped
 
     Returns
     -------
-    list
+    float
+        Curvature change
     """
-    assert pca.n_components_ == 3
-    e = normalized_eigenvalues(pca)
-    curvature_change = e[2]
-    linearity = (e[0] - e[1]) / e[0]
-    planarity = (e[1] - e[2]) / e[0]
-    scattering = e[2] / e[0]
-    omnivariance = e.prod() ** (1 / 3)
-    anisotropy = (e[0] - e[2]) / e[0]
-    eigenentropy = -1 * np.sum(e * np.log(e))
-    return [
-        curvature_change,
-        linearity,
-        planarity,
-        scattering,
-        omnivariance,
-        anisotropy,
-        eigenentropy
-    ]
+    return eigenvalues[2]
 
 
-def compute_2D_features(pca):
-    """Build the set of 2D features for a typical 2D point within a local
-    neighborhood represented through PCA eigenvalues
+def linearity(eigenvalues):
+    """Compute the linearity of the local dataset
+
+    See (Weinmann et al, 2015)
 
     Parameters
     ----------
-    pca : sklearn.decompositions.PCA
-        PCA computed on the x,y coords.
+    eigenvalues : numpy.array
+        Set of normalized eigenvalues; must be (1, 3)-shaped
 
     Returns
     -------
-    list
+    float
+        Linearity
     """
-    assert pca.n_components_ == 2
-    eigenvalues = pca.singular_values_ ** 2
-    eigenvalue_sum_2D = sum(eigenvalues)
-    eigenvalue_ratio_2D = eigenvalues[1] / eigenvalues[0]
-    return [eigenvalue_sum_2D, eigenvalue_ratio_2D]
+    return (eigenvalues[0] - eigenvalues[1]) / eigenvalues[0]
 
 
-def compute_3D_properties(z_neighbors, distances):
-    """Compute some geometric properties of a local point cloud
+def planarity(eigenvalues):
+    """Compute the planarity of the local dataset
 
-    See: Martin Weinmann, Boris Jutzi, Stefan Hinz, Clément Mallet,
-    2015. Semantic point cloud interpretation based on optimal neighborhoods,
-    relevant features and efficient classifiers. ISPRS Journal of
-    Photogrammetry and Remote Sensing, vol 105, pp 286-304.
+    See (Weinmann et al, 2015)
 
     Parameters
     ----------
-    z_neighbors : numpy.array
-        Neighboring point z-coordinates
+    eigenvalues : numpy.array
+        Set of normalized eigenvalues; must be (1, 3)-shaped
+
+    Returns
+    -------
+    float
+        Planarity
+    """
+    return (eigenvalues[1] - eigenvalues[2]) / eigenvalues[0]
+
+
+def scattering(eigenvalues):
+    """Compute the scattering of the local dataset
+
+    See (Weinmann et al, 2015)
+
+    Parameters
+    ----------
+    eigenvalues : numpy.array
+        Set of normalized eigenvalues; must be (1, 3)-shaped
+
+    Returns
+    -------
+    float
+        Scattering
+    """
+    return eigenvalues[2] / eigenvalues[0]
+
+
+
+def omnivariance(eigenvalues):
+    """Compute the omnivariance of the local dataset
+
+    See (Weinmann et al, 2015)
+
+    Parameters
+    ----------
+    eigenvalues : numpy.array
+        Set of normalized eigenvalues; must be (1, 3)-shaped
+
+    Returns
+    -------
+    float
+        Omnivariance
+    """
+    return np.prod(eigenvalues) ** (1 / 3)
+
+
+def anisotropy(eigenvalues):
+    """Compute the anisotropy of the local dataset
+
+    See (Weinmann et al, 2015)
+
+    Parameters
+    ----------
+    eigenvalues : numpy.array
+        Set of normalized eigenvalues; must be (1, 3)-shaped
+
+    Returns
+    -------
+    float
+        Anisotropy
+    """
+    return (eigenvalues[0] - eigenvalues[2]) / eigenvalues[0]
+
+
+def eigenentropy(eigenvalues):
+    """Compute the eigenentropy
+
+    Parameters
+    ----------
+    eigenvalues : numpy.array
+        Set of normalized eigenvalues; must be (1, 3)-shaped
+
+    Returns
+    -------
+    float
+        Entropy of the dataset
+    """
+    return -1 * np.sum(eigenvalues * np.log(eigenvalues))
+
+
+def val_sum(a):
+    """Compute the sum of items in "a"
+
+    Parameters
+    ----------
+    a : numpy.array
+        Data
+
+    Returns
+    -------
+    float
+        Sum of "a" items
+    """
+    return np.sum(a)
+
+
+def eigenvalue_ratio_2D(eigenvalues):
+    """Compute the 2D eigenvalue ratio
+
+    Parameters
+    ----------
+    eigenvalues : numpy.array
+        Array of eigenvalues; must be (1, 2)-shaped
+    """
+    return eigenvalues[1] / eigenvalues[0]
+
+
+def val_range(a):
+    """Compute the range between minimal and maximal values of "a"
+
+    Parameters
+    ----------
+    a : numpy.array
+        Data
+
+    Returns
+    -------
+    float
+        Range of "a"
+    """
+    return np.ptp(a)
+
+
+def std_deviation(a):
+    """Compute the standard deviation of values contained in "a"
+
+    Parameters
+    ----------
+    a : numpy.array
+        Data
+
+    Returns
+    -------
+    float
+        Standard deviation of "a"
+    """
+    return np.std(a)
+
+
+def radius_3D(distances):
+    """Compute the max distance between a point and its neighbors, assuming
+    that "distances" contains the euclidian distances
+
+    Parameters
+    ----------
     distances : numpy.array
-        Distance of each neighboring points to the reference point
 
     Returns
     -------
-    list
-        3D geometric properties
+        3D radius associated to the point of interest
     """
-    radius = np.max(distances)
-    z_range = np.ptp(z_neighbors)
-    std_deviation = np.std(z_neighbors)
-    density = (len(distances) + 1) / ((4 / 3) * math.pi * radius ** 3)
-    return [radius, z_range, std_deviation, density]
+    return np.max(distances)
 
 
-def compute_2D_properties(point, neighbors):
-    """Compute 2D geometric features according to (Lari & Habib, 2012) quoted
-    by (Weinmann *et al.*, 2015)
-
-    For sake of consistency, (Weinmann *et al.*, 2015) uses 3D neighborhood to
-    compute these 2D metrics. We apply this hypothesis here.
+def radius_2D(point, neighbors_2D):
+    """Compute the max distance between 'point' and its neighbors, measured as
+    the squared euclidian distance between 'point' and the furthest neighbor
 
     Parameters
     ----------
     point : numpy.array
-        Reference point 2D-coordinates
-    neighbors : numpy.array
-        Neighboring point 2D-coordinates (x, y)
+        (x, y) coordinates of the point of interest
+    2D_neighbors : numpy.array
+        Set of 2D neighboring points
+
+    Returns
+    -------
+    float
+        2D radius associated to "point"
     """
-    xs, ys = neighbors[:, 0], neighbors[:, 1]
-    distances = [
-        math.sqrt((x - point[0]) ** 2 + (y - point[1]) ** 2) for x, y in zip(xs, ys)
-    ]
-    radius_2D = max(distances)
-    density_2D = (len(distances) + 1) / (math.pi * radius_2D ** 2)
-    return [radius_2D, density_2D]
+    return np.max(np.sum((neighbors_2D - point) ** 2, axis=1))
+
+
+def density_3D(radius, nb_neighbors):
+    """Compute the density in a 3D space, as the ratio between point quantity
+    and 3D volume
+
+    Parameters
+    ----------
+    radius : float
+        Radius of the sphere of interest around the considered point
+    nb_neighbors : int
+        Number of points in the neighborhood
+
+    Returns
+    -------
+    float
+        3D point density in the considered volume
+    """
+    return (nb_neighbors + 1) / ((4 / 3) * math.pi * radius ** 3)
+
+
+def density_2D(radius, nb_neighbors):
+    """Compute the density in a 2D space, as the ratio between point quantity
+    and 2D area
+
+    Parameters
+    ----------
+    radius : float
+        Radius of the area of interest around the considered point
+    nb_neighbors : int
+        Number of points in the neighborhood
+
+    Returns
+    -------
+    float
+        2D point density in the considered area
+    """
+    return (nb_neighbors + 1) / (math.pi * radius ** 2)
 
 
 def verticality_coefficient(pca):
