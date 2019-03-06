@@ -48,7 +48,10 @@ def accumulation_2d_neighborhood(
     pandas.DataFrame
         Set of features built through binning process, for each point within the cloud
     """
-    assert input_columns[:3] == ["x", "y", "z"]
+    if len(input_columns) != point_cloud.shape[1]:
+        raise ValueError("Column names does not match the point cloud shape.")
+    if input_columns[:3] != ["x", "y", "z"]:
+        raise ValueError("'input_columns' must begin with 'x', 'y', 'z'.")
     df = pd.DataFrame(point_cloud, columns=input_columns)
     xmin, xmax = np.min(point_cloud[:, 0]), np.max(point_cloud[:, 0])
     ymin, ymax = np.min(point_cloud[:, 1]), np.max(point_cloud[:, 1])

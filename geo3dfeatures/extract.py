@@ -112,8 +112,10 @@ def alphabeta_features(
     ------
     list, OrderedDict generator (features for each point)
     """
-    assert input_columns[:3] == ["x", "y", "z"]
-    assert len(input_columns) == point_cloud.shape[1]
+    if len(input_columns) != point_cloud.shape[1]:
+        raise ValueError("Column names does not match the point cloud shape.")
+    if input_columns[:3] != ["x", "y", "z"]:
+        raise ValueError("'input_columns' must begin with 'x', 'y', 'z'.")
     kd_tree = compute_tree(point_cloud[:, :3], leaf_size=kdtree_leaf_size)
     for point in point_cloud:
         _, neighbor_idx = request_tree(point[:3], nb_neighbors, kd_tree)
@@ -166,8 +168,10 @@ def eigen_features(
     ------
     list, OrderedDict generator (features for each point)
     """
-    assert input_columns[:3] == ["x", "y", "z"]
-    assert len(input_columns) == point_cloud.shape[1]
+    if len(input_columns) != point_cloud.shape[1]:
+        raise ValueError("Column names does not match the point cloud shape.")
+    if input_columns[:3] != ["x", "y", "z"]:
+        raise ValueError("'input_columns' must begin with 'x', 'y', 'z'.")
     kd_tree = compute_tree(point_cloud[:, :3], leaf_size=kdtree_leaf_size)
     for point in point_cloud:
         _, neighbor_idx = request_tree(point[:3], nb_neighbors, kd_tree)
@@ -222,8 +226,10 @@ def all_features(
     list, OrderedDict generator (features for each point)
 
     """
-    assert input_columns[:3] == ["x", "y", "z"]
-    assert len(input_columns) == point_cloud.shape[1]
+    if len(input_columns) != point_cloud.shape[1]:
+        raise ValueError("Column names does not match the point cloud shape.")
+    if input_columns[:3] != ["x", "y", "z"]:
+        raise ValueError("'input_columns' must begin with 'x', 'y', 'z'.")
     acc_features = accumulation_2d_neighborhood(point_cloud, input_columns)
     kd_tree = compute_tree(point_cloud[:, :3], leaf_size=kdtree_leaf_size)
     for point in acc_features.values:
