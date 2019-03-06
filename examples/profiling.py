@@ -20,8 +20,8 @@ import pandas as pd
 PROJECT_NAME = "geo3dfeatures"
 
 def export_timer_to_json(xp_name):
-    profiling_in_folder = Path("data", xp_name, "profiling")
-    profiling_out_folder = Path("data", xp_name, "timers")
+    profiling_in_folder = Path("data", "profiling", xp_name, "profiling")
+    profiling_out_folder = Path("data", "profiling", xp_name, "timers")
     for profiling_path in profiling_in_folder.iterdir():
         stats = {}
         profiling_file = profiling_path.name
@@ -49,8 +49,8 @@ def export_timer_to_json(xp_name):
 
 def export_timer_to_csv(xp_name):
     full_stats = []
-    profiling_in_folder = Path("data", xp_name, "profiling")
-    profiling_out_folder = Path("data", xp_name, "timers")
+    profiling_in_folder = Path("data", "profiling", xp_name, "profiling")
+    profiling_out_folder = Path("data", "profiling", xp_name, "timers")
     columns = [
         "function", "nb_points", "nb_neighbors", "feature_set",
         "nb_calls", "total_time", "total_time_per_call",
