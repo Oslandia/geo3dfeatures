@@ -21,7 +21,9 @@ import numpy as np
 import pandas as pd
 
 
-def accumulation_2d_neighborhood(point_cloud, bin_size=0.25, buf=1e-3):
+def accumulation_2d_neighborhood(
+        point_cloud, input_columns, bin_size=0.25, buf=1e-3
+):
     """Compute accumulation features as a new way of designing a 2D-neighborhood,
     following the description of (Weinmann *et al.*, 2015): such features are
     built by binning the 2D-space, and evaluating the number of points
@@ -33,7 +35,10 @@ def accumulation_2d_neighborhood(point_cloud, bin_size=0.25, buf=1e-3):
     ----------
     point_cloud : numpy.array
         Coordinates of all points within the point cloud
-    bin_size : float
+    input_columns : list
+        List of input column names, that must begin "x", "y" and "z" columns
+    at least; its length must correspond to "point_cloud" number of columns
+    kdtree_leaf_size : int
         Size of each squared bin edge (in meter)
     buf : float
         Epsilon quantity used for expanding the largest bins and consider max values
@@ -43,7 +48,8 @@ def accumulation_2d_neighborhood(point_cloud, bin_size=0.25, buf=1e-3):
     pandas.DataFrame
         Set of features built through binning process, for each point within the cloud
     """
-    df = pd.DataFrame(point_cloud, columns=["x", "y", "z"])
+    assert input_columns[:3] == ["x", "y", "z"]
+    df = pd.DataFrame(point_cloud, columns=input_columns)
     xmin, xmax = np.min(point_cloud[:, 0]), np.max(point_cloud[:, 0])
     ymin, ymax = np.min(point_cloud[:, 1]), np.max(point_cloud[:, 1])
     xbins = np.arange(xmin, xmax + bin_size + buf, bin_size)

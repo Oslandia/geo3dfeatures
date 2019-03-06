@@ -84,7 +84,10 @@ def fit_pca(point_cloud):
     return PCA().fit(point_cloud)
 
 
-def alphabeta_features(point_cloud, nb_neighbors, kdtree_leaf_size=1000):
+def alphabeta_features(
+        point_cloud, nb_neighbors, 
+        input_columns=["x", "y", "z"], kdtree_leaf_size=1000
+):
     """Compute 'alpha' and 'beta' features within 'point_cloud', a set of 3D
     points, according to Brodu et al (2012)
 
@@ -99,6 +102,9 @@ def alphabeta_features(point_cloud, nb_neighbors, kdtree_leaf_size=1000):
     nb_neighbors : int
         Number of points that must be consider within a neighborhod
     considered
+    input_columns : list
+        List of input column names, that must begin "x", "y" and "z" columns
+    at least; its length must correspond to "point_cloud" number of columns
     kdtree_leaf_size : int
         Size of each kd-tree leaf (in number of points)
 
@@ -106,24 +112,32 @@ def alphabeta_features(point_cloud, nb_neighbors, kdtree_leaf_size=1000):
     ------
     list, OrderedDict generator (features for each point)
     """
-    kd_tree = compute_tree(point_cloud, leaf_size=kdtree_leaf_size)
+    assert input_columns[:3] == ["x", "y", "z"]
+    assert len(input_columns) == point_cloud.shape[1]
+    kd_tree = compute_tree(point_cloud[:, :3], leaf_size=kdtree_leaf_size)
     for point in point_cloud:
-        _, neighbor_idx = request_tree(point, nb_neighbors, kd_tree)
-        neighbors = point_cloud[neighbor_idx]
+        _, neighbor_idx = request_tree(point[:3], nb_neighbors, kd_tree)
+        neighbors = point_cloud[neighbor_idx, :3]
         pca = fit_pca(neighbors)  # PCA on the x,y,z coords
-        alpha, beta = triangle_variance_space(pca)
+        norm_eigenvalues_3D = normalize(pca.singular_values_ ** 2)
+        alpha, beta = triangle_variance_space(norm_eigenvalues_3D)
         yield OrderedDict(
             [
-                ("x", point[0]),
-                ("y", point[1]),
-                ("z", point[2]),
+                (name, data)
+                for name, data in zip(input_columns, point)
+            ]
+            +
+            [
                 ("alpha", alpha),
                 ("beta", beta),
             ]
         )
 
 
-def eigen_features(point_cloud, nb_neighbors, kdtree_leaf_size=1000):
+def eigen_features(
+        point_cloud, nb_neighbors, 
+        input_columns=["x", "y", "z"], kdtree_leaf_size=1000
+):
     """Compute 'alpha' and 'beta' features within 'point_cloud', a set of 3D
     points, according to Brodu et al (2012), as well as neighborhood attributes
     based on eigenvalues (see Weinmann et al, 2015, for details about such
@@ -142,6 +156,9 @@ def eigen_features(point_cloud, nb_neighbors, kdtree_leaf_size=1000):
     nb_neighbors : int
         Number of points that must be consider within a neighborhod
     considered
+    input_columns : list
+        List of input column names, that must begin "x", "y" and "z" columns
+    at least; its length must correspond to "point_cloud" number of columns
     kdtree_leaf_size : int
         Size of each kd-tree leaf (in number of points)
 
@@ -149,36 +166,41 @@ def eigen_features(point_cloud, nb_neighbors, kdtree_leaf_size=1000):
     ------
     list, OrderedDict generator (features for each point)
     """
-    kd_tree = compute_tree(point_cloud, leaf_size=kdtree_leaf_size)
+    assert input_columns[:3] == ["x", "y", "z"]
+    assert len(input_columns) == point_cloud.shape[1]
+    kd_tree = compute_tree(point_cloud[:, :3], leaf_size=kdtree_leaf_size)
     for point in point_cloud:
-        _, neighbor_idx = request_tree(point, nb_neighbors, kd_tree)
-        neighbors = point_cloud[neighbor_idx]
+        _, neighbor_idx = request_tree(point[:3], nb_neighbors, kd_tree)
+        neighbors = point_cloud[neighbor_idx, :3]
         pca = fit_pca(neighbors)  # PCA on the x,y,z coords
-        eigenvalue_sum = (pca.singular_values_ ** 2).sum()
-        alpha, beta = triangle_variance_space(pca)
-        curvature_change, linearity, planarity, scattering, omnivariance, anisotropy, eigenentropy = compute_3D_features(
-            pca
-        )
+        eigenvalues_3D = pca.singular_values_ ** 2
+        norm_eigenvalues_3D = normalize(eigenvalues_3D)
+        alpha, beta = triangle_variance_space(norm_eigenvalues_3D)
         yield OrderedDict(
             [
-                ("x", point[0]),
-                ("y", point[1]),
-                ("z", point[2]),
+                (name, data)
+                for name, data in zip(input_columns, point)
+            ]
+            +
+            [
                 ("alpha", alpha),
                 ("beta", beta),
-                ("curvature_change", curvature_change),
-                ("linearity", linearity),
-                ("planarity", planarity),
-                ("scattering", scattering),
-                ("omnivariance", omnivariance),
-                ("anisotropy", anisotropy),
-                ("eigenentropy", eigenentropy),
-                ("eigenvalue_sum", eigenvalue_sum),
+                ("curvature_change", curvature_change(norm_eigenvalues_3D)),
+                ("linearity", linearity(norm_eigenvalues_3D)),
+                ("planarity", planarity(norm_eigenvalues_3D)),
+                ("scattering", scattering(norm_eigenvalues_3D)),
+                ("omnivariance", omnivariance(norm_eigenvalues_3D)),
+                ("anisotropy", anisotropy(norm_eigenvalues_3D)),
+                ("eigenentropy", eigenentropy(norm_eigenvalues_3D)),
+                ("eigenvalue_sum", val_sum(eigenvalues_3D)),
             ]
         )
 
 
-def all_features(point_cloud, nb_neighbors, kdtree_leaf_size=1000):
+def all_features(
+        point_cloud, nb_neighbors,
+        input_columns=["x", "y", "z"], kdtree_leaf_size=1000
+):
     """Build the full feature set for all points within the point cloud
 
     Parameters
@@ -189,6 +211,9 @@ def all_features(point_cloud, nb_neighbors, kdtree_leaf_size=1000):
     nb_neighbors : int
         Number of points that must be consider within a neighborhod
     considered
+    input_columns : list
+        List of input column names, that must begin "x", "y" and "z" columns
+    at least; its length must correspond to "point_cloud" number of columns
     kdtree_leaf_size : int
         Size of each kd-tree leaf (in number of points)
 
@@ -197,11 +222,13 @@ def all_features(point_cloud, nb_neighbors, kdtree_leaf_size=1000):
     list, OrderedDict generator (features for each point)
 
     """
-    acc_features = accumulation_2d_neighborhood(point_cloud)
-    kd_tree = compute_tree(point_cloud, leaf_size=kdtree_leaf_size)
+    assert input_columns[:3] == ["x", "y", "z"]
+    assert len(input_columns) == point_cloud.shape[1]
+    acc_features = accumulation_2d_neighborhood(point_cloud, input_columns)
+    kd_tree = compute_tree(point_cloud[:, :3], leaf_size=kdtree_leaf_size)
     for point in acc_features.values:
         distance, neighbor_idx = request_tree(point[:3], nb_neighbors, kd_tree)
-        neighbors = point_cloud[neighbor_idx]
+        neighbors = point_cloud[neighbor_idx, :3]
         pca = fit_pca(neighbors)  # PCA on the x,y,z coords
         eigenvalues_3D = pca.singular_values_ ** 2
         norm_eigenvalues_3D = normalize(eigenvalues_3D)
@@ -212,9 +239,11 @@ def all_features(point_cloud, nb_neighbors, kdtree_leaf_size=1000):
         rad_2D = radius_2D(point[:2], neighbors[:, :2])
         yield OrderedDict(
             [
-                ("x", point[0]),
-                ("y", point[1]),
-                ("z", point[2]),
+                (name, data)
+                for name, data in zip(input_columns, point[:-3])
+            ]
+            +
+            [
                 ("alpha", alpha),
                 ("beta", beta),
                 ("radius", rad_3D),
@@ -236,6 +265,6 @@ def all_features(point_cloud, nb_neighbors, kdtree_leaf_size=1000):
                 ("eigenvalue_ratio_2D", eigenvalue_ratio_2D(eigenvalues_2D)),
                 ("bin_density", point[-3]),
                 ("bin_z_range", point[-2]),
-                ("bin_z_std", point[-1]),
+                ("bin_z_std", point[-1])
             ]
         )
