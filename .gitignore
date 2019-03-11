@@ -1,6 +1,4 @@
 *.pyc
 *~
 geo3dfeatures.egg-info/
-data/*/out/*
-data/*/profiling/*
-data/*/timers/profiling-*
+data/
