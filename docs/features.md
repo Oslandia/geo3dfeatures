@@ -39,20 +39,20 @@ geo3dfeatures.features.triangle_variance_space(pca)
 
 ## 3D properties
 
-Given the `z` coordinates for all points and the distances `dist` between the
-point of interest and its neighbors, one can compute the 3D property set with:
+Given the `nb_neighbors` the number of neighbors, `neighbor_z` the *z*
+coordinates of neighboring points, the distances `dist` between the point of
+interest and its neighbors and `pca` the resulting PCA of the neighboring set,
+one can compute a set of 3D properties that are detailed below.
+
 ```python
-geo3dfeatures.extract.compute_3D_properties(z, dist)
+geo3dfeatures.features.val_range(neighbor_z)
+geo3dfeatures.features.std_deviation(neighbor_z)
+geo3dfeatures.features.radius_3D(dist)
+geo3dfeatures.features.density_3D(radius3D, nb_neighbors)
+geo3dfeatures.features.verticality_coefficient(pca)
 ```
 
-It returns a list with the features detailed below.
-
 See [Weinmann et al (2015)](#references) for theoretical details.
-
-### radius
-
-$`r_k`$ represents the radius of the spherical neighborhood encapsulating the
-$`k`$ closest neighbors
 
 ### z range
 
@@ -60,7 +60,13 @@ $`\Delta_{z,k}`$ is the vertical range of height values within the neighborhood
 
 ### z standard deviation
 
-$`\sigma_{z,k}`$ is the standard deviation of height values within the neighborhood
+$`\sigma_{z,k}`$ is the standard deviation of height values within the
+neighborhood
+
+### radius
+
+$`r_k`$ represents the radius of the spherical neighborhood encapsulating the
+$`k`$ closest neighbors
 
 ### density
 
@@ -73,10 +79,18 @@ vertical trend of the local neighborhood.
 
 ## 3D features
 
-Given the covariance matrix eigenvalues `lambdas`, one can compute the feature
-set with:
+Given the covariance matrix eigenvalues `lambda`, and their normalized version
+`e`, one can compute the feature set with:
+
 ```python
-geo3dfeatures.extract.compute_3D_features(lambdas)
+geo3dfeatures.features.curvature_change(e)
+geo3dfeatures.features.linearity(e)
+geo3dfeatures.features.planarity(e)
+geo3dfeatures.features.omnivariance(e)
+geo3dfeatures.features.anisotropy(e)
+geo3dfeatures.features.eigenentropy(e)
+geo3dfeatures.features.curvature_change(e)
+geo3dfeatures.features.val_sum(lambda)
 ```
 
 It returns a list with the features detailed below.
@@ -126,13 +140,14 @@ same manner than for the 3D point cloud.
 
 See [Weinmann et al (2015)](#references) for further explanations.
 
-Considering `point` the 2D coordinates of the point of interest, and
-`neighbors` the 2D coordinates of neighboring points,
-```python
-geo3dfeature.extract.compute_2D_properties(point, neighbors)
-```
+Considering `point` the 2D coordinates of the point of interest, `neighbors`
+the 2D coordinates of neighboring points, and `nb_neighbors` the number of
+neighbors, one gets the 2D properties with following functions:
 
-gives the 2D properties of the point, as a list of two values.
+```python
+geo3dfeature.features.radius_2D(point, neighbors)
+geo3dfeature.features.density_2D(radius2D, nb_neighbors)
+```
 
 ### radius
 
@@ -151,11 +166,11 @@ on the model of 3D features: the sum and the ratio of eigenvalues computed over
 
 Given the covariance matrix eigenvalues `lambdas`, computed on 2D data
 projection, one can compute the feature set with:
-```python
-geo3dfeatures.extract.compute_2D_features(lambdas)
-```
 
-It returns a list with both considered features.
+```python
+geo3dfeatures.features.val_sum(lambdas)
+geo3dfeatures.features.eigenvalue_ratio_2D(lambdas)
+```
 
 ### sum of eigenvalues
 
@@ -179,19 +194,17 @@ for instance.
 
 In order to compute this set of features, one has to assign each point to its
 corresponding bin with:
+
 ```python
-geo3dfeatures.features.accumulation_2d_neighborhood(point_cloud, bin_size,
-buf)
+geo3dfeatures.features.accumulation_2d_neighborhood(point_cloud, bin_size, buf)
 ```
 
-where `point_cloud` represents the point 3D coordinates into the point
-cloud, `bin` the bin size (expressed in the same unity than those of the point
-cloud) and `buf` a buffer that helps managing the extrem points in the point
-cloud. Then, one only has to query the resulting `acc_features` dataframe given
-a provided `point` coordinates with:
-```python
-geo3dfeatures.extract.retrieve_accumulation_features(point, acc_features)
-```
+where `point_cloud` represents the point 3D coordinates into the point cloud,
+`bin` the bin size (expressed in the same unity than those of the point cloud)
+and `buf` a buffer that helps managing the extrem points in the point cloud. As
+this method returns a DataFrame with accumulated density, z-range and
+z-standard-deviation associated to each point in the cloud, accessing the
+feature value is straightforward.
 
 ### accumulation density
 

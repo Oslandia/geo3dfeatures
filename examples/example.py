@@ -16,6 +16,9 @@ def _parse_args(args):
                                                   " feature extraction"))
     parser.add_argument('-i', '--input-file', required=True,
                         help="Input 3D point cloud file")
+    parser.add_argument('-c', '--input-columns',
+                        default=["x", "y", "z"], nargs="+",
+                        help="Input point cloud feature names")
     parser.add_argument('-f', '--feature-set', choices=FEATURE_SETS,
                         help="Set of computed features")
     parser.add_argument('-n', '--neighbors',
@@ -41,6 +44,10 @@ def main(argv=sys.argv[1:]):
         data = read_las(str(input_path))
     else:
         raise ValueError("Wrong file extension, please send xyz or las file.")
+
+    if len(opts.input_columns) != data.shape[1]:
+        raise ValueError("The given input columns does not match data shape.")
+
     if opts.sample_points is not None:
         sample_mask = np.random.choice(np.arange(data.shape[0]),
                                        size=opts.sample_points,
@@ -48,11 +55,17 @@ def main(argv=sys.argv[1:]):
         data = data[sample_mask]
 
     if opts.feature_set == "alphabeta":
-        gen = alphabeta_features(data, opts.neighbors, opts.kdtree_leafs)
+        gen = alphabeta_features(
+            data, opts.neighbors, opts.input_columns, opts.kdtree_leafs
+        )
     elif opts.feature_set == "eigenvalues":
-        gen = eigen_features(data, opts.neighbors, opts.kdtree_leafs)
+        gen = eigen_features(
+            data, opts.neighbors, opts.input_columns, opts.kdtree_leafs
+        )
     elif opts.feature_set == "full":
-        gen = all_features(data, opts.neighbors, opts.kdtree_leafs)
+        gen = all_features(
+            data, opts.neighbors, opts.input_columns, opts.kdtree_leafs
+        )
     else:
         raise ValueError("Choose a valid feature set amongst %s", FEATURE_SETS)
 
