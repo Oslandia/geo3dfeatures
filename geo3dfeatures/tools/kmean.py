@@ -40,16 +40,14 @@ def _parse_args(args):
 
 def main(argv=sys.argv[1:]):
     opts = _parse_args(argv)
-    _here = Path(__file__).absolute().parent
-    _datapath = _here / ".." / opts.datapath
     instance = (
         str(opts.sample_points) + "-"
         + str(opts.neighbors) + "-"
         + opts.feature_set
     )
-    filepath = (
-        _datapath / "output" / opts.experiment / "features" /
-        ("features-" + instance + ".csv")
+    filepath = Path(
+        opts.datapath, "output", opts.experiment, "features",
+        "features-" + instance + ".csv"
         )
     data = pd.read_csv(filepath)
 
@@ -83,7 +81,7 @@ def main(argv=sys.argv[1:]):
     result.loc[mask_floor, "b"] = 100
 
     output_path = Path(
-        _datapath, "output", opts.experiment, "clustering",
+        opts.datapath, "output", opts.experiment, "clustering",
     )
     os.makedirs(output_path, exist_ok=True)
     output_file = Path(output_path, "kmeans-" + instance + ".xyz")
