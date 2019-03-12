@@ -11,6 +11,7 @@ import numpy as np
 
 from geo3dfeatures import io
 
+
 def _parse_args(args):
     parser = argparse.ArgumentParser(description=("3D point cloud sampling"))
     parser.add_argument("-d", "--datapath", default="./data",
@@ -40,6 +41,7 @@ def main(argv=sys.argv[1:]):
     output_lasfile.points = input_points[sample_mask]
     input_lasfile.close()
     output_lasfile.close()
+
 
 if __name__ == "__main__":
     main()
