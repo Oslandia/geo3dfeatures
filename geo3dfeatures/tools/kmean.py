@@ -10,7 +10,6 @@ import pandas as pd
 
 from sklearn.cluster import KMeans
 
-from geo3dfeatures.io import xyz as read_xyz
 from geo3dfeatures.features import normalize
 from geo3dfeatures import FEATURE_SETS
 
@@ -86,6 +85,7 @@ def main(argv=sys.argv[1:]):
     os.makedirs(output_path, exist_ok=True)
     output_file = Path(output_path, "kmeans-" + instance + ".xyz")
     result.to_csv(str(output_file), sep=" ", index=False, header=False)
+
 
 if __name__ == '__main__':
     main()

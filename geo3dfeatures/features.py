@@ -24,12 +24,12 @@ import pandas as pd
 def accumulation_2d_neighborhood(
         point_cloud, input_columns, bin_size=0.25, buf=1e-3
 ):
-    """Compute accumulation features as a new way of designing a 2D-neighborhood,
-    following the description of (Weinmann *et al.*, 2015): such features are
-    built by binning the 2D-space, and evaluating the number of points
-    contained, the Z-range and the Z-standard deviation in each bin. The
-    features are then assigned to the points regarding the bin that they belong
-    to.
+    """Compute accumulation features as a new way of designing a
+        2D-neighborhood, following the description of (Weinmann *et al.*,
+        2015): such features are built by binning the 2D-space, and evaluating
+        the number of points contained, the Z-range and the Z-standard
+        deviation in each bin. The features are then assigned to the points
+        regarding the bin that they belong to.
 
     Parameters
     ----------
@@ -41,12 +41,14 @@ def accumulation_2d_neighborhood(
     kdtree_leaf_size : int
         Size of each squared bin edge (in meter)
     buf : float
-        Epsilon quantity used for expanding the largest bins and consider max values
+        Epsilon quantity used for expanding the largest bins and consider max
+    values
 
     Returns
     -------
     pandas.DataFrame
-        Set of features built through binning process, for each point within the cloud
+        Set of features built through binning process, for each point within
+    the cloud
     """
     if len(input_columns) != point_cloud.shape[1]:
         raise ValueError("Column names does not match the point cloud shape.")
@@ -121,15 +123,16 @@ def triangle_variance_space(eigenvalues):
         b = 2 * svalues[0] + 4 * svalues[1] - 2;
 
     See the wikipedia page
-    https://en.wikipedia.org/wiki/Barycentric_coordinate_system#Conversion_between_barycentric_and_Cartesian_coordinates
+    https://en.wikipedia.org/wiki/Barycentric_coordinate_system\
+    #Conversion_between_barycentric_and_Cartesian_coordinates
 
-    If you project the three normalized eigenvalues on a 2D plane, i.e. (λ1, λ2), you
-    get the triangle with these following coordinates:
+    If you project the three normalized eigenvalues on a 2D plane, i.e. (λ1,
+    λ2), you get the triangle with these following coordinates:
 
     (1/3, 1/3), (1/2, 1/2), (1, 0)
 
-    Thus you can build the T matrix and get the barycentric coordinates with the
-    T^{-1}(r - r_3) formula.
+    Thus you can build the T matrix and get the barycentric coordinates with
+    the T^{-1}(r - r_3) formula.
 
     Parameters
     ----------
@@ -216,7 +219,6 @@ def scattering(eigenvalues):
         Scattering
     """
     return eigenvalues[2] / eigenvalues[0]
-
 
 
 def omnivariance(eigenvalues):

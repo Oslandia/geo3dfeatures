@@ -11,6 +11,7 @@ from geo3dfeatures.extract import (
 )
 from geo3dfeatures import FEATURE_SETS
 
+
 def _parse_args(args):
     parser = argparse.ArgumentParser(description=("3D point cloud geometric"
                                                   " feature extraction"))
@@ -87,6 +88,7 @@ def main(argv=sys.argv[1:]):
     output_file = Path(output_path, instance + ".csv")
     print(output_file)
     write_features(output_file, gen)
+
 
 if __name__ == '__main__':
     main()

@@ -52,13 +52,13 @@ def export_timer_to_json(xp_name):
                 "nb_neighbors": nb_neighbors,
                 "feature_set": feature_set,
                 "nb_calls": nb_calls,
-                "total_time": total_time, # the function without sub-calls
+                "total_time": total_time,  # the function without sub-calls
                 "total_time_per_call": total_time/nb_calls,
-                "cum_time": cum_time, # with calls to sub-functions
+                "cum_time": cum_time,  # with calls to sub-functions
                 "cum_time_per_call": cum_time/nb_cum_calls
             }
-        with open(profiling_out_folder / (profiling_file + ".json"), 'w') as fobj:
-            json.dump(stats, fobj)
+        with open(profiling_out_folder / (profiling_file + ".json"), 'w') as f:
+            json.dump(stats, f)
 
 
 def export_timer_to_csv(xp_name):
@@ -108,6 +108,7 @@ def main(argv=sys.argv[1:]):
         export_timer_to_json(opts.experiment)
     else:
         raise ValueError("Wrong file extension. Choose between csv and json")
+
 
 if __name__ == '__main__':
     main()

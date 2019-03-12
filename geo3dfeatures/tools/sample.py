@@ -2,14 +2,11 @@
 """
 
 import argparse
-import os
 from pathlib import Path
 import sys
 
 import laspy
 import numpy as np
-
-from geo3dfeatures import io
 
 
 def _parse_args(args):
