@@ -10,6 +10,7 @@ into 'pstats' module code
 
 """
 
+import argparse
 import json
 from pathlib import Path
 import pstats
@@ -19,9 +20,22 @@ import pandas as pd
 
 PROJECT_NAME = "geo3dfeatures"
 
+
+def _parse_args(args):
+    parser = argparse.ArgumentParser(
+        description=("Time profiling for 3D point cloud feature generation")
+    )
+    parser.add_argument("-F", "--file-format",
+                        choices=["csv", "json"],
+                        help="Timer file format")
+    parser.add_argument("-e", "--experiment",
+                        help="Name of the feature extraction experiment")
+    return parser.parse_args(args)
+
+
 def export_timer_to_json(xp_name):
-    profiling_in_folder = Path("data", "profiling", xp_name, "profiling")
-    profiling_out_folder = Path("data", "profiling", xp_name, "timers")
+    profiling_in_folder = Path("data", "output", xp_name, "profiling")
+    profiling_out_folder = Path("data", "output", xp_name, "timers")
     for profiling_path in profiling_in_folder.iterdir():
         stats = {}
         profiling_file = profiling_path.name
@@ -49,8 +63,8 @@ def export_timer_to_json(xp_name):
 
 def export_timer_to_csv(xp_name):
     full_stats = []
-    profiling_in_folder = Path("data", "profiling", xp_name, "profiling")
-    profiling_out_folder = Path("data", "profiling", xp_name, "timers")
+    profiling_in_folder = Path("data", "output", xp_name, "profiling")
+    profiling_out_folder = Path("data", "output", xp_name, "timers")
     columns = [
         "function", "nb_points", "nb_neighbors", "feature_set",
         "nb_calls", "total_time", "total_time_per_call",
@@ -86,16 +100,14 @@ def export_timer_to_csv(xp_name):
     )
 
 
-def main():
-    file_format = sys.argv[1]
-    xp_name = sys.argv[2]
-    if file_format == "csv":
-        export_timer_to_csv(xp_name)
-    elif file_format == "json":
-        export_timer_to_json(xp_name)
+def main(argv=sys.argv[1:]):
+    opts = _parse_args(argv)
+    if opts.file_format == "csv":
+        export_timer_to_csv(opts.experiment)
+    elif opts.file_format == "json":
+        export_timer_to_json(opts.experiment)
     else:
         raise ValueError("Wrong file extension. Choose between csv and json")
 
 if __name__ == '__main__':
-
     main()
