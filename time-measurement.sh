@@ -31,10 +31,10 @@ do
     do
 	for feature_set in $4 # 'alphabeta eigenvalues full'
 	do
-	    echo "Run geo3dfeatures/tools/example.py with $points points, $neighbors neighbors and the $feature_set feature set..."
+	    echo "Run geo3dfeatures/tools/featurize.py with $points points, $neighbors neighbors and the $feature_set feature set..."
 	    _output_file="data/output/$xp_name/features/features-$points-$neighbors-$feature_set.csv"
 	    _profiling_file="data/output/$xp_name/profiling/profiling-$points-$neighbors-$feature_set"
-	    python -m cProfile -o $_profiling_file geo3dfeatures/tools/example.py -i data/input/scene.xyz --output-file $_output_file -p $points -n $neighbors -t 1000 -f $feature_set -c $5 -e $xp_name
+	    python -m cProfile -o $_profiling_file geo3dfeatures/tools/featurize.py -i data/input/scene.xyz --output-file $_output_file -p $points -n $neighbors -t 1000 -f $feature_set -c $5 -e $xp_name
 	    echo "**********"
 	done
     done
