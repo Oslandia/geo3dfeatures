@@ -26,7 +26,4 @@ requires = ["poetry>=0.12"]
 build-backend = "poetry.masonry.api"
 
 [tool.poetry.scripts]
-sample = "geo3dfeatures.tools.sample:main"
-featurize = "geo3dfeatures.tools.featurize:main"
-profile = "geo3dfeatures.tools.profiling:main"
-cluster = "geo3dfeatures.tools.kmean:main"
+geo3d = "geo3dfeatures.tools.__main__:main"

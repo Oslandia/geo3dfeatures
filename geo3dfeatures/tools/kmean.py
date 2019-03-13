@@ -17,28 +17,7 @@ from geo3dfeatures import FEATURE_SETS
 SEED = 1337
 
 
-def _parse_args(args):
-    parser = argparse.ArgumentParser(description=("3D point cloud geometric"
-                                                  " feature extraction"))
-    parser.add_argument("-d", "--datapath", default="./data",
-                        help="Data folder on the file system")
-    parser.add_argument("-e", "--experiment", required=True,
-                        help="Name of the feature extraction experiment")
-    parser.add_argument('-f', '--feature-set', choices=FEATURE_SETS,
-                        help="Set of computed features")
-    parser.add_argument('-n', '--neighbors',
-                        type=int, default=50,
-                        help="Number of neighbors to consider")
-    parser.add_argument('-p', '--sample-points',
-                        type=int,
-                        help="Number of sample points to evaluate")
-    parser.add_argument("-k", "--nb-clusters", type=int, default=2,
-                        help="Desired amount of clusters")
-    return parser.parse_args(args)
-
-
-def main(argv=sys.argv[1:]):
-    opts = _parse_args(argv)
+def main(opts):
     instance = (
         str(opts.sample_points) + "-"
         + str(opts.neighbors) + "-"
@@ -85,7 +64,3 @@ def main(argv=sys.argv[1:]):
     os.makedirs(output_path, exist_ok=True)
     output_file = Path(output_path, "kmeans-" + instance + ".xyz")
     result.to_csv(str(output_file), sep=" ", index=False, header=False)
-
-
-if __name__ == '__main__':
-    main()

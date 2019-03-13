@@ -33,10 +33,10 @@ $ source venv/bin/activate
 Four commands are currently available:
 
 ```
-poetry run sample -h
-poetry run featurize -h
-poetry run profile -h
-poetry run cluster -h
+geo3d sample -h
+geo3d featurize -h
+geo3d profile -h
+geo3d cluster -h
 ```
 
 ## Sample
@@ -48,7 +48,7 @@ It considers a input file located in a specified data folder, read it, and
 write a lighter dataset that contains the given point quantity:
 
 ```
-poetry run sample -d <datapath> -i <input-file> -p <sample-points>
+geo3d sample -d <datapath> -i <input-file> -p <sample-points>
 ```
 
 ## Featurize
@@ -63,7 +63,7 @@ points and a leaf size. A name may also be provided to the experiment, for a
 sake of clarity.
 
 ```
-poetry run featurize -c <input-columns> -d <datapath> -e <experiment> -i <input-file> -f <feature-set> -n <nb-neighbors> -p <sample-points> -t <kd-tree-leafs>
+geo3d featurize -c <input-columns> -d <datapath> -e <experiment> -i <input-file> -f <feature-set> -n <nb-neighbors> -p <sample-points> -t <kd-tree-leafs>
 ```
 
 ## Profile
@@ -77,7 +77,7 @@ accurate measurements in subfolders), and produces `csv` or `json` output
 files.
 
 ```
-poetry run profile -e <experiment> -F <file-format>
+geo3d profile -e <experiment> -F <file-format>
 ```
 
 ## Cluster
@@ -91,7 +91,7 @@ points. Then, it runs a k-means clustering by considering a given number of
 clusters.
 
 ```
-poetry run cluster -d <datapath> -e <experiment> -f <feature-set> -n <nb-neighbors> -p <sample-points> -k <nb-clusters>
+geo3d cluster -d <datapath> -e <experiment> -f <feature-set> -n <nb-neighbors> -p <sample-points> -k <nb-clusters>
 ```
 
 # Extras

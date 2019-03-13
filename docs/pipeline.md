@@ -11,7 +11,7 @@ literally huge, by containing tens of millions of 3D points. Considering
 subsample of 10k 3D points with the `sample` command, as follows:
 
 ```
-poetry run sample -d data -i geolithe-extract.las -p 10000
+geo3d sample -d data -i geolithe-extract.las -p 10000
 ```
 
 It will generate a new `.las` file with the 10k points, in
@@ -24,7 +24,7 @@ Once we get a reasonable dataset, we can generate the geometric features that
 are associated to the points of the point cloud:
 
 ```
-poetry run featurize -d data -i geolithe-extract-10000.las -e democli -n 50 -f full -t 1000 -c x y z r g b
+geo3d featurize -d data -i geolithe-extract-10000.las -e democli -n 50 -f full -t 1000 -c x y z r g b
 ```
 
 Here we build the point neighborhoods with a kd-tree composed of 1000 points
@@ -60,7 +60,7 @@ contains time measurements.
 In order to exploit these time measurements, the `profile` command converts profiling files into human-readable files. Hence:
 
 ```
-poetry run profile -F csv -e democli
+geo3d profile -F csv -e democli
 ```
 
 reads every single file in `data/output/democli/profiling/` folder, and write `.csv` versions in `data/output/democli/timers/`.
@@ -72,7 +72,7 @@ point of the original point cloud, starting from the features generated through
 the `featurize` command. As an example, one may run:
 
 ```
-poetry run cluster -d data -e democli -p 10000 -n 50 -f full -k 2
+geo3d cluster -d data -e democli -p 10000 -n 50 -f full -k 2
 ```
 
 This command reads the `data/output/democli/features/feature-10000-50-full.csv`
