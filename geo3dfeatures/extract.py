@@ -11,10 +11,7 @@ vol 105, pp 286-304.
 """
 
 
-import math
 from collections import OrderedDict
-
-import numpy as np
 
 from sklearn.decomposition import PCA
 from scipy.spatial import cKDTree as KDTree
@@ -60,9 +57,10 @@ def request_tree(point, nb_neighbors, kd_tree):
     Returns
     -------
     tuple
-        Neighborhood, decomposed as a mean distance between the reference point and
-        its neighbors and an array of neighbor indices within the point cloud. Get
-        `nb_neighborhood + 1` in order to have the reference point and its k neighbors.
+        Neighborhood, decomposed as a mean distance between the reference point
+    and its neighbors and an array of neighbor indices within the point
+    cloud. Get `nb_neighborhood + 1` in order to have the reference point and
+    its k neighbors.
     """
     return kd_tree.query(point, k=nb_neighbors + 1)
 
@@ -85,7 +83,7 @@ def fit_pca(point_cloud):
 
 
 def alphabeta_features(
-        point_cloud, nb_neighbors, 
+        point_cloud, nb_neighbors,
         input_columns=["x", "y", "z"], kdtree_leaf_size=1000
 ):
     """Compute 'alpha' and 'beta' features within 'point_cloud', a set of 3D
@@ -137,7 +135,7 @@ def alphabeta_features(
 
 
 def eigen_features(
-        point_cloud, nb_neighbors, 
+        point_cloud, nb_neighbors,
         input_columns=["x", "y", "z"], kdtree_leaf_size=1000
 ):
     """Compute 'alpha' and 'beta' features within 'point_cloud', a set of 3D

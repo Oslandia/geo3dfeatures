@@ -8,12 +8,13 @@ from pathlib import Path
 
 import numpy as np
 import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
 from sklearn.decomposition import PCA
 
 from geo3dfeatures import features
 
+
 SIZE = 5000
+
 
 def line(size=SIZE):
     """Build x,y,z point clouds as a line for 1D features
@@ -31,11 +32,10 @@ def plane(size=SIZE):
     """Build x,y,z point clouds as a plane for 2D features
     """
     data = np.zeros((size, 3))
-    # data[:, 0] = 20 + 2 * np.random.uniform(size=size) - 1  # x
     data[:, 0] = np.random.uniform(low=20, high=22, size=size)  # x
-    # data[:, 1] = 40 + 2 * np.random.uniform(size=size) - 1  # y
     data[:, 1] = np.random.uniform(low=40, high=42, size=size)  # y
-    data[:, 2] = np.random.normal(loc=5, scale=0.002, size=size)  # z with std close to zero
+    # z with std close to zero
+    data[:, 2] = np.random.normal(loc=5, scale=0.002, size=size)
     return data
 
 
@@ -47,7 +47,11 @@ def sphere(size=SIZE):
     data[:, 0] = np.random.uniform(low=-1, high=1, size=maxsize)  # x
     data[:, 1] = np.random.uniform(low=-1, high=1, size=maxsize)  # y
     data[:, 2] = np.random.uniform(low=-1, high=1, size=maxsize)  # z
-    d = data[:, 0] * data[:, 0] + data[:, 1] * data[:, 1] + data[:, 2] * data[:, 2]
+    d = (
+        data[:, 0] * data[:, 0]
+        + data[:, 1] * data[:, 1]
+        + data[:, 2] * data[:, 2]
+    )
     # keep just point inside the sphere
     return data[d <= 1.0][:size]
 
@@ -65,7 +69,8 @@ def ztube(size=SIZE):
 
 
 def wall(size=SIZE):
-    """High verticality. Plane projection on (x,y) should look like to a straight line.
+    """High verticality. Plane projection on (x,y) should look like to a
+    straight line.
     """
     data = np.zeros((size, 3))
     data[:, 0] = np.random.uniform(low=1, high=2, size=size)
@@ -78,7 +83,8 @@ def roof(size=SIZE):
     """Looks like a roof.
 
     - high elevation
-    - plane projection on (x,y) looks like a plane (even a square since max-min are the same of x and y)
+    - plane projection on (x,y) looks like a plane (even a square since max-min
+    - are the same of x and y)
     """
     data = np.zeros((size, 3))
     data[:size//2, 0] = np.random.uniform(low=10, high=16, size=size // 2)  # x
@@ -136,7 +142,8 @@ def plot_fixture(fixture, size=SIZE):
     by the component explained variance
 
     See:
-    https://jakevdp.github.io/PythonDataScienceHandbook/05.09-principal-component-analysis.html
+    https://jakevdp.github.io/PythonDataScienceHandbook/\
+    05.09-principal-component-analysis.html
 
     Maybe a smarter arrow implementation (does not use sklearn PCA) at:
     https://sebastianraschka.com/Articles/2014_pca_step_by_step.html

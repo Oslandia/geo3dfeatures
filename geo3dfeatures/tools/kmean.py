@@ -10,7 +10,6 @@ import pandas as pd
 
 from sklearn.cluster import KMeans
 
-from geo3dfeatures.io import xyz as read_xyz
 from geo3dfeatures.features import normalize
 from geo3dfeatures import FEATURE_SETS
 
@@ -18,38 +17,15 @@ from geo3dfeatures import FEATURE_SETS
 SEED = 1337
 
 
-def _parse_args(args):
-    parser = argparse.ArgumentParser(description=("3D point cloud geometric"
-                                                  " feature extraction"))
-    parser.add_argument("-d", "--datapath", default="./data",
-                        help="Data folder on the file system")
-    parser.add_argument("-e", "--experiment", required=True,
-                        help="Name of the feature extraction experiment")
-    parser.add_argument('-f', '--feature-set', choices=FEATURE_SETS,
-                        help="Set of computed features")
-    parser.add_argument('-n', '--neighbors',
-                        type=int, default=50,
-                        help="Number of neighbors to consider")
-    parser.add_argument('-p', '--sample-points',
-                        type=int,
-                        help="Number of sample points to evaluate")
-    parser.add_argument("-k", "--nb-clusters", type=int, default=2,
-                        help="Desired amount of clusters")
-    return parser.parse_args(args)
-
-
-def main(argv=sys.argv[1:]):
-    opts = _parse_args(argv)
-    _here = Path(__file__).absolute().parent
-    _datapath = _here / ".." / opts.datapath
+def main(opts):
     instance = (
         str(opts.sample_points) + "-"
         + str(opts.neighbors) + "-"
         + opts.feature_set
     )
-    filepath = (
-        _datapath / "output" / opts.experiment / "features" /
-        ("features-" + instance + ".csv")
+    filepath = Path(
+        opts.datapath, "output", opts.experiment, "features",
+        "features-" + instance + ".csv"
         )
     data = pd.read_csv(filepath)
 
@@ -83,11 +59,8 @@ def main(argv=sys.argv[1:]):
     result.loc[mask_floor, "b"] = 100
 
     output_path = Path(
-        _datapath, "output", opts.experiment, "clustering",
+        opts.datapath, "output", opts.experiment, "clustering",
     )
     os.makedirs(output_path, exist_ok=True)
     output_file = Path(output_path, "kmeans-" + instance + ".xyz")
     result.to_csv(str(output_file), sep=" ", index=False, header=False)
-
-if __name__ == '__main__':
-    main()

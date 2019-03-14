@@ -11,35 +11,8 @@ from geo3dfeatures.extract import (
 )
 from geo3dfeatures import FEATURE_SETS
 
-def _parse_args(args):
-    parser = argparse.ArgumentParser(description=("3D point cloud geometric"
-                                                  " feature extraction"))
-    parser.add_argument('-c', '--input-columns',
-                        default=["x", "y", "z"], nargs="+",
-                        help="Input point cloud feature names")
-    parser.add_argument("-d", "--datapath", default="./data",
-                        help="Data folder on the file system")
-    parser.add_argument("-e", "--experiment",
-                        help="Name of the feature extraction experiment")
-    parser.add_argument("-i", "--input-file",
-                        help="Input point cloud file")
-    parser.add_argument('-f', '--feature-set', choices=FEATURE_SETS,
-                        help="Set of computed features")
-    parser.add_argument('-n', '--neighbors',
-                        type=int, default=50,
-                        help="Number of neighbors to consider")
-    parser.add_argument('-p', '--sample-points',
-                        type=int,
-                        help="Number of sample points to evaluate")
-    parser.add_argument('-t', '--kdtree-leafs',
-                        type=int, default=1000,
-                        help="Number of leafs in KD-tree")
-    return parser.parse_args(args)
 
-
-def main(argv=sys.argv[1:]):
-    opts = _parse_args(argv)
-
+def main(opts):
     input_path = Path(opts.datapath, "input", opts.input_file)
     if input_path.suffix == ".xyz":
         data = read_xyz(str(input_path))
@@ -87,6 +60,3 @@ def main(argv=sys.argv[1:]):
     output_file = Path(output_path, instance + ".csv")
     print(output_file)
     write_features(output_file, gen)
-
-if __name__ == '__main__':
-    main()

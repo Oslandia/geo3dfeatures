@@ -2,29 +2,14 @@
 """
 
 import argparse
-import os
 from pathlib import Path
 import sys
 
 import laspy
 import numpy as np
 
-from geo3dfeatures import io
 
-def _parse_args(args):
-    parser = argparse.ArgumentParser(description=("3D point cloud sampling"))
-    parser.add_argument("-d", "--datapath", default="./data",
-                        help="Data folder on the file system")
-    parser.add_argument("-i", "--input-file",
-                        help="Input point cloud file")
-    parser.add_argument('-p', '--sample-points',
-                        type=int,
-                        help="Number of sample points to evaluate")
-    return parser.parse_args(args)
-
-
-def main(argv=sys.argv[1:]):
-    opts = _parse_args(argv)
+def main(opts):
     input_path = Path(opts.datapath, "input", opts.input_file)
     basename, ext = opts.input_file.split(".")
     output_file = basename + "-" + str(opts.sample_points) + "." + ext
@@ -40,6 +25,3 @@ def main(argv=sys.argv[1:]):
     output_lasfile.points = input_points[sample_mask]
     input_lasfile.close()
     output_lasfile.close()
-
-if __name__ == "__main__":
-    main()
