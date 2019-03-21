@@ -1,84 +1,100 @@
 import pytest
 
 from geo3dfeatures.extract import (
-    alphabeta_features, eigen_features, all_features
+    compute_tree, sequence_light, sequence_full,
+    process_alphabeta, process_eigenvalues, process_full, extract
     )
 
-def test_alphabeta_features(sphere):
-    """Test the alphabeta feature set generation
+
+def test_extract(sphere):
+    """Test the feature set extraction
     """
     with pytest.raises(ValueError):
         input_columns = ["x", "y"]
-        ab_gen = alphabeta_features(
-            sphere, input_columns=input_columns, nb_neighbors=50
+        features = extract(
+            sphere, nb_neighbors=10, input_columns=input_columns,
+            kdtree_leaf_size=1000, feature_set="full", nb_processes=2
         )
-        first_item = next(ab_gen)
     with pytest.raises(ValueError):
         input_columns = ["dummy1", "dummy2", "dummy3"]
-        ab_gen = alphabeta_features(
-            sphere, input_columns=input_columns, nb_neighbors=50
+        features = extract(
+            sphere, nb_neighbors=10, input_columns=input_columns,
+            kdtree_leaf_size=1000, feature_set="full", nb_processes=2
         )
-        first_item = next(ab_gen)
-    input_columns = ["x", "y", "z"]
-    ab_gen = alphabeta_features(
-        sphere, input_columns=input_columns, nb_neighbors=50
+    features = extract(
+        sphere, nb_neighbors=10, input_columns=["x", "y", "z"],
+        kdtree_leaf_size=1000, feature_set="full", nb_processes=2
     )
-    first_item = next(ab_gen)
-    assert len(first_item) == len(input_columns) + 2
-    assert list(first_item.keys()) == input_columns + ["alpha", "beta"]
-    assert len(list(ab_gen)) == sphere.shape[0] - 1
+    assert features.shape[0] == sphere.shape[0]
 
 
-def test_eigen_features(sphere):
-    """Test the eigenvalue feature set generation
+def test_sequence_light(sphere):
+    """Test the sequence building in the case of "alphabeta" and "eigenvalues"
+    feature set
     """
-    with pytest.raises(ValueError):
-        input_columns = ["x", "y"]
-        eigen_gen = eigen_features(
-            sphere, input_columns=input_columns, nb_neighbors=50
-        )
-        first_item = next(eigen_gen)
-    with pytest.raises(ValueError):
-        input_columns = ["dummy1", "dummy2", "dummy3"]
-        eigen_gen = eigen_features(
-            sphere, input_columns=input_columns, nb_neighbors=50
-        )
-        first_item = next(eigen_gen)
+    NB_NEIGHBORS = 10
+    tree = compute_tree(sphere, leaf_size=500)
+    gen = sequence_light(sphere, tree, nb_neighbors=NB_NEIGHBORS)
+    first_item = next(gen)
+    assert len(first_item) == 2
+    assert first_item[0].shape == (NB_NEIGHBORS + 1, 3)
+    assert first_item[1].shape == (NB_NEIGHBORS + 1,)
+    assert len(list(gen)) == sphere.shape[0] - 1
+
+
+def test_sequence_full(sphere):
+    """Test the sequence building in the case of "full" feature set
+    """
+    NB_NEIGHBORS = 10
+    tree = compute_tree(sphere, leaf_size=500)
+    gen = sequence_full(sphere, tree, nb_neighbors=NB_NEIGHBORS)
+    first_item = next(gen)
+    assert len(first_item) == 3
+    assert first_item[0].shape == (NB_NEIGHBORS + 1, 3)
+    assert first_item[1].shape == (NB_NEIGHBORS + 1,)
+    assert first_item[2].shape == (3,)
+    assert len(list(gen)) == sphere.shape[0] - 1
+
+
+def test_process_alphabeta(sphere):
+    """Test the alphabeta feature set processing for the first "sphere" point
+    """
     input_columns = ["x", "y", "z"]
-    eigen_gen = eigen_features(
-        sphere, input_columns=input_columns, nb_neighbors=50
-    )
-    first_item = next(eigen_gen)
-    assert len(first_item) == len(input_columns) + 10
+    additional_features = ["alpha", "beta"]
+    tree = compute_tree(sphere, leaf_size=500)
+    gen = sequence_light(sphere, tree, nb_neighbors=10)
+    features = process_alphabeta(next(gen)[0], input_columns=input_columns)
+    assert len(features) == len(input_columns) + 2
+    assert features["x"] == sphere[0, 0]
+    assert features["y"] == sphere[0, 1]
+    assert features["z"] == sphere[0, 2]
+    assert list(features.keys()) == input_columns + additional_features
+
+
+def test_process_eigenvalues(sphere):
+    """Test the eigenvalues feature set processing for the first "sphere" point
+    """
+    input_columns = ["x", "y", "z"]
     additional_features = [
-        "alpha", "beta", "curvature_change",
-        "linearity", "planarity", "scattering", "omnivariance",
-        "anisotropy", "eigenentropy", "eigenvalue_sum"
+        "alpha", "beta",
+        "curvature_change", "linearity", "planarity",
+        "scattering", "omnivariance", "anisotropy",
+        "eigenentropy", "eigenvalue_sum"
     ]
-    assert list(first_item.keys()) == input_columns + additional_features
-    assert len(list(eigen_gen)) == sphere.shape[0] - 1
+    tree = compute_tree(sphere, leaf_size=500)
+    gen = sequence_light(sphere, tree, nb_neighbors=10)
+    features = process_eigenvalues(next(gen)[0], input_columns=input_columns)
+    assert len(features) == len(input_columns) + 10
+    assert features["x"] == sphere[0, 0]
+    assert features["y"] == sphere[0, 1]
+    assert features["z"] == sphere[0, 2]
+    assert list(features.keys()) == input_columns + additional_features
 
 
-def test_full_features(sphere):
-    """Test the full feature set generation
+def test_process_full(sphere):
+    """Test the full feature set processing for the first "sphere" point
     """
-    with pytest.raises(ValueError):
-        input_columns = ["x", "y"]
-        full_gen = all_features(
-            sphere, input_columns=input_columns, nb_neighbors=50
-        )
-        first_item = next(full_gen)
-    with pytest.raises(ValueError):
-        input_columns = ["dummy1", "dummy2", "dummy3"]
-        full_gen = all_features(
-            sphere, input_columns=input_columns, nb_neighbors=50
-        )
-        first_item = next(full_gen)
     input_columns = ["x", "y", "z"]
-    full_gen = all_features(
-        sphere, input_columns=input_columns, nb_neighbors=50
-    )
-    first_item = next(full_gen)
     additional_features = [
         "alpha", "beta", "radius",
         "z_range", "std_dev", "density", "verticality",
@@ -88,6 +104,14 @@ def test_full_features(sphere):
         "radius_2D", "density_2D", "eigenvalue_sum_2D", "eigenvalue_ratio_2D",
         "bin_density", "bin_z_range", "bin_z_std"
     ]
-    assert len(first_item) == len(input_columns) + 22
-    assert list(first_item.keys()) == input_columns + additional_features
-    assert len(list(full_gen)) == sphere.shape[0] - 1
+    tree = compute_tree(sphere, leaf_size=500)
+    gen = sequence_full(sphere, tree, nb_neighbors=10)
+    item = next(gen)
+    features = process_full(
+        item[0], item[1], item[2], input_columns=input_columns
+    )
+    assert len(features) == len(input_columns) + 22
+    assert features["x"] == sphere[0, 0]
+    assert features["y"] == sphere[0, 1]
+    assert features["z"] == sphere[0, 2]
+    assert list(features.keys()) == input_columns + additional_features
