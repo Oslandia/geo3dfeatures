@@ -5,10 +5,12 @@ from pathlib import Path
 
 import numpy as np
 
-from geo3dfeatures.io import xyz as read_xyz, las as read_las, write_features
-from geo3dfeatures.extract import (
-    alphabeta_features, eigen_features, all_features
-)
+from geo3dfeatures.io import (
+    xyz as read_xyz,
+    las as read_las,
+    ply as read_ply,
+    )
+from geo3dfeatures.extract import extract
 from geo3dfeatures import FEATURE_SETS
 
 
@@ -18,6 +20,8 @@ def main(opts):
         data = read_xyz(str(input_path))
     elif input_path.suffix == ".las":
         data = read_las(str(input_path))
+    elif input_path.suffix == ".ply":
+        data = read_ply(str(input_path))
     else:
         raise ValueError("Wrong file extension, please send xyz or las file.")
 
@@ -30,20 +34,10 @@ def main(opts):
                                        replace=False)
         data = data[sample_mask]
 
-    if opts.feature_set == "alphabeta":
-        gen = alphabeta_features(
-            data, opts.neighbors, opts.input_columns, opts.kdtree_leafs
-        )
-    elif opts.feature_set == "eigenvalues":
-        gen = eigen_features(
-            data, opts.neighbors, opts.input_columns, opts.kdtree_leafs
-        )
-    elif opts.feature_set == "full":
-        gen = all_features(
-            data, opts.neighbors, opts.input_columns, opts.kdtree_leafs
-        )
-    else:
-        raise ValueError("Choose a valid feature set amongst %s", FEATURE_SETS)
+    features = extract(
+        data, opts.neighbors, opts.input_columns,
+        opts.kdtree_leafs, opts.feature_set, opts.nb_process
+    )
 
     experiment = (
         opts.experiment
@@ -51,12 +45,10 @@ def main(opts):
         else opts.input_file.split(".")[0]
         )
     instance = (
-        "features-" + str(len(data)) + "-"
-        + str(opts.neighbors) + "-" + str(opts.feature_set)
+        "features-" + str(len(data)) + "-" + str(opts.neighbors) + "-"
+        + str(opts.feature_set) + "-" + str(opts.nb_process)
         )
-    print(instance)
     output_path = Path(opts.datapath, "output", experiment, "features")
     os.makedirs(output_path, exist_ok=True)
     output_file = Path(output_path, instance + ".csv")
-    print(output_file)
-    write_features(output_file, gen)
+    features.to_csv(output_file, index=False)
