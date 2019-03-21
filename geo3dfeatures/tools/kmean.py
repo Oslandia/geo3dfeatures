@@ -6,8 +6,9 @@ import os
 from pathlib import Path
 import sys
 
+import numpy as np
 import pandas as pd
-
+import seaborn as sns
 from sklearn.cluster import KMeans
 
 from geo3dfeatures.features import normalize
@@ -15,7 +16,8 @@ from geo3dfeatures import FEATURE_SETS
 
 
 SEED = 1337
-
+MAX_COLOR = 10
+PALETTE = sns.color_palette("colorblind", MAX_COLOR) # deep, muted, dark, ...
 
 def main(opts):
     instance = (
@@ -50,17 +52,16 @@ def main(opts):
     model = KMeans(opts.nb_clusters, random_state=SEED)
     model.fit(data)
 
-    result["r"] = 20
-    result["g"] = 200
-    result["b"] = 20
-    mask_floor = model.labels_ == 1
-    result.loc[mask_floor, "r"] = 100
-    result.loc[mask_floor, "g"] = 100
-    result.loc[mask_floor, "b"] = 100
+    colors = np.array([PALETTE[l] for l in model.labels_]) * 255
+    colors = pd.DataFrame(colors, columns=["r", "g", "b"], dtype=int)
+    result = result.join(colors)
 
     output_path = Path(
         opts.datapath, "output", opts.experiment, "clustering",
     )
     os.makedirs(output_path, exist_ok=True)
-    output_file = Path(output_path, "kmeans-" + instance + ".xyz")
+    output_file = Path(
+        output_path,
+        "kmeans-" + instance + "-" + str(opts.nb_clusters) + ".xyz"
+    )
     result.to_csv(str(output_file), sep=" ", index=False, header=False)
