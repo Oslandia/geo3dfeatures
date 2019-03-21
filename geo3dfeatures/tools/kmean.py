@@ -33,19 +33,19 @@ def main(opts):
 
     color_columns = ["r", "g", "b"]
     for c in color_columns:
-        assert c in data.columns
-        data[c] /= 255
+        if c in data.columns:
+            data[c] /= 255
 
     column_to_normalize = [
         "density", "density_2D", "bin_density",
         "eigenvalue_sum", "eigenvalue_sum_2D", "eigenentropy"
     ]
     for c in column_to_normalize:
-        assert c in data.columns
-        data[c] = normalize(data[c])
+        if c in data.columns:
+            data[c] = normalize(data[c])
 
-    assert "bin_z_range" in data.columns
-    data["bin_z_range"].fillna(0, inplace=True)
+    if "bin_z_range" in data.columns:
+        data["bin_z_range"].fillna(0, inplace=True)
 
     result = data[["x", "y", "z"]].copy()
     data.drop(["x", "y", "z"], axis=1, inplace=True)
