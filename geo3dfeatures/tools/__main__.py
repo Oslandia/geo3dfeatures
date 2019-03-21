@@ -60,9 +60,6 @@ def featurize_parser(subparser, reference_func):
     parser.add_argument('-t', '--kdtree-leafs',
                         type=int, default=1000,
                         help="Number of leafs in KD-tree")
-    parser.add_argument("-m", "--nb-process",
-                        type=int, default=1,
-                        help="")
     parser.set_defaults(func=reference_func)
 
 
@@ -130,6 +127,9 @@ def add_instance_args(parser, featurized=True):
     parser.add_argument('-f', '--feature-set',
                         choices=FEATURE_SETS, default="full",
                         help="Set of computed features")
+    parser.add_argument("-m", "--nb-process",
+                        type=int, default=1,
+                        help="")
     parser.add_argument('-n', '--neighbors',
                         type=int, default=50, required=featurized,
                         help="Number of neighbors to consider")
