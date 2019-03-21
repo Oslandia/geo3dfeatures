@@ -22,7 +22,7 @@ import pandas as pd
 
 
 def accumulation_2d_neighborhood(
-        point_cloud, input_columns, bin_size=0.25, buf=1e-3
+        point_cloud, input_columns, bin_size=1, buf=1e-3
 ):
     """Compute accumulation features as a new way of designing a
         2D-neighborhood, following the description of (Weinmann *et al.*,
