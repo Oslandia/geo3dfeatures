@@ -127,6 +127,9 @@ def add_instance_args(parser, featurized=True):
     parser.add_argument('-f', '--feature-set',
                         choices=FEATURE_SETS, default="full",
                         help="Set of computed features")
+    parser.add_argument("-m", "--nb-process",
+                        type=int, default=1,
+                        help="")
     parser.add_argument('-n', '--neighbors',
                         type=int, default=50, required=featurized,
                         help="Number of neighbors to consider")

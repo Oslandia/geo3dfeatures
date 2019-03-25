@@ -21,7 +21,7 @@ def main(opts):
     instance = (
         str(opts.sample_points) + "-"
         + str(opts.neighbors) + "-"
-        + opts.feature_set
+        + opts.feature_set + "-" + str(opts.nb_process)
     )
     filepath = Path(
         opts.datapath, "output", opts.experiment, "features",
