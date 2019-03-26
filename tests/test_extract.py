@@ -1,3 +1,4 @@
+import numpy as np
 import pytest
 
 from geo3dfeatures.extract import (
@@ -26,6 +27,21 @@ def test_extract(sphere):
         kdtree_leaf_size=1000, feature_set="full", nb_processes=2
     )
     assert features.shape[0] == sphere.shape[0]
+
+
+def test_extract_extra_features(sphere):
+    """Test the feature set extraction when there is more than only "x", "y"
+    and "z" features in the input data
+    """
+    colors = np.random.randint(0, 255, sphere.shape)
+    data = np.concatenate((sphere, colors), axis=1)
+    features = extract(
+        data, nb_neighbors=10, input_columns=["x", "y", "z", "r", "g", "b"],
+        kdtree_leaf_size=100, feature_set="alphabeta", nb_processes=2
+    )
+    nb_extra_features = 2
+    nb_output_features = sphere.shape[1] + colors.shape[1] + nb_extra_features
+    assert features.shape[1] == nb_output_features
 
 
 def test_sequence_light(sphere):
