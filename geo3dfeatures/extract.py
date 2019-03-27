@@ -104,7 +104,7 @@ def process_alphabeta(neighbors, input_columns):
     ------
     list, OrderedDict generator (features for each point)
     """
-    pca = fit_pca(neighbors)  # PCA on the x,y,z coords
+    pca = fit_pca(neighbors[:, :3])  # PCA on the x,y,z coords
     eigenvalues_3D = pca.singular_values_ ** 2
     norm_eigenvalues_3D = normalize(eigenvalues_3D)
     alpha, beta = triangle_variance_space(norm_eigenvalues_3D)
@@ -144,7 +144,7 @@ def process_eigenvalues(neighbors, input_columns):
     ------
     list, OrderedDict generator (features for each point)
     """
-    pca = fit_pca(neighbors)  # PCA on the x,y,z coords
+    pca = fit_pca(neighbors[:, :3])  # PCA on the x,y,z coords
     eigenvalues_3D = pca.singular_values_ ** 2
     norm_eigenvalues_3D = normalize(eigenvalues_3D)
     alpha, beta = triangle_variance_space(norm_eigenvalues_3D)
@@ -190,7 +190,7 @@ def process_full(neighbors, distance, z_acc, input_columns):
     list, OrderedDict generator (features for each point)
 
     """
-    pca = fit_pca(neighbors)  # PCA on the x,y,z coords
+    pca = fit_pca(neighbors[:, :3])  # PCA on the x,y,z coords
     eigenvalues_3D = pca.singular_values_ ** 2
     norm_eigenvalues_3D = normalize(eigenvalues_3D)
     alpha, beta = triangle_variance_space(norm_eigenvalues_3D)
@@ -253,7 +253,7 @@ def sequence_light(point_cloud, tree, nb_neighbors):
     """
     for point in point_cloud:
         distance, neighbor_idx = request_tree(point[:3], nb_neighbors, tree)
-        yield point_cloud[neighbor_idx, :3], distance
+        yield point_cloud[neighbor_idx], distance
 
 
 def sequence_full(
@@ -287,7 +287,7 @@ def sequence_full(
     acc_features = accumulation_2d_neighborhood(point_cloud, input_columns)
     for point in acc_features.values:
         distance, neighbor_idx = request_tree(point[:3], nb_neighbors, tree)
-        yield point_cloud[neighbor_idx, :3], distance, point[3:]
+        yield point_cloud[neighbor_idx], distance, point[3:]
 
 
 def extract(
