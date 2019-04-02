@@ -293,8 +293,8 @@ def sequence_full(
 
 # XXX devrait pas utiliser de liste comme valeur par défaut dans une fonction
 def extract(
-        point_cloud, nb_neighbors, input_columns=["x", "y", "z"],
-        kdtree_leaf_size=1000, feature_set="full", nb_processes=2
+        point_cloud, tree, nb_neighbors, input_columns=["x", "y", "z"],
+        feature_set="full", nb_processes=2
 ):
     """Extract geometric features from a 3D point cloud
 
@@ -302,12 +302,14 @@ def extract(
     ----------
     point_cloud : numpy.array
         3D point cloud
-    tree : scipy.spatial.ckdtree.CKDTree
-        Point cloud kd-tree for computing nearest neighborhoods
     nb_neighbors : int
         Number of neighbors in each point neighborhood
     input_columns : list
         Input data column names, reused for output dataframe
+    tree : scipy.spatial.ckdtree.CKDTree
+        Point cloud kd-tree for computing nearest neighborhoods
+    nb_processes : int
+        Number of parallel cores
     Returns
     -------
     pandas.DataFrame
@@ -317,7 +319,6 @@ def extract(
     if input_columns[:3] != ["x", "y", "z"]:
         raise ValueError("'input_columns' must begin with 'x', 'y', 'z'.")
     start = timer()
-    tree = compute_tree(point_cloud[:, :3], leaf_size=kdtree_leaf_size)
     if feature_set == "full":
         gen = sequence_full(point_cloud, tree, nb_neighbors, input_columns)
     else:

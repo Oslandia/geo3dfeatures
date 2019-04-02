@@ -1,4 +1,5 @@
-import os
+import sys
+import pickle
 from pathlib import Path
 
 import numpy as np
@@ -31,9 +32,16 @@ def main(opts):
                                        replace=False)
         data = data[sample_mask]
 
+    if not opts.tree_file:
+        print("Please index your point cloud with the 'index' command then use --tree-file.")
+        sys.exit(0)
+
+    with open(opts.tree_file, 'rb') as fobj:
+        print("load kd-tree from file")
+        tree = pickle.load(fobj)
+
     features = extract(
-        data, opts.neighbors, opts.input_columns,
-        opts.kdtree_leafs, opts.feature_set, opts.nb_process
+        data, tree, opts.neighbors, opts.input_columns, opts.feature_set, opts.nb_process
     )
 
     experiment = (
@@ -46,6 +54,6 @@ def main(opts):
         + str(opts.feature_set) + "-" + str(opts.nb_process)
         )
     output_path = Path(opts.datapath, "output", experiment, "features")
-    os.makedirs(output_path, exist_ok=True)
+    output_path.mkdir(parents=True, exist_ok=True)
     output_file = Path(output_path, instance + ".csv")
     features.to_csv(output_file, index=False)

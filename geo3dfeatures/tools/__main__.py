@@ -9,8 +9,11 @@ Available choices::
 
 import argparse
 
-from geo3dfeatures.tools import sample, featurize, profiling, kmean
 from geo3dfeatures import FEATURE_SETS
+from geo3dfeatures.tools import sample, featurize, profiling, kmean, index
+
+# default value for kd-tree
+KD_TREE_LEAF_SIZE = 500
 
 
 def sample_parser(subparser, reference_func):
@@ -56,8 +59,9 @@ def featurize_parser(subparser, reference_func):
     parser.add_argument("-i", "--input-file",
                         required=True,
                         help="Input point cloud file")
+    parser.add_argument("--tree-file", required=True, help="kd-tree serialized file")
     parser.add_argument('-t', '--kdtree-leafs',
-                        type=int, default=1000,
+                        type=int, default=KD_TREE_LEAF_SIZE,
                         help="Number of leafs in KD-tree")
     parser.set_defaults(func=reference_func)
 
@@ -109,6 +113,28 @@ def kmean_parser(subparser, reference_func):
     parser.set_defaults(func=reference_func)
 
 
+def index_parser(subparser, reference_func):
+    """Index a point cloud scene.
+
+    Parameters
+    ----------
+    subparser : argparser.parser.SubParsersAction
+    reference_func : function
+    """
+    parser = subparser.add_parser(
+        "index",
+        help="Index a point cloud file and serialize it"
+    )
+    parser.add_argument("-i", "--input-file",
+                        required=True,
+                        help="Input point cloud file")
+    parser.add_argument('-t', '--kdtree-leafs',
+                        type=int, default=KD_TREE_LEAF_SIZE,
+                        help="Number of leafs in KD-tree")
+    add_instance_args(parser, False)
+    parser.set_defaults(func=reference_func)
+
+
 def add_instance_args(parser, featurized=True):
     """Add a bunch of command arguments that permits to identify the instance
     of interest
@@ -116,7 +142,9 @@ def add_instance_args(parser, featurized=True):
     Parameters
     ----------
     parser : argparse.ArgumentParser
-    featurized : bool XXX add a description
+    featurized : bool
+        True if the function is called by the featurization program, hence some
+        arguments are required; false otherwise
     """
     parser.add_argument("-d", "--datapath",
                         default="./data",
@@ -148,6 +176,7 @@ def main():
     )
     sub_parsers = parser.add_subparsers(dest="command")
     sample_parser(sub_parsers, reference_func=sample.main)
+    index_parser(sub_parsers, reference_func=index.main)
     featurize_parser(sub_parsers, reference_func=featurize.main)
     profiling_parser(sub_parsers, reference_func=profiling.main)
     kmean_parser(sub_parsers, reference_func=kmean.main)
