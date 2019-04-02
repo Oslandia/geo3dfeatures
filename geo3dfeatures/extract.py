@@ -326,19 +326,19 @@ def extract(
     with Pool(processes=nb_processes) as pool:
         if feature_set == "full":
             result = pool.starmap(
-                process_full, [(g[0], g[1], g[2], input_columns) for g in gen]
+                process_full, ((g[0], g[1], g[2], input_columns) for g in gen)
             )
         elif feature_set == "eigenvalues":
             result = pool.starmap(
-                process_eigenvalues, [(g[0], input_columns) for g in gen]
+                process_eigenvalues, ((g[0], input_columns) for g in gen)
             )
         elif feature_set == "alphabeta":
             result = pool.starmap(
-                process_alphabeta, [(g[0], input_columns) for g in gen]
+                process_alphabeta, ((g[0], input_columns) for g in gen)
             )
         else:
             raise ValueError(
-                "Unknown feature set, choose amongst %s", FEATURE_SETS
+                "Unknown feature set, choose amongst {}".format(FEATURE_SETS)
             )
     stop = timer()
     print("Time spent: {}sec".format(stop - start))
