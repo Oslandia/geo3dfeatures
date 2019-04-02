@@ -1,9 +1,9 @@
 [tool.poetry]
 name = "geo3dfeatures"
-version = "0.1.0"
+version = "0.2.0"
 description = "Extract geometry features from 3D point clouds"
 license = "MIT"
-authors = ["Damien Garaud <damien.garaud@oslandia.com>"]
+authors = ["Damien Garaud <damien.garaud@oslandia.com>", "Raphaël Delhome <raphael.delhome@oslandia.com>"]
 
 [tool.poetry.dependencies]
 python = "^3.7"
