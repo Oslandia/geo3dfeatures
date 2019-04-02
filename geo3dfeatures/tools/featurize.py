@@ -1,6 +1,4 @@
 import os
-import sys
-import argparse
 from pathlib import Path
 
 import numpy as np
@@ -11,7 +9,6 @@ from geo3dfeatures.io import (
     ply as read_ply,
     )
 from geo3dfeatures.extract import extract
-from geo3dfeatures import FEATURE_SETS
 
 
 def main(opts):

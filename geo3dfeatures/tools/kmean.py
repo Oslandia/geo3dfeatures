@@ -12,12 +12,12 @@ import seaborn as sns
 from sklearn.cluster import KMeans
 
 from geo3dfeatures.features import normalize
-from geo3dfeatures import FEATURE_SETS
 
 
 SEED = 1337
 MAX_COLOR = 10
-PALETTE = sns.color_palette("colorblind", MAX_COLOR) # deep, muted, dark, ...
+PALETTE = sns.color_palette("colorblind", MAX_COLOR)  # deep, muted, dark, ...
+
 
 def main(opts):
     instance = (

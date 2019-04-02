@@ -18,6 +18,7 @@ import pandas as pd
 from sklearn.decomposition import PCA
 from scipy.spatial import cKDTree as KDTree
 
+from geo3dfeatures import FEATURE_SETS
 from geo3dfeatures.features import (
     accumulation_2d_neighborhood,
     triangle_variance_space,
@@ -253,7 +254,7 @@ def sequence_light(point_cloud, tree, nb_neighbors):
     """
     for point in point_cloud:
         distance, neighbor_idx = request_tree(point[:3], nb_neighbors, tree)
-        yield point_cloud[neighbor_idx], distance
+        yield point_cloud[neighbor_idx], distance  # XXX la distance est-elle utilisée?
 
 
 def sequence_full(
@@ -290,6 +291,7 @@ def sequence_full(
         yield point_cloud[neighbor_idx], distance, point[3:]
 
 
+# XXX devrait pas utiliser de liste comme valeur par défaut dans une fonction
 def extract(
         point_cloud, nb_neighbors, input_columns=["x", "y", "z"],
         kdtree_leaf_size=1000, feature_set="full", nb_processes=2

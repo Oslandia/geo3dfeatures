@@ -1,14 +1,13 @@
-"""Deeposlandia central command-line interface
+"""CLI for Geo3Dfeatures
 
 Available choices::
-    - deepo datagen [args]
-    - deepo train [args]
-    - deepo infer [args]
-    - deepo postprocess [args]
+    - geo3d sample [args]
+    - geo3d featurize [args]
+    - geo3d profiling [args]
+    - geo3d kmean [args]
 """
 
 import argparse
-import os
 
 from geo3dfeatures.tools import sample, featurize, profiling, kmean
 from geo3dfeatures import FEATURE_SETS
@@ -117,6 +116,7 @@ def add_instance_args(parser, featurized=True):
     Parameters
     ----------
     parser : argparse.ArgumentParser
+    featurized : bool XXX add a description
     """
     parser.add_argument("-d", "--datapath",
                         default="./data",
