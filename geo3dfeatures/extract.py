@@ -29,6 +29,8 @@ from geo3dfeatures.features import (
     radius_2D, radius_3D, density_2D, density_3D
 )
 
+CHUNKSIZE = 20_000
+
 
 class AlphaBetaFeatures(NamedTuple):
     """Alpha & Beta features (barycentric coordinates from PCA eigenvalues)
@@ -338,7 +340,7 @@ def sequence_full(
         yield point_cloud[neighbor_idx], distance, point[3:]
 
 
-def _dump_results_by_chunk(iterable, csvpath, chunksize=10000):
+def _dump_results_by_chunk(iterable, csvpath, chunksize=CHUNKSIZE):
     """Write result in a CSV file by chunk.
     """
     def chunkgenerator(iterable):
@@ -400,11 +402,11 @@ def extract(
         gen = sequence_light(point_cloud, tree, nb_neighbors)
     with Pool(processes=nb_processes) as pool:
         if feature_set == "full":
-            result_it = pool.imap_unordered(_wrap_process, gen)
+            result_it = pool.imap_unordered(_wrap_process, gen, chunksize=CHUNKSIZE)
         elif feature_set == "eigenvalues":
-            result_it = pool.imap_unordered(process_eigenvalues, gen)
+            result_it = pool.imap_unordered(process_eigenvalues, gen, chunksize=CHUNKSIZE)
         elif feature_set == "alphabeta":
-            result_it = pool.imap_unordered(process_alphabeta, gen)
+            result_it = pool.imap_unordered(process_alphabeta, gen, chunksize=CHUNKSIZE)
         else:
             raise ValueError(
                 "Unknown feature set, choose amongst {}".format(FEATURE_SETS)
