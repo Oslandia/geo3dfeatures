@@ -31,6 +31,34 @@ from geo3dfeatures.features import (
 )
 
 
+class AlphaBetaFeatures(NamedTuple):
+    """Alpha & Beta features (barycentric coordinates from PCA eigenvalues)
+    """
+    x: float
+    y: float
+    z: float
+    alpha: float
+    beta: float
+
+
+class EigenvaluesFeatures(NamedTuple):
+    """List of features (eigenvalues)
+    """
+    x: float
+    y: float
+    z: float
+    alpha: float
+    beta: float
+    curvature_change: float
+    linearity: float
+    planarity: float
+    scattering: float
+    omnivariance: float
+    anisotropy: float
+    eigenentropy: float
+    eigenvalue_sum: float
+
+
 class Features(NamedTuple):
     """List of features
     """
@@ -116,7 +144,7 @@ def fit_pca(point_cloud):
     return PCA().fit(point_cloud)
 
 
-def process_alphabeta(neighbors, input_columns):
+def process_alphabeta(neighbors):
     """Compute 'alpha' and 'beta' features for a single point, according to
     Brodu et al (2012)
 
@@ -131,6 +159,7 @@ def process_alphabeta(neighbors, input_columns):
     input_columns : list
         List of input column names, that must begin "x", "y" and "z" columns
     at least; its length must correspond to "point_cloud" number of columns
+    XXX fix it
 
     Returns
     ------
@@ -140,20 +169,13 @@ def process_alphabeta(neighbors, input_columns):
     eigenvalues_3D = pca.singular_values_ ** 2
     norm_eigenvalues_3D = normalize(eigenvalues_3D)
     alpha, beta = triangle_variance_space(norm_eigenvalues_3D)
-    return OrderedDict(
-        [
-            (name, data)
-                for name, data in zip(input_columns, neighbors[0])
-        ]
-        +
-        [
-            ("alpha", alpha),
-            ("beta", beta),
-        ]
-    )
+    x, y, z = neighbors[0]
+    return AlphaBetaFeatures(x, y, z,
+                             alpha,
+                             beta)
 
 
-def process_eigenvalues(neighbors, input_columns):
+def process_eigenvalues(neighbors):
     """Compute 'alpha' and 'beta' features for a single point, according to
     Brodu et al (2012), as well as neighborhood attributes based on eigenvalues
     (see Weinmann et al, 2015, for details about such metrics)
@@ -169,39 +191,33 @@ def process_eigenvalues(neighbors, input_columns):
         Coordinates of all points within the point neighborhood; must be a
     2D-shaped array with `point_cloud.shape[1] == 3`
     input_columns : list
-        List of input column names, that must begin "x", "y" and "z" columns
-    at least; its length must correspond to "point_cloud" number of columns
+        List of input column names, that must begin "x", "y" and "z" columns at
+        least; its length must correspond to "point_cloud" number of columns XXX fix it
 
     Returns
     ------
     list, OrderedDict generator (features for each point)
+
     """
     pca = fit_pca(neighbors[:, :3])  # PCA on the x,y,z coords
     eigenvalues_3D = pca.singular_values_ ** 2
     norm_eigenvalues_3D = normalize(eigenvalues_3D)
     alpha, beta = triangle_variance_space(norm_eigenvalues_3D)
-    return OrderedDict(
-        [
-            (name, data)
-                for name, data in zip(input_columns, neighbors[0])
-        ]
-        +
-        [
-            ("alpha", alpha),
-            ("beta", beta),
-            ("curvature_change", curvature_change(norm_eigenvalues_3D)),
-            ("linearity", linearity(norm_eigenvalues_3D)),
-            ("planarity", planarity(norm_eigenvalues_3D)),
-            ("scattering", scattering(norm_eigenvalues_3D)),
-            ("omnivariance", omnivariance(norm_eigenvalues_3D)),
-            ("anisotropy", anisotropy(norm_eigenvalues_3D)),
-            ("eigenentropy", eigenentropy(norm_eigenvalues_3D)),
-            ("eigenvalue_sum", val_sum(eigenvalues_3D)),
-        ]
-    )
+    x, y, z = neighbors[0]
+    return EigenvaluesFeatures(x, y, z,
+                               alpha,
+                               beta,
+                               curvature_change(norm_eigenvalues_3D),
+                               linearity(norm_eigenvalues_3D),
+                               planarity(norm_eigenvalues_3D),
+                               scattering(norm_eigenvalues_3D),
+                               omnivariance(norm_eigenvalues_3D),
+                               anisotropy(norm_eigenvalues_3D),
+                               eigenentropy(norm_eigenvalues_3D),
+                               val_sum(eigenvalues_3D))  # eigenvalue sum
 
 
-def process_full(neighbors, distance, z_acc, input_columns):
+def process_full(neighbors, distance, z_acc):
     """Build the full feature set for a single point
 
     Parameters
@@ -214,8 +230,9 @@ def process_full(neighbors, distance, z_acc, input_columns):
     z_acc : numpy.array
         Accumulation features associated to the point
     input_columns : list
-        List of input column names, that must begin "x", "y" and "z" columns
-    at least; its length must correspond to "point_cloud" number of columns
+        List of input column names, that must begin "x", "y" and "z" columns at
+        least; its length must correspond to "point_cloud" number of
+        columns. Temporary unavailable XXX fix it
 
     Returns
     ------
@@ -285,7 +302,7 @@ def sequence_light(point_cloud, tree, nb_neighbors):
     """
     for point in point_cloud:
         distance, neighbor_idx = request_tree(point[:3], nb_neighbors, tree)
-        yield point_cloud[neighbor_idx], distance  # XXX la distance est-elle utilisée?
+        yield point_cloud[neighbor_idx]
 
 
 def sequence_full(
@@ -386,18 +403,13 @@ def extract(
         if feature_set == "full":
             result_it = pool.imap_unordered(_wrap_process, gen)
         elif feature_set == "eigenvalues":
-            result = pool.starmap(
-                process_eigenvalues, ((g[0], input_columns) for g in gen)
-            )
+            result_it = pool.imap_unordered(process_eigenvalues, gen)
         elif feature_set == "alphabeta":
-            result = pool.starmap(
-                process_alphabeta, ((g[0], input_columns) for g in gen)
-            )
+            result_it = pool.imap_unordered(process_alphabeta, gen)
         else:
             raise ValueError(
                 "Unknown feature set, choose amongst {}".format(FEATURE_SETS)
             )
         _dump_results_by_chunk(result_it, csvpath, chunksize=20000)
     stop = timer()
-    print("Time spent: {}sec".format(stop - start))
-    return pd.DataFrame(result)
+    print("Time spent: {:.2f}s".format(stop - start))
