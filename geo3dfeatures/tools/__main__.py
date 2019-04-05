@@ -156,7 +156,7 @@ def add_instance_args(parser, featurized=True):
                         choices=FEATURE_SETS, default="full",
                         help="Set of computed features")
     parser.add_argument("-m", "--nb-process",
-                        type=int, default=1,
+                        type=int, default=2,
                         help="")
     parser.add_argument('-n', '--neighbors',
                         type=int, default=50, required=featurized,
