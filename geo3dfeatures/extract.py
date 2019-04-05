@@ -11,7 +11,6 @@ vol 105, pp 286-304.
 """
 
 from csv import DictWriter
-from collections import OrderedDict
 from multiprocessing import Pool
 from timeit import default_timer as timer
 from typing import NamedTuple
