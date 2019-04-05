@@ -53,6 +53,7 @@ def main(opts):
     output_path.mkdir(parents=True, exist_ok=True)
     output_file = Path(output_path, instance + ".csv")
 
+    # XXX fix the number of arbitrary columns
     extract(
-        data, tree, opts.neighbors, output_file, opts.feature_set, opts.nb_process)
+        data[:, :3], tree, opts.neighbors, output_file, opts.feature_set, opts.nb_process)
     print("Results in {}".format(output_file))

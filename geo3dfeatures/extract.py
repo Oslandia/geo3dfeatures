@@ -347,7 +347,7 @@ def _dump_results_by_chunk(iterable, csvpath, chunksize=CHUNKSIZE):
         group = []
         for num, row in enumerate(iterable):
             group.append(row)
-            if num+1 % chunksize == 0:
+            if (num+1) % chunksize == 0:
                 yield group
                 group = []
         yield group
@@ -360,8 +360,11 @@ def _dump_results_by_chunk(iterable, csvpath, chunksize=CHUNKSIZE):
         # write the first line
         writer.writerow(first._asdict())
         # write results by chunk
+        num_processed_points = chunksize
         for chunk in chunkgenerator(iterable):
+            print("processed points: {}".format(num_processed_points))
             writer.writerows([x._asdict() for x in chunk])
+            num_processed_points += chunksize
 
 
 # XXX devrait pas utiliser de liste comme valeur par défaut dans une fonction
@@ -395,6 +398,7 @@ def extract(
     #     raise ValueError("'input_columns' must begin with 'x', 'y', 'z'.")
     if point_cloud.shape[1] != 3:
         raise ValueError("point_cloud parameter should have 3 columns")
+    print("computation begins")
     start = timer()
     if feature_set == "full":
         gen = sequence_full(point_cloud, tree, nb_neighbors)
@@ -411,6 +415,7 @@ def extract(
             raise ValueError(
                 "Unknown feature set, choose amongst {}".format(FEATURE_SETS)
             )
+        print("total points: {}".format(point_cloud.shape[0]))
         _dump_results_by_chunk(result_it, csvpath, chunksize=20000)
     stop = timer()
     print("Time spent: {:.2f}s".format(stop - start))
