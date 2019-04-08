@@ -34,6 +34,7 @@ Four commands are currently available:
 
 ```
 geo3d sample -h
+geo3d index -h
 geo3d featurize -h
 geo3d profile -h
 geo3d cluster -h
@@ -49,6 +50,18 @@ write a lighter dataset that contains the given point quantity:
 
 ```
 geo3d sample -d <datapath> -i <input-file> -p <sample-points>
+```
+
+## Index
+
+This program aims at computing a kd-tree on a given-as-argument point cloud, in
+order to pre-compute local neighborhoods. This information will be useful for
+the next step, *i.e.* featurization.
+
+The `index` program can be used as follows:
+
+```
+geo3d index -d <datapath> -i <input-file> -e <experiment> -t <tree-leaf-size>
 ```
 
 ## Featurize

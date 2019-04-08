@@ -32,19 +32,28 @@ def main(opts):
                                        replace=False)
         data = data[sample_mask]
 
-    if not opts.tree_file:
-        print("Please index your point cloud with the 'index' command then use --tree-file.")
-        sys.exit(0)
-
-    with open(opts.tree_file, 'rb') as fobj:
-        print("load kd-tree from file")
-        tree = pickle.load(fobj)
-
     experiment = (
         opts.experiment
         if opts.experiment is not None
         else opts.input_file.split(".")[0]
         )
+    tree_file = opts.tree_file
+    if not tree_file:
+        tree_file = Path(
+            opts.datapath, "output", experiment,
+            "kd-tree-leaf-" + str(opts.kdtree_leafs) + ".pkl"
+        )
+        if not tree_file.exists():
+            print("No serialized kd-tree with",
+                  f"leaf size = {opts.kdtree_leafs}.",
+                  "Please index your point cloud with the 'index' command,",
+                  "then use the --tree-file or the -t/--kdtree-leafs option.")
+            sys.exit(0)
+
+    with open(tree_file, 'rb') as fobj:
+        print("load kd-tree from file")
+        tree = pickle.load(fobj)
+
     instance = (
         "features-" + str(len(data)) + "-" + str(opts.neighbors) + "-"
         + str(opts.feature_set) + "-" + str(opts.nb_process)
