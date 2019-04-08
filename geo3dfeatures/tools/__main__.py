@@ -53,17 +53,13 @@ def featurize_parser(subparser, reference_func):
         help="Extract the geometric feature associated to 3D points"
     )
     add_instance_args(parser, featurized=False)
+    add_kdtree_args(parser)
     parser.add_argument('-c', '--input-columns',
                         default=["x", "y", "z"], nargs="+",
                         help="Input point cloud feature names")
     parser.add_argument("-i", "--input-file",
                         required=True,
                         help="Input point cloud file")
-    parser.add_argument("--tree-file",
-                        help="kd-tree serialized file")
-    parser.add_argument('-t', '--kdtree-leafs',
-                        type=int, default=KD_TREE_LEAF_SIZE,
-                        help="Number of leafs in KD-tree")
     parser.set_defaults(func=reference_func)
 
 
@@ -126,6 +122,7 @@ def index_parser(subparser, reference_func):
         "index",
         help="Index a point cloud file and serialize it"
     )
+    add_kdtree_args(parser)
     parser.add_argument("-d", "--datapath",
                         default="./data",
                         help="Data folder on the file system")
@@ -134,10 +131,21 @@ def index_parser(subparser, reference_func):
     parser.add_argument("-i", "--input-file",
                         required=True,
                         help="Input point cloud file")
+    parser.set_defaults(func=reference_func)
+
+
+def add_kdtree_args(parser):
+    """Add arguments related to kd-tree serialization
+
+    Parameters
+    ----------
+    parser : argparse.ArgumentParser
+    """
+    parser.add_argument("--tree-file",
+                        help="kd-tree serialized file")
     parser.add_argument('-t', '--kdtree-leafs',
                         type=int, default=KD_TREE_LEAF_SIZE,
                         help="Number of leafs in KD-tree")
-    parser.set_defaults(func=reference_func)
 
 
 def add_instance_args(parser, featurized=True):

@@ -29,17 +29,20 @@ def main(opts):
     else:
         raise ValueError("Wrong file extension, please send xyz or las file.")
 
+    tree_file = opts.tree_file
     leaf_size = opts.kdtree_leafs
-    experiment = (
-        opts.experiment
-        if opts.experiment is not None
-        else opts.input_file.split(".")[0]
-        )
-    fname = "kd-tree-leaf-{}.pkl".format(leaf_size)
-    output_path = Path(opts.datapath, "output", experiment)
-    os.makedirs(output_path, exist_ok=True)
+    if not tree_file:
+        experiment = (
+            opts.experiment
+            if opts.experiment is not None
+            else opts.input_file.split(".")[0]
+            )
+        fname = "kd-tree-leaf-{}.pkl".format(leaf_size)
+        output_path = Path(opts.datapath, "output", experiment)
+        os.makedirs(output_path, exist_ok=True)
+        tree_file = output_path / fname
     print("compute tree")
     tree = compute_tree(data[:, :3], leaf_size)
-    print("dump tree into {}".format(output_path))
-    with open(output_path / fname, 'wb') as fobj:
+    print("dump tree into {}".format(tree_file))
+    with open(tree_file, 'wb') as fobj:
         pickle.dump(tree, fobj)
