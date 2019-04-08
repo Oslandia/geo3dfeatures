@@ -18,9 +18,27 @@ It will generate a new `.las` file with the 10k points, in
 `./data/input/geolithe-extract-10000.las`. This tinier dataset will be far more
 practical for testing purpose...
 
+## Index
+
+Once we get a working dataset, we can compute its kd-tree structure, in order
+to evaluate distances between points and consequently pre-compute local
+neighborhoods. The kd-tree is computed and serialized on the file system with the following command:
+
+```
+geo3d index -d data -i geocliff-100000.las -e democli -t 1000
+```
+
+In such a case, we compute a kd-tree on a sampled file located as
+`./data/input/geocliff-100000.las`. We required a kd-tree computing with
+1000-leafed branches. The experiment name (`-e democli`) is optional: it is
+used for saving the kd-tree in the file system, knowing that we use the input
+file name if no experiment name is provided. Here it will be serialized at
+`data/output/democli/kd-tree-leaf-1000.pkl`. The output file may also be saved
+at a path specified by the user, for a more free use (option `--tree-file`).
+
 ## Featurize
 
-Once we get a reasonable dataset, we can generate the geometric features that
+Once we get the kd-tree structure, we can generate the geometric features that
 are associated to the points of the point cloud:
 
 ```
@@ -28,9 +46,11 @@ geo3d featurize -d data -i geolithe-extract-10000.las -e democli -n 50 -f full -
 ```
 
 Here we build the point neighborhoods with a kd-tree composed of 1000 points
-per leaf (`-t 1000`), each point having 50 neighbors (`-n 50`). We decide to
-consider all the geometric features (`-f full`). We do not specify any point
-quantity (`-p <nb-points>`), hence all the 10k points are considered.
+per leaf (`-t 1000`), each point having 50 neighbors (`-n 50`). The kd-tree
+file is recovered thanks to this leaf argument, however we can also specify the
+tree file directly (option `--tree-file`). We decide to consider all the
+geometric features (`-f full`). We do not specify any point quantity (`-p
+<nb-points>`), hence all the 10k points are considered.
 
 As a required parameters, we must provide the input dataset column names; here
 we get the (x, y, z) coordinates and the raw RGB-color (`-c x y z r g b`). We
