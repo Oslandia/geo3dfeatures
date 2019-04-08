@@ -367,7 +367,6 @@ def _dump_results_by_chunk(iterable, csvpath, chunksize=CHUNKSIZE):
             num_processed_points += chunksize
 
 
-# XXX devrait pas utiliser de liste comme valeur par défaut dans une fonction
 def extract(
         point_cloud, tree, nb_neighbors, csvpath,
         feature_set="full", nb_processes=2
