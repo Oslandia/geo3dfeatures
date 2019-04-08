@@ -37,7 +37,8 @@ def main(opts):
         if opts.experiment is not None
         else opts.input_file.split(".")[0]
         )
-    if not opts.tree_file:
+    tree_file = opts.tree_file
+    if not tree_file:
         tree_file = Path(
             opts.datapath, "output", experiment,
             "kd-tree-leaf-" + str(opts.kdtree_leafs) + ".pkl"
@@ -49,7 +50,7 @@ def main(opts):
                   "then use the --tree-file or the -t/--kdtree-leafs option.")
             sys.exit(0)
 
-    with open(str(tree_file), 'rb') as fobj:
+    with open(tree_file, 'rb') as fobj:
         print("load kd-tree from file")
         tree = pickle.load(fobj)
 
