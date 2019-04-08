@@ -40,10 +40,6 @@ def main(opts):
         print("load kd-tree from file")
         tree = pickle.load(fobj)
 
-    features = extract(
-        data, tree, opts.neighbors, opts.input_columns, opts.feature_set, opts.nb_process
-    )
-
     experiment = (
         opts.experiment
         if opts.experiment is not None
@@ -56,4 +52,8 @@ def main(opts):
     output_path = Path(opts.datapath, "output", experiment, "features")
     output_path.mkdir(parents=True, exist_ok=True)
     output_file = Path(output_path, instance + ".csv")
-    features.to_csv(output_file, index=False)
+
+    # XXX fix the number of arbitrary columns
+    extract(
+        data[:, :3], tree, opts.neighbors, output_file, opts.feature_set, opts.nb_process)
+    print("Results in {}".format(output_file))
