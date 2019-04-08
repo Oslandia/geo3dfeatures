@@ -18,6 +18,7 @@ import pandas as pd
 from sklearn.decomposition import PCA
 from scipy.spatial import cKDTree as KDTree
 
+from geo3dfeatures import FEATURE_SETS
 from geo3dfeatures.features import (
     accumulation_2d_neighborhood,
     triangle_variance_space,
@@ -253,7 +254,7 @@ def sequence_light(point_cloud, tree, nb_neighbors):
     """
     for point in point_cloud:
         distance, neighbor_idx = request_tree(point[:3], nb_neighbors, tree)
-        yield point_cloud[neighbor_idx], distance
+        yield point_cloud[neighbor_idx], distance  # XXX la distance est-elle utilisée?
 
 
 def sequence_full(
@@ -290,9 +291,10 @@ def sequence_full(
         yield point_cloud[neighbor_idx], distance, point[3:]
 
 
+# XXX devrait pas utiliser de liste comme valeur par défaut dans une fonction
 def extract(
-        point_cloud, nb_neighbors, input_columns=["x", "y", "z"],
-        kdtree_leaf_size=1000, feature_set="full", nb_processes=2
+        point_cloud, tree, nb_neighbors, input_columns=["x", "y", "z"],
+        feature_set="full", nb_processes=2
 ):
     """Extract geometric features from a 3D point cloud
 
@@ -300,12 +302,14 @@ def extract(
     ----------
     point_cloud : numpy.array
         3D point cloud
-    tree : scipy.spatial.ckdtree.CKDTree
-        Point cloud kd-tree for computing nearest neighborhoods
     nb_neighbors : int
         Number of neighbors in each point neighborhood
     input_columns : list
         Input data column names, reused for output dataframe
+    tree : scipy.spatial.ckdtree.CKDTree
+        Point cloud kd-tree for computing nearest neighborhoods
+    nb_processes : int
+        Number of parallel cores
     Returns
     -------
     pandas.DataFrame
@@ -315,7 +319,6 @@ def extract(
     if input_columns[:3] != ["x", "y", "z"]:
         raise ValueError("'input_columns' must begin with 'x', 'y', 'z'.")
     start = timer()
-    tree = compute_tree(point_cloud[:, :3], leaf_size=kdtree_leaf_size)
     if feature_set == "full":
         gen = sequence_full(point_cloud, tree, nb_neighbors, input_columns)
     else:
@@ -323,19 +326,19 @@ def extract(
     with Pool(processes=nb_processes) as pool:
         if feature_set == "full":
             result = pool.starmap(
-                process_full, [(g[0], g[1], g[2], input_columns) for g in gen]
+                process_full, ((g[0], g[1], g[2], input_columns) for g in gen)
             )
         elif feature_set == "eigenvalues":
             result = pool.starmap(
-                process_eigenvalues, [(g[0], input_columns) for g in gen]
+                process_eigenvalues, ((g[0], input_columns) for g in gen)
             )
         elif feature_set == "alphabeta":
             result = pool.starmap(
-                process_alphabeta, [(g[0], input_columns) for g in gen]
+                process_alphabeta, ((g[0], input_columns) for g in gen)
             )
         else:
             raise ValueError(
-                "Unknown feature set, choose amongst %s", FEATURE_SETS
+                "Unknown feature set, choose amongst {}".format(FEATURE_SETS)
             )
     stop = timer()
     print("Time spent: {}sec".format(stop - start))
