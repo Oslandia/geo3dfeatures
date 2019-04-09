@@ -329,17 +329,15 @@ def sequence_light(point_cloud, tree, nb_neighbors, extra_columns):
 
 
 def sequence_full(
-        point_cloud, tree, nb_neighbors, extra_columns
+        acc_features, tree, nb_neighbors, extra_columns
 ):
     """Build a data generator for getting neighborhoods, distances and
         accumulation features for each point
 
-    This function includes the accumulation feature computation.
-
     Parameters
     ----------
-    point_cloud : numpy.array
-        3D point cloud
+    acc_features : pd.DataFrame
+        point cloud + extra columns + z-accumulation features
     tree : scipy.spatial.ckdtree.CKDTree
         Point cloud kd-tree for computing nearest neighborhoods
     nb_neighbors : int
@@ -356,7 +354,6 @@ def sequence_full(
     numpy.array
         Reference point accumulation features
     """
-    acc_features = accumulation_2d_neighborhood(point_cloud, extra_columns)
     for point in acc_features.values:
         distance, neighbor_idx = request_tree(point[:3], nb_neighbors, tree)
         z_acc = point[-3:]
@@ -392,7 +389,7 @@ def _dump_results_by_chunk(iterable, csvpath, chunksize=CHUNKSIZE):
 
 
 def extract(
-        point_cloud, tree, nb_neighbors, csvpath,
+        point_cloud, tree, nb_neighbors, csvpath, sample_points=None,
         feature_set="full", nb_processes=2, extra_columns=None
 ):
     """Extract geometric features from a 3D point cloud.
@@ -409,17 +406,22 @@ def extract(
         Number of neighbors in each point neighborhood
     csvpath : Path
         CSV output path (extracted features)
+    sample_points : int
+        Sampling size (if None, this is the full point cloud which is taking into account)
     nb_processes : int
         Number of parallel cores
     extra_columns : list
         Extra input data column names, reused for output (None by default)
     """
     print("computation begins")
+    acc_features = accumulation_2d_neighborhood(point_cloud, extra_columns)
+    if sample_points is not None:
+        acc_features = acc_features.sample(sample_points)
     start = timer()
     if feature_set == "full":
-        gen = sequence_full(point_cloud, tree, nb_neighbors, extra_columns)
+        gen = sequence_full(acc_features, tree, nb_neighbors, extra_columns)
     else:
-        gen = sequence_light(point_cloud, tree, nb_neighbors, extra_columns)
+        gen = sequence_light(acc_features.values[:, :-3], tree, nb_neighbors, extra_columns)
     with Pool(processes=nb_processes) as pool:
         if feature_set == "full":
             result_it = pool.imap_unordered(_wrap_full_process, gen, chunksize=CHUNKSIZE)

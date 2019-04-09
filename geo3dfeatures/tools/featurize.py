@@ -2,8 +2,6 @@ import sys
 import pickle
 from pathlib import Path
 
-import numpy as np
-
 from geo3dfeatures.io import (
     xyz as read_xyz,
     las as read_las,
@@ -53,14 +51,9 @@ def main(opts):
         print("Input data and data stored in the kd-tree do not have the same length")
         sys.exit(0)
 
-    if opts.sample_points is not None:
-        sample_mask = np.random.choice(np.arange(data.shape[0]),
-                                       size=opts.sample_points,
-                                       replace=False)
-        data = data[sample_mask]
-
+    data_size = len(data) if not opts.sample_points else opts.sample_points
     instance = (
-        "features-" + str(len(data)) + "-" + str(opts.neighbors) + "-"
+        "features-" + str(data_size) + "-" + str(opts.neighbors) + "-"
         + str(opts.feature_set) + "-" + str(opts.nb_process)
         )
     output_path = Path(opts.datapath, "output", experiment, "features")
@@ -69,5 +62,5 @@ def main(opts):
 
     extra_columns = tuple(opts.extra_columns) if opts.extra_columns is not None else tuple()
     extract(
-        data, tree, opts.neighbors, output_file, opts.feature_set, opts.nb_process, extra_columns)
+        data, tree, opts.neighbors, output_file, opts.sample_points, opts.feature_set, opts.nb_process, extra_columns)
     print("Results in {}".format(output_file))
