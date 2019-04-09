@@ -361,7 +361,7 @@ def sequence_full(
         distance, neighbor_idx = request_tree(point[:3], nb_neighbors, tree)
         z_acc = point[-3:]
         extra_features = ExtraFeatures(extra_columns, tuple(point[3:-3])) if extra_columns else ExtraFeatures(tuple(), tuple())
-        yield point_cloud[neighbor_idx, :3], distance, z_acc, extra_features
+        yield tree.data[neighbor_idx], distance, z_acc, extra_features
 
 
 def _dump_results_by_chunk(iterable, csvpath, chunksize=CHUNKSIZE):
