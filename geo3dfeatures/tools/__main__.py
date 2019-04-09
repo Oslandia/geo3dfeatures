@@ -54,9 +54,8 @@ def featurize_parser(subparser, reference_func):
     )
     add_instance_args(parser, featurized=False)
     add_kdtree_args(parser)
-    parser.add_argument('-c', '--input-columns',
-                        default=["x", "y", "z"], nargs="+",
-                        help="Input point cloud feature names")
+    parser.add_argument('-c', '--extra-columns', nargs="+",
+                        help="Extra point cloud feature names (other than x,y,z)")
     parser.add_argument("-i", "--input-file",
                         required=True,
                         help="Input point cloud file")

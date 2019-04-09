@@ -23,8 +23,9 @@ def main(opts):
     else:
         raise ValueError("Wrong file extension, please send xyz or las file.")
 
-    if len(opts.input_columns) != data.shape[1]:
-        raise ValueError("The given input columns does not match data shape.")
+    if opts.extra_columns is not None:
+        if len(opts.extra_columns) + 3 != data.shape[1]:
+            raise ValueError("The given input columns does not match data shape, i.e. x,y,z plus extra columns.")
 
     if opts.sample_points is not None:
         sample_mask = np.random.choice(np.arange(data.shape[0]),
@@ -62,7 +63,7 @@ def main(opts):
     output_path.mkdir(parents=True, exist_ok=True)
     output_file = Path(output_path, instance + ".csv")
 
-    # XXX fix the number of arbitrary columns
+    extra_columns = tuple(opts.extra_columns) if opts.extra_columns is not None else tuple()
     extract(
-        data[:, :3], tree, opts.neighbors, output_file, opts.feature_set, opts.nb_process)
+        data, tree, opts.neighbors, output_file, opts.feature_set, opts.nb_process, extra_columns)
     print("Results in {}".format(output_file))

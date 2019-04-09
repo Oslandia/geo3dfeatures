@@ -22,7 +22,7 @@ import pandas as pd
 
 
 def accumulation_2d_neighborhood(
-        point_cloud, input_columns, bin_size=1, buf=1e-3
+        point_cloud, extra_columns=None, bin_size=1, buf=1e-3
 ):
     """Compute accumulation features as a new way of designing a
         2D-neighborhood, following the description of (Weinmann *et al.*,
@@ -35,25 +35,31 @@ def accumulation_2d_neighborhood(
     ----------
     point_cloud : numpy.array
         Coordinates of all points within the point cloud
-    input_columns : list
-        List of input column names, that must begin "x", "y" and "z" columns
-    at least; its length must correspond to "point_cloud" number of columns
-    kdtree_leaf_size : int
+    extra_columns : tuple
+        List of extra input column names; its length must correspond to "point_cloud"
+        number of columns minus 3 (x, y, z are supposed to be the first three
+        columns)
+    bin_size : int
         Size of each squared bin edge (in meter)
     buf : float
         Epsilon quantity used for expanding the largest bins and consider max
-    values
+        values
 
     Returns
     -------
     pandas.DataFrame
         Set of features built through binning process, for each point within
     the cloud
+
     """
+    input_columns = ("x", "y", "z")
+    if extra_columns is not None:
+        input_columns += extra_columns
+    else:
+        # you only take into account the x, y, z coordinates from the point cloud data
+        point_cloud = point_cloud[:, :3]
     if len(input_columns) != point_cloud.shape[1]:
         raise ValueError("Column names does not match the point cloud shape.")
-    if input_columns[:3] != ["x", "y", "z"]:
-        raise ValueError("'input_columns' must begin with 'x', 'y', 'z'.")
     df = pd.DataFrame(point_cloud, columns=input_columns)
     xmin, xmax = np.min(point_cloud[:, 0]), np.max(point_cloud[:, 0])
     ymin, ymax = np.min(point_cloud[:, 1]), np.max(point_cloud[:, 1])
