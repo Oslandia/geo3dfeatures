@@ -27,12 +27,6 @@ def main(opts):
         if len(opts.extra_columns) + 3 != data.shape[1]:
             raise ValueError("The given input columns does not match data shape, i.e. x,y,z plus extra columns.")
 
-    if opts.sample_points is not None:
-        sample_mask = np.random.choice(np.arange(data.shape[0]),
-                                       size=opts.sample_points,
-                                       replace=False)
-        data = data[sample_mask]
-
     experiment = (
         opts.experiment
         if opts.experiment is not None
@@ -54,6 +48,16 @@ def main(opts):
     with open(tree_file, 'rb') as fobj:
         print("load kd-tree from file")
         tree = pickle.load(fobj)
+
+    if tree.data.shape[0] != data.shape[0]:
+        print("Input data and data stored in the kd-tree do not have the same length")
+        sys.exit(0)
+
+    if opts.sample_points is not None:
+        sample_mask = np.random.choice(np.arange(data.shape[0]),
+                                       size=opts.sample_points,
+                                       replace=False)
+        data = data[sample_mask]
 
     instance = (
         "features-" + str(len(data)) + "-" + str(opts.neighbors) + "-"
