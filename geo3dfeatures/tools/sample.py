@@ -5,11 +5,18 @@ import argparse
 from pathlib import Path
 import sys
 
+import daiquiri
 import laspy
 import numpy as np
 
 
+logger = daiquiri.getLogger(__name__)
+
+
 def main(opts):
+    logger.info(
+        "Sample %s points from file %s...", opts.sample_points, opts.input_file
+    )
     input_path = Path(opts.datapath, "input", opts.input_file)
     basename, ext = opts.input_file.split(".")
     output_file = basename + "-" + str(opts.sample_points) + "." + ext

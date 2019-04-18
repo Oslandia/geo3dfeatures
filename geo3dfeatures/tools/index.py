@@ -6,6 +6,8 @@ For now, just compute a KDTree for x,y,z coordinates of a point cloud scene and 
 import pickle
 from pathlib import Path
 
+import daiquiri
+
 from geo3dfeatures.io import (
     xyz as read_xyz,
     las as read_las,
@@ -14,11 +16,14 @@ from geo3dfeatures.io import (
 from geo3dfeatures.extract import compute_tree
 
 
+logger = daiquiri.getLogger(__name__)
+
+
 def main(opts):
     """Load a point cloud file and compute a kd-tree
     """
     input_path = Path(opts.datapath, "input", opts.input_file)
-    print("load data")
+    logger.info("Load data...")
     if input_path.suffix == ".xyz":
         data = read_xyz(str(input_path))
     elif input_path.suffix == ".las":
@@ -40,8 +45,8 @@ def main(opts):
         output_path = Path(opts.datapath, "output", experiment)
         output_path.mkdir(parents=True, exist_ok=True)
         tree_file = output_path / fname
-    print("compute tree")
+    logger.info("Compute tree...")
     tree = compute_tree(data[:, :3], leaf_size)
-    print("dump tree into {}".format(tree_file))
+    logger.info("Dump tree into %s...", tree_file)
     with open(tree_file, 'wb') as fobj:
         pickle.dump(tree, fobj)

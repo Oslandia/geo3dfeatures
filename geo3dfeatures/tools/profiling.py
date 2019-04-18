@@ -16,7 +16,11 @@ from pathlib import Path
 import pstats
 import sys
 
+import daiquiri
 import pandas as pd
+
+logger = daiquiri.getLogger(__name__)
+
 
 PROJECT_NAME = "geo3dfeatures"
 
@@ -27,7 +31,7 @@ def export_timer_to_json(xp_name):
     for profiling_path in profiling_in_folder.iterdir():
         stats = {}
         profiling_file = profiling_path.name
-        print(profiling_file)
+        logger.info(profiling_file)
         _, nb_points, nb_neighbors, feature_set = profiling_file.split('-')
         p = pstats.Stats(str(profiling_path))
         _, function_list = p.get_print_list([PROJECT_NAME])
@@ -61,7 +65,7 @@ def export_timer_to_csv(xp_name):
     for profiling_path in profiling_in_folder.iterdir():
         stats = []
         profiling_file = profiling_path.name
-        print(profiling_file)
+        logger.info(profiling_file)
         _, nb_points, nb_neighbors, feature_set = profiling_file.split('-')
         p = pstats.Stats(str(profiling_path))
         _, function_list = p.get_print_list([PROJECT_NAME])

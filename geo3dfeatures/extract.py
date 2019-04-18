@@ -16,6 +16,7 @@ from multiprocessing import Pool
 from timeit import default_timer as timer
 from typing import NamedTuple, Tuple
 
+import daiquiri
 from sklearn.decomposition import PCA
 from scipy.spatial import cKDTree as KDTree
 from tqdm import tqdm
@@ -30,6 +31,9 @@ from geo3dfeatures.features import (
     eigenvalue_ratio_2D,
     radius_2D, radius_3D, density_2D, density_3D
 )
+
+
+logger = daiquiri.getLogger(__name__)
 
 
 class AlphaBetaFeatures(NamedTuple):
@@ -413,7 +417,7 @@ def extract(
     extra_columns : list
         Extra input data column names, reused for output (None by default)
     """
-    print("computation begins")
+    logger.info("Computation begins!")
     acc_features = accumulation_2d_neighborhood(point_cloud, extra_columns)
     if sample_points is not None:
         acc_features = acc_features.sample(sample_points)
@@ -423,7 +427,7 @@ def extract(
     else:
         gen = sequence_light(acc_features.values[:, :-3], tree, nb_neighbors, extra_columns)
     with Pool(processes=nb_processes) as pool:
-        print("total points: {}".format(point_cloud.shape[0]))
+        logger.info("Total number of points: %s", point_cloud.shape[0])
         steps = math.ceil(point_cloud.shape[0] / chunksize)
         with tqdm(total=steps) as pbar:
             if feature_set == "full":
@@ -447,4 +451,4 @@ def extract(
                 result_it, csvpath, chunksize, progress_bar=pbar
             )
     stop = timer()
-    print("Time spent: {:.2f}s".format(stop - start))
+    logger.info("Time spent: %s", stop - start)

@@ -2,12 +2,17 @@ import sys
 import pickle
 from pathlib import Path
 
+import daiquiri
+
 from geo3dfeatures.io import (
     xyz as read_xyz,
     las as read_las,
     ply as read_ply,
     )
 from geo3dfeatures.extract import extract
+
+
+logger = daiquiri.getLogger(__name__)
 
 
 def main(opts):
@@ -37,18 +42,23 @@ def main(opts):
             "kd-tree-leaf-" + str(opts.kdtree_leafs) + ".pkl"
         )
         if not tree_file.exists():
-            print("No serialized kd-tree with",
-                  f"leaf size = {opts.kdtree_leafs}.",
-                  "Please index your point cloud with the 'index' command,",
-                  "then use the --tree-file or the -t/--kdtree-leafs option.")
+            logger.info(
+                "No serialized kd-tree with leaf size = %s. Please index your "
+                "point cloud with the 'index' command, then use the "
+                "--tree-file or the -t/--kdtree-leafs option.",
+                opts.kdtree_leafs
+            )
             sys.exit(0)
 
     with open(tree_file, 'rb') as fobj:
-        print("load kd-tree from file")
+        logger.info("Load kd-tree from file...")
         tree = pickle.load(fobj)
 
     if tree.data.shape[0] != data.shape[0]:
-        print("Input data and data stored in the kd-tree do not have the same length")
+        logger.info(
+            "Input data and data stored in the kd-tree "
+            "do not have the same length"
+        )
         sys.exit(0)
 
     data_size = len(data) if not opts.sample_points else opts.sample_points
@@ -65,4 +75,4 @@ def main(opts):
         data, tree, opts.neighbors, output_file, opts.sample_points,
         opts.feature_set, opts.nb_process, extra_columns, opts.chunksize
     )
-    print("Results in {}".format(output_file))
+    logger.info("Results in %s", output_file)
