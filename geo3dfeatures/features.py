@@ -22,7 +22,7 @@ import pandas as pd
 
 
 def accumulation_2d_neighborhood(
-        point_cloud, extra_columns=None, bin_size=1, buf=1e-3
+        point_cloud, extra_columns=None, bin_size=1
 ):
     """Compute accumulation features as a new way of designing a
         2D-neighborhood, following the description of (Weinmann *et al.*,
@@ -41,9 +41,6 @@ def accumulation_2d_neighborhood(
         columns)
     bin_size : int
         Size of each squared bin edge (in meter)
-    buf : float
-        Epsilon quantity used for expanding the largest bins and consider max
-        values
 
     Returns
     -------
@@ -63,9 +60,9 @@ def accumulation_2d_neighborhood(
     df = pd.DataFrame(point_cloud, columns=input_columns)
     xmin, xmax = np.min(point_cloud[:, 0]), np.max(point_cloud[:, 0])
     ymin, ymax = np.min(point_cloud[:, 1]), np.max(point_cloud[:, 1])
-    xbins = np.arange(xmin, xmax + bin_size + buf, bin_size)
+    xbins = np.arange(xmin, xmax + bin_size + 1e-3, bin_size)
     df["xbin"] = pd.cut(df.x, xbins, right=False)
-    ybins = np.arange(ymin, ymax + bin_size + buf, bin_size)
+    ybins = np.arange(ymin, ymax + bin_size + 1e-3, bin_size)
     df["ybin"] = pd.cut(df.y, ybins, right=False)
     aggdf = (
         df.groupby(["xbin", "ybin"])["z"]
