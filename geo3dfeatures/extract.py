@@ -451,4 +451,4 @@ def extract(
                 result_it, csvpath, chunksize, progress_bar=pbar
             )
     stop = timer()
-    logger.info("Time spent: %s", stop - start)
+    logger.info("Time spent: %.2fs", stop - start)
