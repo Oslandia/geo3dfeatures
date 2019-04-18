@@ -59,6 +59,9 @@ def featurize_parser(subparser, reference_func):
     parser.add_argument("-i", "--input-file",
                         required=True,
                         help="Input point cloud file")
+    parser.add_argument("--chunksize",
+                        default=20_000, type=int,
+                        help="Number of points in each writing chunk")
     parser.set_defaults(func=reference_func)
 
 

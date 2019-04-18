@@ -62,5 +62,7 @@ def main(opts):
 
     extra_columns = tuple(opts.extra_columns) if opts.extra_columns is not None else tuple()
     extract(
-        data, tree, opts.neighbors, output_file, opts.sample_points, opts.feature_set, opts.nb_process, extra_columns)
+        data, tree, opts.neighbors, output_file, opts.sample_points,
+        opts.feature_set, opts.nb_process, extra_columns, opts.chunksize
+    )
     print("Results in {}".format(output_file))
