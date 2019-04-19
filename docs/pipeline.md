@@ -42,7 +42,7 @@ Once we get the kd-tree structure, we can generate the geometric features that
 are associated to the points of the point cloud:
 
 ```
-geo3d featurize -d data -i geolithe-extract-10000.las -e democli -n 50 -f full -t 1000 -c r g b --chunksize 10000
+geo3d featurize -d data -i geolithe-extract-10000.las -e democli -n 50 -f full -t 1000 -c r g b -b 1 --chunksize 10000
 ```
 
 Here we build the point neighborhoods with a kd-tree composed of 1000 points
@@ -50,7 +50,9 @@ per leaf (`-t 1000`), each point having 50 neighbors (`-n 50`). The kd-tree
 file is recovered thanks to this leaf argument, however we can also specify the
 tree file directly (option `--tree-file`). We decide to consider all the
 geometric features (`-f full`). We do not specify any point quantity (`-p
-<nb-points>`), hence all the 10k points are considered.
+<nb-points>`), hence all the 10k points are considered. As another argument, we
+may specify the accumulation feature bin size (`b`), expressed in the same unit
+than the point cloud.
 
 By default the first three fields of the input data are x, y, z coordinates. As
 optional parameters, we can provide some extra fields from the input dataset such as

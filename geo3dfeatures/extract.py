@@ -394,7 +394,8 @@ def _dump_results_by_chunk(iterable, csvpath, chunksize, progress_bar):
 
 def extract(
         point_cloud, tree, nb_neighbors, csvpath, sample_points=None,
-        feature_set="full", nb_processes=2, extra_columns=None, chunksize=20000
+        feature_set="full", nb_processes=2, extra_columns=None,
+        bin_size=1, chunksize=20000
 ):
     """Extract geometric features from a 3D point cloud.
 
@@ -416,9 +417,13 @@ def extract(
         Number of parallel cores
     extra_columns : list
         Extra input data column names, reused for output (None by default)
+    bin_size: int
+        Size of square accumulation bins (the unit is those of the dataset)
     """
     logger.info("Computation begins!")
-    acc_features = accumulation_2d_neighborhood(point_cloud, extra_columns)
+    acc_features = accumulation_2d_neighborhood(
+        point_cloud, extra_columns, bin_size
+    )
     if sample_points is not None:
         acc_features = acc_features.sample(sample_points)
     start = timer()
