@@ -11,12 +11,15 @@ vol 105, pp 286-304.
 """
 
 from csv import writer as CSVWriter
+import math
 from multiprocessing import Pool
 from timeit import default_timer as timer
 from typing import NamedTuple, Tuple
 
+import daiquiri
 from sklearn.decomposition import PCA
 from scipy.spatial import cKDTree as KDTree
+from tqdm import tqdm
 
 from geo3dfeatures import FEATURE_SETS
 from geo3dfeatures.features import (
@@ -29,7 +32,8 @@ from geo3dfeatures.features import (
     radius_2D, radius_3D, density_2D, density_3D
 )
 
-CHUNKSIZE = 20_000
+
+logger = daiquiri.getLogger(__name__)
 
 
 class AlphaBetaFeatures(NamedTuple):
@@ -361,7 +365,7 @@ def sequence_full(
         yield tree.data[neighbor_idx], distance, z_acc, extra_features
 
 
-def _dump_results_by_chunk(iterable, csvpath, chunksize=CHUNKSIZE):
+def _dump_results_by_chunk(iterable, csvpath, chunksize, progress_bar):
     """Write result in a CSV file by chunk.
     """
     def chunkgenerator(iterable):
@@ -383,14 +387,14 @@ def _dump_results_by_chunk(iterable, csvpath, chunksize=CHUNKSIZE):
         # write results by chunk
         num_processed_points = chunksize
         for chunk in chunkgenerator(iterable):
-            print("processed points: {}".format(num_processed_points))
             writer.writerows(chunk)
             num_processed_points += chunksize
+            progress_bar.update()
 
 
 def extract(
         point_cloud, tree, nb_neighbors, csvpath, sample_points=None,
-        feature_set="full", nb_processes=2, extra_columns=None
+        feature_set="full", nb_processes=2, extra_columns=None, chunksize=20000
 ):
     """Extract geometric features from a 3D point cloud.
 
@@ -413,7 +417,7 @@ def extract(
     extra_columns : list
         Extra input data column names, reused for output (None by default)
     """
-    print("computation begins")
+    logger.info("Computation begins!")
     acc_features = accumulation_2d_neighborhood(point_cloud, extra_columns)
     if sample_points is not None:
         acc_features = acc_features.sample(sample_points)
@@ -423,17 +427,28 @@ def extract(
     else:
         gen = sequence_light(acc_features.values[:, :-3], tree, nb_neighbors, extra_columns)
     with Pool(processes=nb_processes) as pool:
+        logger.info("Total number of points: %s", point_cloud.shape[0])
+        steps = math.ceil(point_cloud.shape[0] / chunksize)
         if feature_set == "full":
-            result_it = pool.imap_unordered(_wrap_full_process, gen, chunksize=CHUNKSIZE)
+            result_it = pool.imap_unordered(
+                _wrap_full_process, gen, chunksize=chunksize
+            )
         elif feature_set == "eigenvalues":
-            result_it = pool.imap_unordered(_wrap_eigenvalues_process, gen, chunksize=CHUNKSIZE)
+            result_it = pool.imap_unordered(
+                _wrap_eigenvalues_process, gen, chunksize=chunksize
+            )
         elif feature_set == "alphabeta":
-            result_it = pool.imap_unordered(_wrap_alphabeta_process, gen, chunksize=CHUNKSIZE)
+            result_it = pool.imap_unordered(
+                _wrap_alphabeta_process, gen, chunksize=chunksize
+            )
         else:
             raise ValueError(
-                "Unknown feature set, choose amongst {}".format(FEATURE_SETS)
+                "Unknown feature set, choose amongst {}"
+                .format(FEATURE_SETS)
             )
-        print("total points: {}".format(point_cloud.shape[0]))
-        _dump_results_by_chunk(result_it, csvpath, chunksize=20000)
+        with tqdm(total=steps) as pbar:
+            _dump_results_by_chunk(
+                result_it, csvpath, chunksize, progress_bar=pbar
+            )
     stop = timer()
-    print("Time spent: {:.2f}s".format(stop - start))
+    logger.info("Time spent: %.2fs", stop - start)
