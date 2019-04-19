@@ -304,7 +304,7 @@ def _wrap_full_process(args):
     return process_full(*args)
 
 
-def sequence_light(point_cloud, tree, nb_neighbors, extra_columns):
+def sequence_light(point_cloud, tree, nb_neighbors, extra_columns=None):
     """Build a data generator for getting neighborhoods and distances for each
     point
 
@@ -326,6 +326,12 @@ def sequence_light(point_cloud, tree, nb_neighbors, extra_columns):
     numpy.array
         Euclidian distance between the reference point and its neighbors
     """
+    if extra_columns is None:
+        if point_cloud.shape[1] != 3:
+            raise ValueError("No extra column declared.")
+    else:
+        if point_cloud.shape[1] - 3 != len(extra_columns):
+            raise ValueError("Extra column lengths does not match data.")
     for point in point_cloud:
         distance, neighbor_idx = request_tree(point[:3], nb_neighbors, tree)
         extra_features = ExtraFeatures(extra_columns, tuple(point[3:])) if extra_columns else ExtraFeatures(tuple(), tuple())
@@ -333,7 +339,7 @@ def sequence_light(point_cloud, tree, nb_neighbors, extra_columns):
 
 
 def sequence_full(
-        acc_features, tree, nb_neighbors, extra_columns
+        acc_features, tree, nb_neighbors, extra_columns=None
 ):
     """Build a data generator for getting neighborhoods, distances and
         accumulation features for each point
@@ -358,6 +364,12 @@ def sequence_full(
     numpy.array
         Reference point accumulation features
     """
+    if extra_columns is None:
+        if acc_features.shape[1] != 6:
+            raise ValueError("No extra column declared.")
+    else:
+        if acc_features.shape[1] - 6 != len(extra_columns):
+            raise ValueError("Extra column lengths does not match data.")
     for point in acc_features.values:
         distance, neighbor_idx = request_tree(point[:3], nb_neighbors, tree)
         z_acc = point[-3:]

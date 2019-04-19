@@ -30,9 +30,9 @@ def _neighbors(data, reference_point, neighbors_size=50, leaf_size=100):
 
 
 def test_accumulation_2d_features(line, plane, sphere):
-    acc1D = accumulation_2d_neighborhood(line, ["x", "y", "z"])
-    acc2D = accumulation_2d_neighborhood(plane, ["x", "y", "z"])
-    acc3D = accumulation_2d_neighborhood(sphere, ["x", "y", "z"])
+    acc1D = accumulation_2d_neighborhood(line)
+    acc2D = accumulation_2d_neighborhood(plane)
+    acc3D = accumulation_2d_neighborhood(sphere)
     # a large density of points for the line
     assert acc1D["count"].mean() > acc2D["count"].mean()
     assert acc1D["count"].mean() > acc3D["count"].mean()
