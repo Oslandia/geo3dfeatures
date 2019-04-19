@@ -30,9 +30,10 @@ $ source venv/bin/activate
 
 # Run commands
 
-Four commands are currently available:
+Six commands are currently available:
 
 ```
+geo3d info -h
 geo3d sample -h
 geo3d index -h
 geo3d featurize -h
@@ -40,9 +41,17 @@ geo3d profile -h
 geo3d cluster -h
 ```
 
+## Info
+
+This first program provides basic informations about an input point cloud file.
+
+```
+geo3d info -d <datapath> -i <input-file>
+```
+
 ## Sample
 
-This first program aims at generating small subsets of data starting from a raw
+This program aims at generating small subsets of data starting from a raw
 `.las` file.
 
 It considers a input file located in a specified data folder, read it, and

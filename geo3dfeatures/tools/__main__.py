@@ -10,10 +10,33 @@ Available choices::
 import argparse
 
 from geo3dfeatures import FEATURE_SETS
-from geo3dfeatures.tools import sample, featurize, profiling, kmean, index
+from geo3dfeatures.tools import (
+    info, sample, featurize, profiling, kmean, index
+    )
 
 # default value for kd-tree
 KD_TREE_LEAF_SIZE = 500
+
+
+def info_parser(subparser, reference_func):
+    """Add arguments for describing a point cloud file
+
+    Parameters
+    ----------
+    subparser : argparser.parser.SubParsersAction
+    reference_func : function
+    """
+    parser = subparser.add_parser(
+        "info",
+        help="Describe an input .las file"
+    )
+    parser.add_argument("-d", "--datapath",
+                        default="./data",
+                        help="Data folder on the file system")
+    parser.add_argument("-i", "--input-file",
+                        required=True,
+                        help="Input point cloud file")
+    parser.set_defaults(func=reference_func)
 
 
 def sample_parser(subparser, reference_func):
@@ -193,6 +216,7 @@ def main():
         description="Geo3dfeatures framework for 3D semantic analysis",
     )
     sub_parsers = parser.add_subparsers(dest="command")
+    info_parser(sub_parsers, reference_func=info.main)
     sample_parser(sub_parsers, reference_func=sample.main)
     index_parser(sub_parsers, reference_func=index.main)
     featurize_parser(sub_parsers, reference_func=featurize.main)
