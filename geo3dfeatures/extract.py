@@ -429,24 +429,24 @@ def extract(
     with Pool(processes=nb_processes) as pool:
         logger.info("Total number of points: %s", point_cloud.shape[0])
         steps = math.ceil(point_cloud.shape[0] / chunksize)
+        if feature_set == "full":
+            result_it = pool.imap_unordered(
+                _wrap_full_process, gen, chunksize=chunksize
+            )
+        elif feature_set == "eigenvalues":
+            result_it = pool.imap_unordered(
+                _wrap_eigenvalues_process, gen, chunksize=chunksize
+            )
+        elif feature_set == "alphabeta":
+            result_it = pool.imap_unordered(
+                _wrap_alphabeta_process, gen, chunksize=chunksize
+            )
+        else:
+            raise ValueError(
+                "Unknown feature set, choose amongst {}"
+                .format(FEATURE_SETS)
+            )
         with tqdm(total=steps) as pbar:
-            if feature_set == "full":
-                result_it = pool.imap_unordered(
-                    _wrap_full_process, gen, chunksize=chunksize
-                )
-            elif feature_set == "eigenvalues":
-                result_it = pool.imap_unordered(
-                    _wrap_eigenvalues_process, gen, chunksize=chunksize
-                )
-            elif feature_set == "alphabeta":
-                result_it = pool.imap_unordered(
-                    _wrap_alphabeta_process, gen, chunksize=chunksize
-                )
-            else:
-                raise ValueError(
-                    "Unknown feature set, choose amongst {}"
-                    .format(FEATURE_SETS)
-                )
             _dump_results_by_chunk(
                 result_it, csvpath, chunksize, progress_bar=pbar
             )
