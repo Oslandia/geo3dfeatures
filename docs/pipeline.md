@@ -42,7 +42,7 @@ Once we get the kd-tree structure, we can generate the geometric features that
 are associated to the points of the point cloud:
 
 ```
-geo3d featurize -d data -i geolithe-extract-10000.las -e democli -n 50 -f full -t 1000 -c r g b
+geo3d featurize -d data -i geolithe-extract-10000.las -e democli -n 50 -f full -t 1000 -c r g b --chunksize 10000
 ```
 
 Here we build the point neighborhoods with a kd-tree composed of 1000 points
@@ -56,6 +56,10 @@ By default the first three fields of the input data are x, y, z coordinates. As
 optional parameters, we can provide some extra fields from the input dataset such as
 the raw RGB-color, the density, etc. with the `-c/--extra-columns` option. You can
 have `-c r g b` to include the RGB-color for instance.
+
+The feature extraction process is multi-threaded, and point features are
+written onto file system by chunks. One may control the writing chunk size with
+the `--chunksize` argument.
 
 We call the experiment "democli", for identifying it afterwards. If we do not give
 any name, the experiment takes the input file name (here, "geolithe-extract-10000").
