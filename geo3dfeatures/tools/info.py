@@ -1,8 +1,9 @@
 """Describe an input .las file by providing the following informations:
   * filename
-  * memory size
+  * relative path
   * number of 3D points
-  * features
+  * feature list
+  * x, y and z definition domains
   * already computed kd-trees
   * already extracted features
   * already computed clusters
