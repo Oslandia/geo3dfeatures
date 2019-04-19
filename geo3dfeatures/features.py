@@ -21,6 +21,9 @@ import numpy as np
 import pandas as pd
 
 
+BIN_BUF = 1e-3  # Value that allows to consider max x/y values in bin building
+
+
 def accumulation_2d_neighborhood(
         point_cloud, extra_columns=None, bin_size=1
 ):
@@ -60,9 +63,9 @@ def accumulation_2d_neighborhood(
     df = pd.DataFrame(point_cloud, columns=input_columns)
     xmin, xmax = np.min(point_cloud[:, 0]), np.max(point_cloud[:, 0])
     ymin, ymax = np.min(point_cloud[:, 1]), np.max(point_cloud[:, 1])
-    xbins = np.arange(xmin, xmax + bin_size + 1e-3, bin_size)
+    xbins = np.arange(xmin, xmax + bin_size + BIN_BUF, bin_size)
     df["xbin"] = pd.cut(df.x, xbins, right=False)
-    ybins = np.arange(ymin, ymax + bin_size + 1e-3, bin_size)
+    ybins = np.arange(ymin, ymax + bin_size + BIN_BUF, bin_size)
     df["ybin"] = pd.cut(df.y, ybins, right=False)
     aggdf = (
         df.groupby(["xbin", "ybin"])["z"]
