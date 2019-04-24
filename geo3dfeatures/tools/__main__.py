@@ -200,12 +200,15 @@ def add_instance_args(parser, featurized=True):
                         type=int, default=2,
                         help="")
     parser.add_argument('-n', '--neighbors',
-                        type=int, default=50, required=featurized,
+                        type=int,
                         help="Number of neighbors to consider")
     parser.add_argument('-p', '--sample-points',
                         type=int,
                         required=featurized,
                         help="Number of sample points to evaluate")
+    parser.add_argument('-r', '--radius',
+                        type=float,
+                        help="Radius that defines the neighboring ball")
 
 
 def main():
