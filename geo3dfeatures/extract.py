@@ -116,19 +116,22 @@ def compute_tree(point_cloud, leaf_size):
     return KDTree(point_cloud, leaf_size)
 
 
-def request_tree(point, nb_neighbors, radius, kd_tree):
+def request_tree(point, kd_tree, nb_neighbors=None, radius=None):
     """Extract a point neighborhood by the way of a KDTree method
+
+    At least one parameter amongst 'nb_neighbors' and 'radius' much be
+    valid. 'nb_neighbors' is considered first.
 
     Parameters
     ----------
     point : numpy.array
         Coordinates of the reference point (x, y, z)
+    tree : scipy.spatial.KDTree
+        Tree representation of the point cloud
     nb_neighborhood : int
         Number of neighboring points to consider
     radius : float
         Radius that defines the neighboring ball around a given point
-    tree : scipy.spatial.KDTree
-        Tree representation of the point cloud
 
     Returns
     -------
@@ -347,7 +350,7 @@ def sequence_light(
             raise ValueError("Extra column lengths does not match data.")
     for point in point_cloud:
         distance, neighbor_idx = request_tree(
-            point[:3], nb_neighbors, radius, tree
+            point[:3], tree, nb_neighbors, radius
         )
         extra_features = ExtraFeatures(extra_columns, tuple(point[3:])) if extra_columns else ExtraFeatures(tuple(), tuple())
         yield tree.data[neighbor_idx], extra_features
@@ -389,7 +392,7 @@ def sequence_full(
             raise ValueError("Extra column lengths does not match data.")
     for point in acc_features.values:
         distance, neighbor_idx = request_tree(
-            point[:3], nb_neighbors, radius, tree
+            point[:3], tree, nb_neighbors, radius
         )
         z_acc = point[-3:]
         extra_features = ExtraFeatures(extra_columns, tuple(point[3:-3])) if extra_columns else ExtraFeatures(tuple(), tuple())

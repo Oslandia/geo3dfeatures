@@ -26,7 +26,7 @@ def _neighbors(data, reference_point, neighbors_size=50, leaf_size=100):
     Return the neighborhood and the distance
     """
     kd_tree = KDTree(data, leaf_size)
-    return request_tree(reference_point, neighbors_size, kd_tree)
+    return request_tree(reference_point, kd_tree, nb_neighbors=neighbors_size)
 
 
 def test_accumulation_2d_features(line, plane, sphere):
@@ -164,7 +164,7 @@ def test_2d_features_roof(roof):
     """
     pca = PCA().fit(roof[:, :2])
     eigenvalues = pca.singular_values_ ** 2
-    assert abs(eigenvalue_ratio_2D(eigenvalues) - 1) <= 0.05
+    assert abs(eigenvalue_ratio_2D(eigenvalues) - 1) <= 0.1
     assert val_sum(eigenvalues) > 1000
 
 
