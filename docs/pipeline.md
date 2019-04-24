@@ -3,6 +3,25 @@
 This document describes the way the different commands must be run in order to
 produce point cloud classifications.
 
+## Info
+
+Before any data treatment, one may want to know better the data one targets to
+process. By considering an input file `data/input/cloud.las`, some basic
+informations are provided with the following command:
+
+```
+geo3d info -d data -i cloud.las
+```
+
+This command gives the file name, its relative path, its total number of
+points, the domain of definition for every the point cloud coordinate (`x`, `y`
+and `z`) and the generated output files (kd-tree, features and k-means).
+
+The supported formats are `.las`, `.ply` and `.xyz`. As a side remark, one may
+have bonus information with classic terminal commands for `ply` and `xyz` files
+as they design text files. For `las` file, one may have full metadata with
+`lasinfo` command (through `liblas` package under Linux/Ubuntu).
+
 ## Sample
 
 First we have a 3D point cloud stored as a `.las` file. This dataset may be
