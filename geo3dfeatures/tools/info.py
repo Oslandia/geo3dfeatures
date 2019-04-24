@@ -33,7 +33,7 @@ def main(opts):
         reader = laspy.base.FileManager(input_path, mode="r")
         hm = laspy.header.HeaderManager(header, reader)
         nb_points = hm.point_records_count
-        feature_list = "x, y, z, r, g, b"
+        feature_list = [s.name for s in reader.point_format.specs]
         xmin, ymin, zmin = hm.min
         xmax, ymax, zmax = hm.max
     elif input_path.suffix == ".xyz":
