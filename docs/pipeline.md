@@ -13,10 +13,9 @@ informations are provided with the following command:
 geo3d info -d data -i cloud.las
 ```
 
-Cette commande donne : le nom du fichier, son emplacement relatif, le nombre de
-points, les informations récupérées, le domaine de définition sur les axes `x`,
-`y` et `z`, ainsi que les fichiers générés (kd-tree, features et k-means) à
-partir du nuage de points.
+This command gives the file name, its relative path, its total number of
+points, the domain of definition for every the point cloud coordinate (`x`, `y`
+and `z`) and the generated output files (kd-tree, features and k-means).
 
 The supported formats are `.las`, `.ply` and `.xyz`. As a side remark, one may
 have bonus information with classic terminal commands for `ply` and `xyz` files
