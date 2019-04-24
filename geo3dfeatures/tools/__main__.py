@@ -208,7 +208,11 @@ def add_instance_args(parser, featurized=True):
                         help="Number of sample points to evaluate")
     parser.add_argument('-r', '--radius',
                         type=float,
-                        help="Radius that defines the neighboring ball")
+                        help=(
+                            "Radius that defines the neighboring ball. "
+                            "This parameter is considered only if "
+                            "'neighbors' is None."
+                        ))
 
 
 def main():

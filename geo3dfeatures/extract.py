@@ -116,7 +116,7 @@ def compute_tree(point_cloud, leaf_size):
     return KDTree(point_cloud, leaf_size)
 
 
-def request_tree(point, nb_neighbors, kd_tree):
+def request_tree(point, nb_neighbors, radius, kd_tree):
     """Extract a point neighborhood by the way of a KDTree method
 
     Parameters
@@ -125,6 +125,8 @@ def request_tree(point, nb_neighbors, kd_tree):
         Coordinates of the reference point (x, y, z)
     nb_neighborhood : int
         Number of neighboring points to consider
+    radius : float
+        Radius that defines the neighboring ball around a given point
     tree : scipy.spatial.KDTree
         Tree representation of the point cloud
 
@@ -134,9 +136,16 @@ def request_tree(point, nb_neighbors, kd_tree):
         Neighborhood, decomposed as a mean distance between the reference point
     and its neighbors and an array of neighbor indices within the point
     cloud. Get `nb_neighborhood + 1` in order to have the reference point and
-    its k neighbors.
+    its k neighbors. If the neighborhood is recovered through radius, distances
+    are not computed.
     """
-    return kd_tree.query(point, k=nb_neighbors + 1)
+    if nb_neighbors is not None:
+        return kd_tree.query(point, k=nb_neighbors + 1)
+    if radius is not None:
+        return None, kd_tree.query_ball_point(point, r=radius)
+    raise ValueError(
+        "Kd-tree request error: nb_neighbors and radius can't be both None."
+        )
 
 
 def fit_pca(point_cloud):
@@ -304,7 +313,9 @@ def _wrap_full_process(args):
     return process_full(*args)
 
 
-def sequence_light(point_cloud, tree, nb_neighbors, extra_columns=None):
+def sequence_light(
+        point_cloud, tree, nb_neighbors, radius=None, extra_columns=None
+):
     """Build a data generator for getting neighborhoods and distances for each
     point
 
@@ -316,6 +327,8 @@ def sequence_light(point_cloud, tree, nb_neighbors, extra_columns=None):
         Point cloud kd-tree for computing nearest neighborhoods
     nb_neighbors : int
         Number of neighbors in each point neighborhood
+    radius : float
+        Radius that defines the neighboring ball around a given point
     extra_columns : tuple
         Extra input data column names, reused for output dataframe
 
@@ -333,13 +346,15 @@ def sequence_light(point_cloud, tree, nb_neighbors, extra_columns=None):
         if point_cloud.shape[1] - 3 != len(extra_columns):
             raise ValueError("Extra column lengths does not match data.")
     for point in point_cloud:
-        distance, neighbor_idx = request_tree(point[:3], nb_neighbors, tree)
+        distance, neighbor_idx = request_tree(
+            point[:3], nb_neighbors, radius, tree
+        )
         extra_features = ExtraFeatures(extra_columns, tuple(point[3:])) if extra_columns else ExtraFeatures(tuple(), tuple())
         yield tree.data[neighbor_idx], extra_features
 
 
 def sequence_full(
-        acc_features, tree, nb_neighbors, extra_columns=None
+        acc_features, tree, nb_neighbors, radius=None, extra_columns=None
 ):
     """Build a data generator for getting neighborhoods, distances and
         accumulation features for each point
@@ -352,6 +367,8 @@ def sequence_full(
         Point cloud kd-tree for computing nearest neighborhoods
     nb_neighbors : int
         Number of neighbors in each point neighborhood
+    radius : float
+        Radius that defines the neighboring ball around a given point
     extra_columns : tuple
         Extra input data column names, reused for output dataframe
 
@@ -371,7 +388,9 @@ def sequence_full(
         if acc_features.shape[1] - 6 != len(extra_columns):
             raise ValueError("Extra column lengths does not match data.")
     for point in acc_features.values:
-        distance, neighbor_idx = request_tree(point[:3], nb_neighbors, tree)
+        distance, neighbor_idx = request_tree(
+            point[:3], nb_neighbors, radius, tree
+        )
         z_acc = point[-3:]
         extra_features = ExtraFeatures(extra_columns, tuple(point[3:-3])) if extra_columns else ExtraFeatures(tuple(), tuple())
         yield tree.data[neighbor_idx], distance, z_acc, extra_features
@@ -405,9 +424,9 @@ def _dump_results_by_chunk(iterable, csvpath, chunksize, progress_bar):
 
 
 def extract(
-        point_cloud, tree, nb_neighbors, csvpath, sample_points=None,
-        feature_set="full", nb_processes=2, extra_columns=None,
-        bin_size=1, chunksize=20000
+        point_cloud, tree, csvpath, nb_neighbors=None, radius=None,
+        sample_points=None, feature_set="full", nb_processes=2,
+        extra_columns=None, bin_size=1, chunksize=20000
 ):
     """Extract geometric features from a 3D point cloud.
 
@@ -419,10 +438,12 @@ def extract(
         3D point cloud
     tree : scipy.spatial.ckdtree.CKDTree
         Point cloud kd-tree for computing nearest neighborhoods
-    nb_neighbors : int
-        Number of neighbors in each point neighborhood
     csvpath : Path
         CSV output path (extracted features)
+    nb_neighbors : int
+        Number of neighbors in each point neighborhood
+    radius : float
+        Radius that defines the neighboring ball around a given point
     sample_points : int
         Sampling size (if None, this is the full point cloud which is taking into account)
     nb_processes : int
@@ -436,13 +457,24 @@ def extract(
     acc_features = accumulation_2d_neighborhood(
         point_cloud, extra_columns, bin_size
     )
+    if nb_neighbors is None and radius is None:
+        logger.error("nb_neighbors and radius can't be both None.")
+        raise ValueError(
+            "Error in input neighborhood definition: "
+            "nb_neighbors and radius can't be both None."
+        )
     if sample_points is not None:
         acc_features = acc_features.sample(sample_points)
     start = timer()
     if feature_set == "full":
-        gen = sequence_full(acc_features, tree, nb_neighbors, extra_columns)
+        gen = sequence_full(
+            acc_features, tree, nb_neighbors, radius, extra_columns
+        )
     else:
-        gen = sequence_light(acc_features.values[:, :-3], tree, nb_neighbors, extra_columns)
+        gen = sequence_light(
+            acc_features.values[:, :-3], tree,
+            nb_neighbors, radius, extra_columns
+        )
     with Pool(processes=nb_processes) as pool:
         logger.info("Total number of points: %s", point_cloud.shape[0])
         steps = math.ceil(point_cloud.shape[0] / chunksize)
