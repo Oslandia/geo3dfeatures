@@ -17,6 +17,7 @@ from timeit import default_timer as timer
 from typing import NamedTuple, Tuple
 
 import daiquiri
+import numpy as np
 from sklearn.decomposition import PCA
 from scipy.spatial import cKDTree as KDTree
 from tqdm import tqdm
@@ -260,39 +261,64 @@ def process_full(neighbors, distance, z_acc, extra):
     list, OrderedDict generator (features for each point)
 
     """
-    pca = fit_pca(neighbors)  # PCA on the x,y,z coords
-    eigenvalues_3D = pca.singular_values_ ** 2
-    norm_eigenvalues_3D = normalize(eigenvalues_3D)
-    alpha, beta = triangle_variance_space(norm_eigenvalues_3D)
-    rad_3D = radius_3D(distance)
-    pca_2d = fit_pca(neighbors[:, :2])  # PCA just on the x,y coords
-    eigenvalues_2D = pca_2d.singular_values_ ** 2
-    rad_2D = radius_2D(neighbors[0, :2], neighbors[:, :2])
-    x, y, z = neighbors[0]
-    return (Features(x, y, z,
-                     alpha,
-                     beta,
-                     rad_3D,
-                     val_range(neighbors[:, 2]),  # z_range
-                     std_deviation(neighbors[:, 2]),  # std_dev
-                     density_3D(rad_3D, len(neighbors)),
-                     verticality_coefficient(pca),
-                     curvature_change(norm_eigenvalues_3D),
-                     linearity(norm_eigenvalues_3D),
-                     planarity(norm_eigenvalues_3D),
-                     scattering(norm_eigenvalues_3D),
-                     omnivariance(norm_eigenvalues_3D),
-                     anisotropy(norm_eigenvalues_3D),
-                     eigenentropy(norm_eigenvalues_3D),
-                     val_sum(eigenvalues_3D),  # eigenvalue sum
-                     rad_2D,  # radius 2D
-                     density_2D(rad_2D, len(neighbors)),
-                     val_sum(eigenvalues_2D),  # eigenvalue_sum_2D
-                     eigenvalue_ratio_2D(eigenvalues_2D),
-                     z_acc[-3],    # bin_density
-                     z_acc[-2],    # bin_z_range
-                     z_acc[-1]),   # bin_z_std
-            extra)
+    if len(neighbors) <= 2:
+        rad_3D = radius_3D(distance)
+        rad_2D = radius_2D(neighbors[0, :2], neighbors[:, :2])
+        x, y, z = neighbors[0]
+        return (
+            Features(
+                x, y, z,
+                np.nan, np.nan,  # alpha, beta
+                radius_3D(distance),  # radius3D
+                val_range(neighbors[:, 2]),  # z_range
+                std_deviation(neighbors[:, 2]),  # std_dev
+                density_3D(rad_3D, len(neighbors)),  # density3D
+                np.nan, np.nan, np.nan, np.nan, np.nan,
+                np.nan, np.nan, np.nan, np.nan,
+                radius_2D(neighbors[0, :2], neighbors[:, :2]),  # radius2D
+                density_2D(rad_2D, len(neighbors)),  # density2D
+                np.nan,  # eigenvalue_sum_2D
+                np.nan,  # eigenvalue_ratio_2D
+                z_acc[-3],    # bin_density
+                z_acc[-2],    # bin_z_range
+                z_acc[-1]   # bin_z_std
+            ),
+            extra
+        )
+    else:
+        pca = fit_pca(neighbors)  # PCA on the x,y,z coords
+        eigenvalues_3D = pca.singular_values_ ** 2
+        norm_eigenvalues_3D = normalize(eigenvalues_3D)
+        alpha, beta = triangle_variance_space(norm_eigenvalues_3D)
+        rad_3D = radius_3D(distance)
+        pca_2d = fit_pca(neighbors[:, :2])  # PCA just on the x,y coords
+        eigenvalues_2D = pca_2d.singular_values_ ** 2
+        rad_2D = radius_2D(neighbors[0, :2], neighbors[:, :2])
+        x, y, z = neighbors[0]
+        return (Features(x, y, z,
+                         alpha,
+                         beta,
+                         rad_3D,
+                         val_range(neighbors[:, 2]),  # z_range
+                         std_deviation(neighbors[:, 2]),  # std_dev
+                         density_3D(rad_3D, len(neighbors)),
+                         verticality_coefficient(pca),
+                         curvature_change(norm_eigenvalues_3D),
+                         linearity(norm_eigenvalues_3D),
+                         planarity(norm_eigenvalues_3D),
+                         scattering(norm_eigenvalues_3D),
+                         omnivariance(norm_eigenvalues_3D),
+                         anisotropy(norm_eigenvalues_3D),
+                         eigenentropy(norm_eigenvalues_3D),
+                         val_sum(eigenvalues_3D),  # eigenvalue sum
+                         rad_2D,  # radius 2D
+                         density_2D(rad_2D, len(neighbors)),
+                         val_sum(eigenvalues_2D),  # eigenvalue_sum_2D
+                         eigenvalue_ratio_2D(eigenvalues_2D),
+                         z_acc[-3],    # bin_density
+                         z_acc[-2],    # bin_z_range
+                         z_acc[-1]),   # bin_z_std
+                extra)
 
 
 def _wrap_alphabeta_process(args):
@@ -395,8 +421,14 @@ def sequence_full(
             point[:3], tree, nb_neighbors, radius
         )
         z_acc = point[-3:]
-        extra_features = ExtraFeatures(extra_columns, tuple(point[3:-3])) if extra_columns else ExtraFeatures(tuple(), tuple())
-        yield tree.data[neighbor_idx], distance, z_acc, extra_features
+        extra_features = (
+            ExtraFeatures(extra_columns, tuple(point[3:-3]))
+            if extra_columns else ExtraFeatures(tuple(), tuple())
+        )
+        neighbors = tree.data[neighbor_idx]
+        if distance is None:
+            distance = np.sqrt(np.sum((neighbors - point[:3])**2, axis=1))
+        yield neighbors, distance, z_acc, extra_features
 
 
 def _dump_results_by_chunk(iterable, csvpath, chunksize, progress_bar):
