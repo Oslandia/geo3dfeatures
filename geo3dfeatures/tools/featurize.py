@@ -62,8 +62,17 @@ def main(opts):
         sys.exit(0)
 
     data_size = len(data) if not opts.sample_points else opts.sample_points
+    if opts.neighbors is not None:
+        neighborhood = "n" + str(opts.neighbors)
+    elif opts.radius is not None:
+        neighborhood = "r" + str(opts.radius)
+    else:
+        raise ValueError(
+            "Error in input neighborhood definition: "
+            "neighbors and radius arguments can't be both undefined"
+            )
     instance = (
-        "features-" + str(data_size) + "-" + str(opts.neighbors) + "-"
+        "features-" + str(data_size) + "-" + neighborhood + "-"
         + str(opts.feature_set) + "-" + str(opts.nb_process)
         )
     output_path = Path(opts.datapath, "output", experiment, "features")
@@ -72,8 +81,8 @@ def main(opts):
 
     extra_columns = tuple(opts.extra_columns) if opts.extra_columns is not None else tuple()
     extract(
-        data, tree, opts.neighbors, output_file, opts.sample_points,
-        opts.feature_set, opts.nb_process, extra_columns, opts.bin_size,
-        opts.chunksize
+        data, tree, output_file, opts.neighbors, opts.radius,
+        opts.sample_points, opts.feature_set, opts.nb_process,
+        extra_columns, opts.bin_size, opts.chunksize
     )
     logger.info("Results in %s", output_file)

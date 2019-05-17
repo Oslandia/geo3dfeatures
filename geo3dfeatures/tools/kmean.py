@@ -20,9 +20,17 @@ PALETTE = sns.color_palette("colorblind", MAX_COLOR)  # deep, muted, dark, ...
 
 
 def main(opts):
+    if opts.neighbors is not None:
+        neighborhood = "n" + str(opts.neighbors)
+    elif opts.radius is not None:
+        neighborhood = "r" + str(opts.radius)
+    else:
+        raise ValueError(
+            "Error in input neighborhood definition: "
+            "neighbors and radius arguments can't be both undefined"
+            )
     instance = (
-        str(opts.sample_points) + "-"
-        + str(opts.neighbors) + "-"
+        str(opts.sample_points) + "-" + neighborhood + "-"
         + opts.feature_set + "-" + str(opts.nb_process)
     )
     filepath = Path(

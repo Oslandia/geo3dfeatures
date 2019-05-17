@@ -5,7 +5,7 @@ import pandas as pd
 from scipy.spatial import cKDTree as KDTree
 
 from geo3dfeatures.extract import (
-    compute_tree, sequence_light, sequence_full,
+    compute_tree, request_tree, sequence_light, sequence_full,
     process_alphabeta, process_eigenvalues, process_full, extract
     )
 from geo3dfeatures.features import accumulation_2d_neighborhood
@@ -15,12 +15,6 @@ def test_extract(sphere):
     """
     kd_tree = KDTree(sphere, leafsize=100)
     csvpath = "tests/data/test_extract.csv"
-    # with pytest.raises(ValueError):
-    #     extra_columns = ("dummy-column")
-    #     extract(
-    #         sphere, kd_tree, nb_neighbors=10, csvpath=csvpath,
-    #         extra_columns=extra_columns, feature_set="full", nb_processes=2
-    #     )
     extract(
         sphere, kd_tree, nb_neighbors=10, csvpath=csvpath,
         feature_set="full", nb_processes=2
@@ -140,3 +134,17 @@ def test_process_full(sphere):
     assert features.z == sphere[0, 2]
     dfeatures = features._asdict()
     assert list(dfeatures.keys()) == ["x", "y", "z"] + additional_features
+
+
+def test_request_tree(sphere):
+    """Test a kd-tree request, depending on the neighborhood definition, either
+    starting from a number of neighbors or from a ball radius
+    """
+    tree = compute_tree(sphere, leaf_size=500)
+    with pytest.raises(ValueError):
+        request_tree(sphere[0], tree)
+    result_radius = request_tree(sphere[0], tree, radius=1)
+    assert len(result_radius) == 2
+    assert result_radius[0] is None
+    result_neighbors = request_tree(sphere[0], tree, nb_neighbors=10)
+    assert len(result_neighbors) == 2
