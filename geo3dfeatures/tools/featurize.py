@@ -17,6 +17,9 @@ logger = daiquiri.getLogger(__name__)
 
 def main(opts):
     input_path = Path(opts.datapath, "input", opts.input_file)
+    if not input_path.is_file():
+        logger.error("no such file '%s'.", input_path)
+        sys.exit(1)
     if input_path.suffix == ".xyz":
         data = read_xyz(str(input_path))
     elif input_path.suffix == ".las":
@@ -28,6 +31,8 @@ def main(opts):
 
     if opts.extra_columns is not None:
         if len(opts.extra_columns) + 3 != data.shape[1]:
+            logger.warning("Number of fields for the input data: '%d' but you ask '%d'.",
+                           data.shape[1], len(opts.extra_columns) + 3)
             raise ValueError("The given input columns does not match data shape, i.e. x,y,z plus extra columns.")
 
     experiment = (
