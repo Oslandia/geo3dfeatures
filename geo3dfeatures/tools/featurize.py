@@ -78,7 +78,7 @@ def main(opts):
             )
     instance = (
         "features-" + str(data_size) + "-" + neighborhood + "-"
-        + str(opts.feature_set) + "-" + str(opts.nb_process)
+        + str(opts.feature_set) + "-binsize-" + str(opts.binsize)
         )
     output_path = Path(opts.datapath, "output", experiment, "features")
     output_path.mkdir(parents=True, exist_ok=True)
