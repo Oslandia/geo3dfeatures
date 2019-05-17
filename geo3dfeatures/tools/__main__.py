@@ -199,20 +199,23 @@ def add_instance_args(parser, featurized=True):
     parser.add_argument("-m", "--nb-process",
                         type=int, default=2,
                         help="")
-    parser.add_argument('-n', '--neighbors',
-                        type=int,
-                        help="Number of neighbors to consider")
     parser.add_argument('-p', '--sample-points',
                         type=int,
                         required=featurized,
                         help="Number of sample points to evaluate")
-    parser.add_argument('-r', '--radius',
-                        type=float,
-                        help=(
-                            "Radius that defines the neighboring ball. "
-                            "This parameter is considered only if "
-                            "'neighbors' is None."
-                        ))
+    neighbor_group = parser.add_mutually_exclusive_group()
+    neighbor_group.add_argument('-n', '--neighbors',
+                                type=int,
+                                help="Number of neighbors to consider. "
+                                "Alternative neighborhood definition: "
+                                "--radius.")
+    neighbor_group.add_argument('-r', '--radius',
+                                type=float,
+                                help=(
+                                    "Radius that defines the neighboring "
+                                    "ball. Alternative neighborhood "
+                                    "definition: --neighbors."
+                                ))
 
 
 def main():

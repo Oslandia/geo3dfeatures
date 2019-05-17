@@ -129,7 +129,7 @@ def request_tree(point, kd_tree, nb_neighbors=None, radius=None):
         Coordinates of the reference point (x, y, z)
     tree : scipy.spatial.KDTree
         Tree representation of the point cloud
-    nb_neighborhood : int
+    nb_neighbors : int
         Number of neighboring points to consider
     radius : float
         Radius that defines the neighboring ball around a given point
