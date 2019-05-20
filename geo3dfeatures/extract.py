@@ -261,21 +261,21 @@ def process_full(neighbors, distance, z_acc, extra):
     list, OrderedDict generator (features for each point)
 
     """
+    x, y, z = neighbors[0]
+    rad_3D = radius_3D(distance)
+    rad_2D = radius_2D(neighbors[0, :2], neighbors[:, :2])
     if len(neighbors) <= 2:
-        rad_3D = radius_3D(distance)
-        rad_2D = radius_2D(neighbors[0, :2], neighbors[:, :2])
-        x, y, z = neighbors[0]
         return (
             Features(
                 x, y, z,
                 np.nan, np.nan,  # alpha, beta
-                radius_3D(distance),  # radius3D
+                rad_3D,  # radius3D
                 val_range(neighbors[:, 2]),  # z_range
                 std_deviation(neighbors[:, 2]),  # std_dev
                 density_3D(rad_3D, len(neighbors)),  # density3D
                 np.nan, np.nan, np.nan, np.nan, np.nan,
                 np.nan, np.nan, np.nan, np.nan,
-                radius_2D(neighbors[0, :2], neighbors[:, :2]),  # radius2D
+                rad_2D,  # radius2D
                 density_2D(rad_2D, len(neighbors)),  # density2D
                 np.nan,  # eigenvalue_sum_2D
                 np.nan,  # eigenvalue_ratio_2D
@@ -290,11 +290,8 @@ def process_full(neighbors, distance, z_acc, extra):
         eigenvalues_3D = pca.singular_values_ ** 2
         norm_eigenvalues_3D = sum_normalize(eigenvalues_3D)
         alpha, beta = triangle_variance_space(norm_eigenvalues_3D)
-        rad_3D = radius_3D(distance)
         pca_2d = fit_pca(neighbors[:, :2])  # PCA just on the x,y coords
         eigenvalues_2D = pca_2d.singular_values_ ** 2
-        rad_2D = radius_2D(neighbors[0, :2], neighbors[:, :2])
-        x, y, z = neighbors[0]
         return (Features(x, y, z,
                          alpha,
                          beta,

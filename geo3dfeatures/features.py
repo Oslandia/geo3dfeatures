@@ -274,7 +274,8 @@ def eigenentropy(eigenvalues):
     float
         Entropy of the dataset
     """
-    return -1 * np.sum(eigenvalues * np.log(eigenvalues))
+    nonnull_eig = [eig for eig in eigenvalues if eig > 0]
+    return -1 * np.sum(nonnull_eig * np.log(nonnull_eig))
 
 
 def val_sum(a):
@@ -386,6 +387,8 @@ def density_3D(radius, nb_neighbors):
     float
         3D point density in the considered volume
     """
+    if radius == 0:
+        return None
     return (nb_neighbors + 1) / ((4 / 3) * math.pi * radius ** 3)
 
 
@@ -405,6 +408,8 @@ def density_2D(radius, nb_neighbors):
     float
         2D point density in the considered area
     """
+    if radius == 0:
+        return None
     return (nb_neighbors + 1) / (math.pi * radius ** 2)
 
 
