@@ -188,14 +188,19 @@ def process_alphabeta(neighbors, extra):
     ------
     list, OrderedDict generator (features for each point)
     """
-    pca = fit_pca(neighbors[:, :3])  # PCA on the x,y,z coords
-    eigenvalues_3D = pca.singular_values_ ** 2
-    norm_eigenvalues_3D = sum_normalize(eigenvalues_3D)
-    alpha, beta = triangle_variance_space(norm_eigenvalues_3D)
     x, y, z = neighbors[0]
-    return (AlphaBetaFeatures(x, y, z,
-                              alpha,
-                              beta),
+    if len(neighbors) <= 2:
+        return (AlphaBetaFeatures(x, y, z,
+                                  None, None),  # alpha, beta
+                extra)
+    else:
+        pca = fit_pca(neighbors[:, :3])  # PCA on the x,y,z coords
+        eigenvalues_3D = pca.singular_values_ ** 2
+        norm_eigenvalues_3D = normalize(eigenvalues_3D)
+        alpha, beta = triangle_variance_space(norm_eigenvalues_3D)
+        return (AlphaBetaFeatures(x, y, z,
+                                  alpha,
+                                  beta),
             extra)
 
 
@@ -222,23 +227,30 @@ def process_eigenvalues(neighbors, extra):
     list, OrderedDict generator (features for each point)
 
     """
-    pca = fit_pca(neighbors[:, :3])  # PCA on the x,y,z coords
-    eigenvalues_3D = pca.singular_values_ ** 2
-    norm_eigenvalues_3D = sum_normalize(eigenvalues_3D)
-    alpha, beta = triangle_variance_space(norm_eigenvalues_3D)
     x, y, z = neighbors[0]
-    return (EigenvaluesFeatures(x, y, z,
-                                alpha,
-                                beta,
-                                curvature_change(norm_eigenvalues_3D),
-                                linearity(norm_eigenvalues_3D),
-                                planarity(norm_eigenvalues_3D),
-                                scattering(norm_eigenvalues_3D),
-                                omnivariance(norm_eigenvalues_3D),
-                                anisotropy(norm_eigenvalues_3D),
-                                eigenentropy(norm_eigenvalues_3D),
-                                val_sum(eigenvalues_3D)),  # eigenvalue sum
-            extra)
+    if len(neighbors) <= 2:
+        return (EigenvaluesFeatures(x, y, z,
+                                    None, None,  # alpha, beta
+                                    None, None, None, None,
+                                    None, None, None, None),
+                extra)
+    else:
+        pca = fit_pca(neighbors[:, :3])  # PCA on the x,y,z coords
+        eigenvalues_3D = pca.singular_values_ ** 2
+        norm_eigenvalues_3D = normalize(eigenvalues_3D)
+        alpha, beta = triangle_variance_space(norm_eigenvalues_3D)
+        return (EigenvaluesFeatures(x, y, z,
+                                    alpha,
+                                    beta,
+                                    curvature_change(norm_eigenvalues_3D),
+                                    linearity(norm_eigenvalues_3D),
+                                    planarity(norm_eigenvalues_3D),
+                                    scattering(norm_eigenvalues_3D),
+                                    omnivariance(norm_eigenvalues_3D),
+                                    anisotropy(norm_eigenvalues_3D),
+                                    eigenentropy(norm_eigenvalues_3D),
+                                    val_sum(eigenvalues_3D)),  # eigenvalue sum
+                extra)
 
 
 def process_full(neighbors, distance, z_acc, extra):
