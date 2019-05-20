@@ -90,7 +90,7 @@ def normalize(a):
     -------
     numpy.array
     """
-    return a / np.sum(a)
+    return a / np.max(a)
 
 
 def normalized_eigenvalues(pca):
