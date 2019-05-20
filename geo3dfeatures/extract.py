@@ -253,7 +253,7 @@ def process_eigenvalues(neighbors, extra):
                 extra)
 
 
-def process_full(neighbors, distance, z_acc, extra):
+def process_full(neighbors, neighborhood_extra, z_acc, extra, mode="neighbors"):
     """Build the full feature set for a single point
 
     Parameters
@@ -261,12 +261,16 @@ def process_full(neighbors, distance, z_acc, extra):
     neighbors : numpy.array
         Coordinates of all points within the point neighborhood; must be a
     2D-shaped array with `point_cloud.shape[1] == 3`
-    distance : numpy.array
-        Distance between the point and all its neighbors
+    neighborhood_extra : numpy.array or int
+        If mode == "neighbors", gives distance between the point and all its
+    neighbors; otherwise (mode == "radius") gives the number of points in the
+    local sphere
     z_acc : numpy.array
         Accumulation features associated to the point
     extra : ExtraFeatures
         Names and values of extra input features, e.g. the RGB color
+    mode : str
+        Gives the neighborhood definition, i.e. "neighbors" or "radius"
 
     Returns
     ------
@@ -274,21 +278,30 @@ def process_full(neighbors, distance, z_acc, extra):
 
     """
     x, y, z = neighbors[0]
-    rad_3D = radius_3D(distance)
-    rad_2D = radius_2D(neighbors[0, :2], neighbors[:, :2])
+    extra_2D = radius_2D(neighbors[0, :2], neighbors[:, :2])
+    if mode == "neighbors":
+        extra_3D = radius_3D(neighborhood_extra)
+        dens_3D = density_3D(extra_3D, len(neighbors))
+        dens_2D = density_2D(extra_2D, len(neighbors))
+    elif mode == "radius":
+        extra_3D = len(neighbors)
+        dens_3D = density_3D(neighborhood_extra, extra_3D)
+        dens_2D = density_2D(neighborhood_extra, extra_2D)
+    else:
+        raise ValueError("Unknown neighboring mode.")
     if len(neighbors) <= 2:
         return (
             Features(
                 x, y, z,
                 np.nan, np.nan,  # alpha, beta
-                rad_3D,  # radius3D
+                extra_3D,  # radius3D
                 val_range(neighbors[:, 2]),  # z_range
                 std_deviation(neighbors[:, 2]),  # std_dev
-                density_3D(rad_3D, len(neighbors)),  # density3D
+                dens_3D,  # density3D
                 np.nan, np.nan, np.nan, np.nan, np.nan,
                 np.nan, np.nan, np.nan, np.nan,
-                rad_2D,  # radius2D
-                density_2D(rad_2D, len(neighbors)),  # density2D
+                extra_2D,  # radius2D
+                dens_2D,  # density2D
                 np.nan,  # eigenvalue_sum_2D
                 np.nan,  # eigenvalue_ratio_2D
                 z_acc[-3],    # bin_density
@@ -307,10 +320,10 @@ def process_full(neighbors, distance, z_acc, extra):
         return (Features(x, y, z,
                          alpha,
                          beta,
-                         rad_3D,
+                         extra_3D,
                          val_range(neighbors[:, 2]),  # z_range
                          std_deviation(neighbors[:, 2]),  # std_dev
-                         density_3D(rad_3D, len(neighbors)),
+                         dens_3D,
                          verticality_coefficient(pca),
                          curvature_change(norm_eigenvalues_3D),
                          linearity(norm_eigenvalues_3D),
@@ -320,8 +333,8 @@ def process_full(neighbors, distance, z_acc, extra):
                          anisotropy(norm_eigenvalues_3D),
                          eigenentropy(norm_eigenvalues_3D),
                          val_sum(eigenvalues_3D),  # eigenvalue sum
-                         rad_2D,  # radius 2D
-                         density_2D(rad_2D, len(neighbors)),
+                         extra_2D,  # radius 2D
+                         dens_2D,
                          val_sum(eigenvalues_2D),  # eigenvalue_sum_2D
                          eigenvalue_ratio_2D(eigenvalues_2D),
                          z_acc[-3],    # bin_density
@@ -426,7 +439,7 @@ def sequence_full(
         if acc_features.shape[1] - 6 != len(extra_columns):
             raise ValueError("Extra column lengths does not match data.")
     for point in acc_features.values:
-        distance, neighbor_idx = request_tree(
+        neighborhood_extra, neighbor_idx = request_tree(
             point[:3], tree, nb_neighbors, radius
         )
         z_acc = point[-3:]
@@ -435,9 +448,9 @@ def sequence_full(
             if extra_columns else ExtraFeatures(tuple(), tuple())
         )
         neighbors = tree.data[neighbor_idx]
-        if distance is None:
-            distance = np.sqrt(np.sum((neighbors - point[:3])**2, axis=1))
-        yield neighbors, distance, z_acc, extra_features
+        if neighborhood_extra is None:  # True if radius is not None
+            neighborhood_extra = radius
+        yield neighbors, neighborhood_extra, z_acc, extra_features
 
 
 def _dump_results_by_chunk(iterable, csvpath, chunksize, progress_bar):
