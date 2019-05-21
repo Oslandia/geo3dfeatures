@@ -65,7 +65,7 @@ def test_sequence_full(sphere):
     acc_features = accumulation_2d_neighborhood(sphere)
     gen = sequence_full(acc_features, tree, nb_neighbors=NB_NEIGHBORS)
     first_item = next(gen)
-    assert len(first_item) == 4
+    assert len(first_item) == 5
     assert first_item[0].shape == (NB_NEIGHBORS + 1, 3)
     assert first_item[1].shape == (NB_NEIGHBORS + 1,)
     assert first_item[2].shape == (3,)

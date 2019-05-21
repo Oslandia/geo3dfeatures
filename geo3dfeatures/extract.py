@@ -65,8 +65,8 @@ class EigenvaluesFeatures(NamedTuple):
     eigenvalue_sum: float
 
 
-class Features(NamedTuple):
-    """List of features
+class NeighborFeatures(NamedTuple):
+    """List of features for neighbor-based neighborhood
     """
     x: float
     y: float
@@ -74,6 +74,36 @@ class Features(NamedTuple):
     alpha: float
     beta: float
     radius: float
+    z_range: float
+    std_dev: float
+    density: float
+    verticality: float
+    curvature_change: float
+    linearity: float
+    planarity: float
+    scattering: float
+    omnivariance: float
+    anisotropy: float
+    eigenentropy: float
+    eigenvalue_sum: float
+    radius_2D: float
+    density_2D: float
+    eigenvalue_sum_2D: float
+    eigenvalue_ratio_2D: float
+    bin_density: float
+    bin_z_range: float
+    bin_z_std: float
+
+
+class RadiusFeatures(NamedTuple):
+    """List of features for radius-based neighborhood
+    """
+    x: float
+    y: float
+    z: float
+    alpha: float
+    beta: float
+    neighbor_nb: int
     z_range: float
     std_dev: float
     density: float
@@ -280,10 +310,12 @@ def process_full(neighbors, neighborhood_extra, z_acc, extra, mode="neighbors"):
     x, y, z = neighbors[0]
     extra_2D = radius_2D(neighbors[0, :2], neighbors[:, :2])
     if mode == "neighbors":
+        FeatureTuple = NeighborFeatures
         extra_3D = radius_3D(neighborhood_extra)
         dens_3D = density_3D(extra_3D, len(neighbors))
         dens_2D = density_2D(extra_2D, len(neighbors))
     elif mode == "radius":
+        FeatureTuple = RadiusFeatures
         extra_3D = len(neighbors)
         dens_3D = density_3D(neighborhood_extra, extra_3D)
         dens_2D = density_2D(neighborhood_extra, extra_2D)
@@ -291,7 +323,7 @@ def process_full(neighbors, neighborhood_extra, z_acc, extra, mode="neighbors"):
         raise ValueError("Unknown neighboring mode.")
     if len(neighbors) <= 2:
         return (
-            Features(
+            FeatureTuple(
                 x, y, z,
                 np.nan, np.nan,  # alpha, beta
                 extra_3D,  # radius3D
@@ -317,7 +349,7 @@ def process_full(neighbors, neighborhood_extra, z_acc, extra, mode="neighbors"):
         alpha, beta = triangle_variance_space(norm_eigenvalues_3D)
         pca_2d = fit_pca(neighbors[:, :2])  # PCA just on the x,y coords
         eigenvalues_2D = pca_2d.singular_values_ ** 2
-        return (Features(x, y, z,
+        return (FeatureTuple(x, y, z,
                          alpha,
                          beta,
                          extra_3D,
@@ -442,6 +474,7 @@ def sequence_full(
         neighborhood_extra, neighbor_idx = request_tree(
             point[:3], tree, nb_neighbors, radius
         )
+        mode = "neighbors"
         z_acc = point[-3:]
         extra_features = (
             ExtraFeatures(extra_columns, tuple(point[3:-3]))
@@ -450,7 +483,8 @@ def sequence_full(
         neighbors = tree.data[neighbor_idx]
         if neighborhood_extra is None:  # True if radius is not None
             neighborhood_extra = radius
-        yield neighbors, neighborhood_extra, z_acc, extra_features
+            mode = "radius"
+        yield neighbors, neighborhood_extra, z_acc, extra_features, mode
 
 
 def _dump_results_by_chunk(iterable, csvpath, chunksize, progress_bar):
