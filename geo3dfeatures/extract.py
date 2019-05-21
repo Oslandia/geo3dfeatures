@@ -460,8 +460,8 @@ def _dump_results_by_chunk(iterable, csvpath, chunksize, progress_bar):
 
 def extract(
         point_cloud, tree, csvpath, nb_neighbors=None, radius=None,
-        sample_points=None, feature_set="full", nb_processes=2,
-        extra_columns=None, bin_size=1, chunksize=20000
+        feature_set="full", nb_processes=2, extra_columns=None,
+        bin_size=1, chunksize=20000
 ):
     """Extract geometric features from a 3D point cloud.
 
@@ -479,8 +479,6 @@ def extract(
         Number of neighbors in each point neighborhood
     radius : float
         Radius that defines the neighboring ball around a given point
-    sample_points : int
-        Sampling size (if None, this is the full point cloud which is taking into account)
     nb_processes : int
         Number of parallel cores
     extra_columns : list
@@ -498,8 +496,6 @@ def extract(
             "Error in input neighborhood definition: "
             "nb_neighbors and radius can't be both None."
         )
-    if sample_points is not None:
-        acc_features = acc_features.sample(sample_points)
     start = timer()
     if feature_set == "full":
         gen = sequence_full(
