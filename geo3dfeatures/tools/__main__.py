@@ -77,9 +77,6 @@ def featurize_parser(subparser, reference_func):
     )
     add_instance_args(parser, featurized=False)
     add_kdtree_args(parser)
-    parser.add_argument('-b', '--bin-size',
-                        type=float, default=1.0,
-                        help="Bin size for accumulation metric computing")
     parser.add_argument('-c', '--extra-columns', nargs="+",
                         help="Extra point cloud feature names (other than x,y,z)")
     parser.add_argument("-i", "--input-file",
@@ -187,6 +184,9 @@ def add_instance_args(parser, featurized=True):
         True if the function is called by the featurization program, hence some
         arguments are required; false otherwise
     """
+    parser.add_argument('-b', '--bin-size',
+                        type=float, required=featurized,
+                        help="Bin size for accumulation metric computing")
     parser.add_argument("-d", "--datapath",
                         default="./data",
                         help="Data folder on the file system")
