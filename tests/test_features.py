@@ -7,7 +7,7 @@ from scipy.spatial import cKDTree as KDTree
 
 from geo3dfeatures.features import (accumulation_2d_neighborhood,
                                     triangle_variance_space,
-                                    normalize,
+                                    sum_normalize,
                                     curvature_change,
                                     linearity,
                                     planarity,
@@ -52,7 +52,10 @@ def test_sum_triangle_variance_space(plane):
     `alpha + beta + gamma = 1`
     """
     pca = PCA().fit(plane)
-    norm_eigenvalues = normalize(pca.singular_values_ ** 2)
+    norm_eigenvalues = sum_normalize(pca.singular_values_ ** 2)
+    print(pca.singular_values_)
+    print(pca.singular_values_ ** 2)
+    print(norm_eigenvalues)
     alpha, beta = triangle_variance_space(norm_eigenvalues)
     assert alpha + beta <= 1.0
 
@@ -63,7 +66,7 @@ def test_triangle_variance_space_1D_case(line):
     'alpha' must be >> to 'beta'
     """
     pca = PCA().fit(line)
-    norm_eigenvalues = normalize(pca.singular_values_ ** 2)
+    norm_eigenvalues = sum_normalize(pca.singular_values_ ** 2)
     alpha, beta = triangle_variance_space(norm_eigenvalues)
     assert alpha > beta
     assert abs(alpha - 1) < 1e-3
@@ -75,7 +78,7 @@ def test_triangle_variance_space_2D_case(plane):
     beta must be > alpha and close to 1.0
     """
     pca = PCA().fit(plane)
-    norm_eigenvalues = normalize(pca.singular_values_ ** 2)
+    norm_eigenvalues = sum_normalize(pca.singular_values_ ** 2)
     alpha, beta = triangle_variance_space(norm_eigenvalues)
     assert alpha < beta
     assert beta >= 0.95
@@ -87,7 +90,7 @@ def test_triangle_variance_space_3D_case(sphere):
     alpha and beta must be close to 0. (so gamme close to 1.)
     """
     pca = PCA().fit(sphere)
-    norm_eigenvalues = normalize(pca.singular_values_ ** 2)
+    norm_eigenvalues = sum_normalize(pca.singular_values_ ** 2)
     alpha, beta = triangle_variance_space(norm_eigenvalues)
     assert 1 - (alpha + beta) >= 0.95
 
@@ -96,7 +99,7 @@ def test_3d_features_line(line):
     """Test curvature change, linearity, planarity and scattering for a line.
     """
     pca = PCA().fit(line)
-    norm_eigenvalues = normalize(pca.singular_values_ ** 2)
+    norm_eigenvalues = sum_normalize(pca.singular_values_ ** 2)
     # close to 1
     assert linearity(norm_eigenvalues) >= 0.9
     # close to zero
@@ -109,7 +112,7 @@ def test_3d_features_plane(plane):
     """Test curvature change, linearity, planarity and scattering for a plane.
     """
     pca = PCA().fit(plane)
-    norm_eigenvalues = normalize(pca.singular_values_ ** 2)
+    norm_eigenvalues = sum_normalize(pca.singular_values_ ** 2)
     # close to zero
     assert curvature_change(norm_eigenvalues) <= 5e-3
     # close to 1
@@ -123,7 +126,7 @@ def test_3d_features_sphere(sphere):
     """Test curvature change, linearity, planarity and scattering for a sphere.
     """
     pca = PCA().fit(sphere)
-    norm_eigenvalues = normalize(pca.singular_values_ ** 2)
+    norm_eigenvalues = sum_normalize(pca.singular_values_ ** 2)
     # close to 1/3
     assert abs(curvature_change(norm_eigenvalues) - 1/3) <= 0.05
     # close to 1

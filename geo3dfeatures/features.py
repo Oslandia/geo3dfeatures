@@ -79,8 +79,9 @@ def accumulation_2d_neighborhood(
     )
 
 
-def normalize(a):
-    """Compute and normalize values in "a".
+def max_normalize(a):
+    """Compute and normalize values in "a". The normalized values are comprised
+    between 0 and 1, 1 being the values of the larger value.
 
     Parameters
     ----------
@@ -93,22 +94,19 @@ def normalize(a):
     return a / np.max(a)
 
 
-def normalized_eigenvalues(pca):
-    """Compute and normalized the eigenvalues from a fitted PCA.
-
-    The singular values stored in a PCA instance are the squarred root of
-    eigenvalues.
+def sum_normalize(a):
+    """Compute and normalize values in "a". The normalized values are comprised
+    between 0 and 1, and the sum of normalized values equals to 1.
 
     Parameters
     ----------
-    pca : sklearn.decomposition.PCA
+    a : numpy.array
 
     Returns
     -------
-    np.ndarray
+    numpy.array
     """
-    eigenvalues = pca.singular_values_ * pca.singular_values_
-    return eigenvalues / eigenvalues.sum()
+    return a / np.sum(a)
 
 
 def triangle_variance_space(eigenvalues):

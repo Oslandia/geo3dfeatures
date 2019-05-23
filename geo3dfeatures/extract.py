@@ -26,7 +26,7 @@ from geo3dfeatures import FEATURE_SETS
 from geo3dfeatures.features import (
     accumulation_2d_neighborhood,
     triangle_variance_space,
-    normalize, val_sum, val_range, std_deviation,
+    sum_normalize, val_sum, val_range, std_deviation,
     curvature_change, linearity, planarity, scattering,
     omnivariance, anisotropy, eigenentropy, verticality_coefficient,
     eigenvalue_ratio_2D,
@@ -190,7 +190,7 @@ def process_alphabeta(neighbors, extra):
     """
     pca = fit_pca(neighbors[:, :3])  # PCA on the x,y,z coords
     eigenvalues_3D = pca.singular_values_ ** 2
-    norm_eigenvalues_3D = normalize(eigenvalues_3D)
+    norm_eigenvalues_3D = sum_normalize(eigenvalues_3D)
     alpha, beta = triangle_variance_space(norm_eigenvalues_3D)
     x, y, z = neighbors[0]
     return (AlphaBetaFeatures(x, y, z,
@@ -224,7 +224,7 @@ def process_eigenvalues(neighbors, extra):
     """
     pca = fit_pca(neighbors[:, :3])  # PCA on the x,y,z coords
     eigenvalues_3D = pca.singular_values_ ** 2
-    norm_eigenvalues_3D = normalize(eigenvalues_3D)
+    norm_eigenvalues_3D = sum_normalize(eigenvalues_3D)
     alpha, beta = triangle_variance_space(norm_eigenvalues_3D)
     x, y, z = neighbors[0]
     return (EigenvaluesFeatures(x, y, z,
@@ -288,7 +288,7 @@ def process_full(neighbors, distance, z_acc, extra):
     else:
         pca = fit_pca(neighbors)  # PCA on the x,y,z coords
         eigenvalues_3D = pca.singular_values_ ** 2
-        norm_eigenvalues_3D = normalize(eigenvalues_3D)
+        norm_eigenvalues_3D = sum_normalize(eigenvalues_3D)
         alpha, beta = triangle_variance_space(norm_eigenvalues_3D)
         rad_3D = radius_3D(distance)
         pca_2d = fit_pca(neighbors[:, :2])  # PCA just on the x,y coords
