@@ -52,7 +52,7 @@ def sample_parser(subparser, reference_func):
         help="Extract a sample of a .las file"
     )
     parser.add_argument("-d", "--datapath",
-                        default="./data",
+                        default="./data/input",
                         help="Data folder on the file system")
     parser.add_argument("-i", "--input-file",
                         required=True,
