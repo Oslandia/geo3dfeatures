@@ -18,7 +18,7 @@ logger = daiquiri.getLogger(__name__)
 def main(opts):
     input_path = Path(opts.datapath, "input", opts.input_file)
     if not input_path.is_file():
-        logger.error("no such file '%s'.", input_path)
+        logger.error("No such file '%s'.", input_path)
         sys.exit(1)
     if input_path.suffix == ".xyz":
         data = read_xyz(str(input_path))

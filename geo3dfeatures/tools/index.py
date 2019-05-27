@@ -25,7 +25,7 @@ def main(opts):
     """
     input_path = Path(opts.datapath, "input", opts.input_file)
     if not input_path.is_file():
-        logger.error("no such file '%s'.", input_path)
+        logger.error("No such file '%s'.", input_path)
         sys.exit(1)
     logger.info("Load data...")
     if input_path.suffix == ".xyz":

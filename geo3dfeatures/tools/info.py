@@ -25,7 +25,7 @@ logger = daiquiri.getLogger(__name__)
 def main(opts):
     input_path = Path(opts.datapath, "input", opts.input_file)
     if not input_path.is_file():
-        logger.error("no such file '%s'.", input_path)
+        logger.error("No such file '%s'.", input_path)
         sys.exit(1)
     output_path = Path(opts.datapath, "output", opts.input_file.split(".")[0])
     kdtrees = [f.name for f in output_path.glob("*.pkl")]
