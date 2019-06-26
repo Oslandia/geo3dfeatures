@@ -45,14 +45,20 @@ def las(fpath):
         an array
     """
     input_file = laspy.file.File(fpath, mode="r")
+    # in case the RGB were uint16 encoded.
+    # note : a color channel on uint16 can have valurs from 0 to 65535, see np.iinfo('uint16').max
+    if input_file.red.dtype == np.dtype('uint16'):
+        factor = 256
+    else:
+        factor = 1
     data = np.vstack(
         (
             input_file.x,
             input_file.y,
             input_file.z,
-            input_file.red,
-            input_file.green,
-            input_file.blue,
+            input_file.red / factor,
+            input_file.green / factor,
+            input_file.blue / factor,
         )
     )
     return data.transpose()
