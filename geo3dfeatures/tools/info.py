@@ -24,6 +24,9 @@ logger = daiquiri.getLogger(__name__)
 
 def main(opts):
     input_path = Path(opts.datapath, "input", opts.input_file)
+    if not input_path.is_file():
+        logger.error("No such file '%s'.", input_path)
+        sys.exit(1)
     output_path = Path(opts.datapath, "output", opts.input_file.split(".")[0])
     kdtrees = [f.name for f in output_path.glob("*.pkl")]
     features = [f.name for f in Path(output_path, "features").glob("*.csv")]
@@ -55,7 +58,7 @@ def main(opts):
         xmin, ymin, zmin = np.min(data, axis=0)
         xmax, ymax, zmax = np.max(data, axis=0)
     else:
-        logger.error("Unknown file extension")
+        logger.error("Unknown file extension, '%s' not supported", input_path.suffix)
         sys.exit(1)
     info_string = (
         f"File : {opts.input_file}"

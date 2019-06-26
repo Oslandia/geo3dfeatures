@@ -17,6 +17,9 @@ logger = daiquiri.getLogger(__name__)
 
 def main(opts):
     input_path = Path(opts.datapath, "input", opts.input_file)
+    if not input_path.is_file():
+        logger.error("No such file '%s'.", input_path)
+        sys.exit(1)
     if input_path.suffix == ".xyz":
         data = read_xyz(str(input_path))
     elif input_path.suffix == ".las":
@@ -28,6 +31,7 @@ def main(opts):
 
     if opts.extra_columns is not None:
         if len(opts.extra_columns) + 3 != data.shape[1]:
+            logger.warning("%d extra fields are expected for the provided input data, however you enter %d field names (%s).", data.shape[1] - 3, len(opts.extra_columns), opts.extra_columns)
             raise ValueError("The given input columns does not match data shape, i.e. x,y,z plus extra columns.")
 
     experiment = (
@@ -61,7 +65,6 @@ def main(opts):
         )
         sys.exit(0)
 
-    data_size = len(data) if not opts.sample_points else opts.sample_points
     if opts.neighbors is not None:
         neighborhood = "n" + str(opts.neighbors)
     elif opts.radius is not None:
@@ -72,8 +75,8 @@ def main(opts):
             "neighbors and radius arguments can't be both undefined"
             )
     instance = (
-        "features-" + str(data_size) + "-" + neighborhood + "-"
-        + str(opts.feature_set) + "-" + str(opts.nb_process)
+        "features-" + neighborhood + "-"
+        + str(opts.feature_set) + "-binsize-" + str(opts.bin_size)
         )
     output_path = Path(opts.datapath, "output", experiment, "features")
     output_path.mkdir(parents=True, exist_ok=True)
@@ -82,7 +85,7 @@ def main(opts):
     extra_columns = tuple(opts.extra_columns) if opts.extra_columns is not None else tuple()
     extract(
         data, tree, output_file, opts.neighbors, opts.radius,
-        opts.sample_points, opts.feature_set, opts.nb_process,
-        extra_columns, opts.bin_size, opts.chunksize
+        opts.feature_set, opts.nb_process, extra_columns,
+        opts.bin_size, opts.chunksize
     )
     logger.info("Results in %s", output_file)

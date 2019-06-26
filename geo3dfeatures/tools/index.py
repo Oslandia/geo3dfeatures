@@ -3,6 +3,7 @@
 For now, just compute a KDTree for x,y,z coordinates of a point cloud scene and serialize it into a file.
 """
 
+import sys
 import pickle
 from pathlib import Path
 
@@ -23,6 +24,9 @@ def main(opts):
     """Load a point cloud file and compute a kd-tree
     """
     input_path = Path(opts.datapath, "input", opts.input_file)
+    if not input_path.is_file():
+        logger.error("No such file '%s'.", input_path)
+        sys.exit(1)
     logger.info("Load data...")
     if input_path.suffix == ".xyz":
         data = read_xyz(str(input_path))

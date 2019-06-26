@@ -30,8 +30,8 @@ def main(opts):
             "neighbors and radius arguments can't be both undefined"
             )
     instance = (
-        str(opts.sample_points) + "-" + neighborhood + "-"
-        + opts.feature_set + "-" + str(opts.nb_process)
+        neighborhood + "-" + opts.feature_set
+        + "-binsize-" + str(opts.bin_size)
     )
     filepath = Path(
         opts.datapath, "output", opts.experiment, "features",
