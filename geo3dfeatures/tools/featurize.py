@@ -31,8 +31,7 @@ def main(opts):
 
     if opts.extra_columns is not None:
         if len(opts.extra_columns) + 3 != data.shape[1]:
-            logger.warning("Number of fields for the input data: '%d' but you ask '%d'.",
-                           data.shape[1], len(opts.extra_columns) + 3)
+            logger.warning("%d extra fields are expected for the provided input data, however you enter %d field names (%s).", data.shape[1] - 3, len(opts.extra_columns), opts.extra_columns)
             raise ValueError("The given input columns does not match data shape, i.e. x,y,z plus extra columns.")
 
     experiment = (
