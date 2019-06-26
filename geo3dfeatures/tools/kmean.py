@@ -42,18 +42,8 @@ def main(opts):
     logger.info(f"Recover features stored in {filepath}")
     data = pd.read_csv(filepath)
 
-    color_columns = ["r", "g", "b"]
-    for c in color_columns:
-        if c in data.columns:
-            data[c] /= 255
-
-    column_to_normalize = [
-        "density", "density_2D", "bin_density",
-        "eigenvalue_sum", "eigenvalue_sum_2D", "eigenentropy"
-    ]
-    for c in column_to_normalize:
-        if c in data.columns:
-            data[c] = max_normalize(data[c])
+    for c in data.columns[3:]:
+        data[c] = max_normalize(data[c])
 
     if "bin_z_range" in data.columns:
         data["bin_z_range"].fillna(0, inplace=True)
