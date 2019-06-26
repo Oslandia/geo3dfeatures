@@ -6,6 +6,7 @@ import os
 from pathlib import Path
 import sys
 
+import daiquiri
 import numpy as np
 import pandas as pd
 import seaborn as sns
@@ -13,6 +14,7 @@ from sklearn.cluster import KMeans
 
 from geo3dfeatures.features import max_normalize
 
+logger = daiquiri.getLogger(__name__)
 
 SEED = 1337
 MAX_COLOR = 10
@@ -37,6 +39,7 @@ def main(opts):
         opts.datapath, "output", opts.experiment, "features",
         "features-" + instance + ".csv"
         )
+    logger.info(f"Recover features stored in {filepath}")
     data = pd.read_csv(filepath)
 
     color_columns = ["r", "g", "b"]
@@ -57,6 +60,8 @@ def main(opts):
 
     result = data[["x", "y", "z"]].copy()
     data.drop(["x", "y", "z"], axis=1, inplace=True)
+
+    logger.info(f"Compute {opts.nb_clusters} clusters...")
     model = KMeans(opts.nb_clusters, random_state=SEED)
     model.fit(data)
 
@@ -73,3 +78,4 @@ def main(opts):
         "kmeans-" + instance + "-" + str(opts.nb_clusters) + ".xyz"
     )
     result.to_csv(str(output_file), sep=" ", index=False, header=False)
+    logger.info(f"Clusters saved into {output_file}")
