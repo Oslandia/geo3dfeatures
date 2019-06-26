@@ -11,7 +11,7 @@ import pandas as pd
 import seaborn as sns
 from sklearn.cluster import KMeans
 
-from geo3dfeatures.features import normalize
+from geo3dfeatures.features import max_normalize
 
 
 SEED = 1337
@@ -50,7 +50,7 @@ def main(opts):
     ]
     for c in column_to_normalize:
         if c in data.columns:
-            data[c] = normalize(data[c])
+            data[c] = max_normalize(data[c])
 
     if "bin_z_range" in data.columns:
         data["bin_z_range"].fillna(0, inplace=True)
