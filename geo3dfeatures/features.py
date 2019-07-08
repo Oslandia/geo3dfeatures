@@ -274,7 +274,7 @@ def eigenentropy(eigenvalues):
     float
         Entropy of the dataset
     """
-    nonnull_eig = [eig for eig in eigenvalues if eig > 0]
+    nonnull_eig = eigenvalues[eigenvalues > 0]
     return -1 * np.sum(nonnull_eig * np.log(nonnull_eig))
 
 

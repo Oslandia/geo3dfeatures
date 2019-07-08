@@ -1,5 +1,6 @@
 import pytest
 
+import numpy as np
 from sklearn.decomposition import PCA
 
 from sklearn.decomposition import PCA
@@ -294,7 +295,7 @@ def test_eigenentropy_with_null_eigenvalue():
     """
 
     with pytest.warns(None) as warning_record:
-        eigen1 = eigenentropy([2.43, 0.96, 0.0])
-    eigen2 = eigenentropy([2.43, 0.96])
+        eigen1 = eigenentropy(np.array([2.43, 0.96, 0.0]))
+    eigen2 = eigenentropy(np.array([2.43, 0.96]))
     assert len(warning_record) == 0  # Test that no warning is raised
     assert eigen1 == eigen2
