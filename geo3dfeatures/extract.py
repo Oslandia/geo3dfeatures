@@ -226,7 +226,7 @@ def process_alphabeta(neighbors, extra):
     else:
         pca = fit_pca(neighbors[:, :3])  # PCA on the x,y,z coords
         eigenvalues_3D = pca.singular_values_ ** 2
-        norm_eigenvalues_3D = normalize(eigenvalues_3D)
+        norm_eigenvalues_3D = sum_normalize(eigenvalues_3D)
         alpha, beta = triangle_variance_space(norm_eigenvalues_3D)
         return (AlphaBetaFeatures(x, y, z,
                                   alpha,
@@ -267,7 +267,7 @@ def process_eigenvalues(neighbors, extra):
     else:
         pca = fit_pca(neighbors[:, :3])  # PCA on the x,y,z coords
         eigenvalues_3D = pca.singular_values_ ** 2
-        norm_eigenvalues_3D = normalize(eigenvalues_3D)
+        norm_eigenvalues_3D = sum_normalize(eigenvalues_3D)
         alpha, beta = triangle_variance_space(norm_eigenvalues_3D)
         return (EigenvaluesFeatures(x, y, z,
                                     alpha,
