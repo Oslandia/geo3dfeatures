@@ -1,5 +1,6 @@
 import pytest
 
+import numpy as np
 from sklearn.decomposition import PCA
 
 from sklearn.decomposition import PCA
@@ -16,7 +17,8 @@ from geo3dfeatures.features import (accumulation_2d_neighborhood,
                                     val_sum, eigenvalue_ratio_2D,
                                     val_range, std_deviation,
                                     radius_2D, radius_3D,
-                                    density_2D, density_3D)
+                                    density_2D, density_3D,
+                                    eigenentropy)
 from geo3dfeatures.extract import request_tree
 
 
@@ -270,3 +272,30 @@ def test_verticality_coefficient_roof(roof):
     pca = PCA().fit(roof)
     vcoef = verticality_coefficient(pca)
     assert vcoef >= 0 and vcoef <= 0.01
+
+
+def test_empty_density_2D():
+    """Test density_2D function with empty neighborhood, i.e. when radius is
+    equal to 0
+    """
+    dummy_neighbor_number = 1
+    assert density_2D(0, dummy_neighbor_number) is None
+
+
+def test_empty_density_3D():
+    """Test density_3D function with empty neighborhood, i.e. when radius is
+    equal to 0
+    """
+    dummy_neighbor_number = 1
+    assert density_3D(0, dummy_neighbor_number) is None
+
+
+def test_eigenentropy_with_null_eigenvalue():
+    """Test eigenentropy computation when at least one eigenvalue is equal to 0
+    """
+
+    with pytest.warns(None) as warning_record:
+        eigen1 = eigenentropy(np.array([2.43, 0.96, 0.0]))
+    eigen2 = eigenentropy(np.array([2.43, 0.96]))
+    assert len(warning_record) == 0  # Test that no warning is raised
+    assert eigen1 == eigen2
