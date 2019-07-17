@@ -2,6 +2,7 @@
 """
 
 import argparse
+from configparser import ConfigParser
 import os
 from pathlib import Path
 import sys
@@ -49,8 +50,7 @@ def instance(neighbors, radius, feature_set, bin_size):
             "neighbors and radius arguments can't be both undefined"
             )
     return (
-        neighborhood + "-" + feature_set
-        + "-binsize-" + str(bin_size)
+        neighborhood + "-" + feature_set + "-binsize-" + str(bin_size)
     )
 
 
@@ -91,6 +91,37 @@ def load_features(
     return pd.read_csv(filepath)
 
 
+def update_features(df, config_path):
+    """Modify data features with the help of multiplier coefficients associated
+    to each data feature, before to fit the k-mean model
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        Full dataset
+    config_path : str
+        Path of the file where the coefficients are stored
+
+    Returns
+    -------
+    np.array
+        Array of feature coefficient; sorted in the same order than feature_list
+    """
+    coefs = np.ones(shape=df.shape[1])
+    if os.path.isfile(config_path):
+        config = ConfigParser()
+        config.optionxform = str  # Preserve case in feature names
+        config.read(config_path)
+        df_coefs = pd.DataFrame(np.expand_dims(coefs, 0), columns=df.columns)
+        for key in config["clustering"]:
+            df_coefs[key] = float(config["clustering"][key])
+        coefs = np.squeeze(np.array(df_coefs))
+    for idx, column in enumerate(df.columns):
+        if coefs[idx] != 1:
+            logger.info(f"Multiply {column} feature by {coefs[idx]}")
+            df[column] = coefs[idx] * df[column]
+
+
 def colorize_clusters(points, clusters):
     """Associated a (r, g, b) color for each record of a dataframe, depending
     on the cluster id
@@ -118,7 +149,7 @@ def colorize_clusters(points, clusters):
 
 def save_clusters(
         results, datapath, experiment, neighbors, radius,
-        feature_set, bin_size, nb_clusters
+        feature_set, bin_size, nb_clusters, config_name
 ):
     """Save the resulting dataframe into the accurate folder on the file system
 
@@ -141,6 +172,8 @@ def save_clusters(
         Bin size used to compute accumulation features
     nb_clusters : int
         Number of cluster, used for identifying the resulting data
+    config_name : str
+        Cluster configuration filename
     """
     output_path = Path(
         datapath, "output", experiment, "clustering",
@@ -148,8 +181,9 @@ def save_clusters(
     os.makedirs(output_path, exist_ok=True)
     output_file = Path(
         output_path,
-        "kmeans-" + instance(neighbors, radius, feature_set, bin_size)
-        + "-" + str(nb_clusters) + ".xyz"
+        "kmeans-"
+        + instance(neighbors, radius, feature_set, bin_size)
+        + "-" + config_name + "-" + str(nb_clusters) + ".xyz"
     )
     results.to_csv(
         str(output_file), sep=" ", index=False, header=False
@@ -158,6 +192,7 @@ def save_clusters(
 
 
 def main(opts):
+    config_path = Path("config", opts.config_file)
     data = load_features(
         opts.datapath, opts.experiment, opts.neighbors, opts.radius,
         opts.feature_set, opts.bin_size
@@ -172,6 +207,8 @@ def main(opts):
     points = data[["x", "y", "z"]].copy()
     data.drop(["x", "y", "z"], axis=1, inplace=True)
 
+    update_features(data, config_path)
+
     logger.info(f"Compute {opts.nb_clusters} clusters...")
     model = KMeans(opts.nb_clusters, random_state=SEED)
     model.fit(data)
@@ -179,5 +216,6 @@ def main(opts):
     colored_results = colorize_clusters(points, model.labels_)
     save_clusters(
         colored_results, opts.datapath, opts.experiment, opts.neighbors,
-        opts.radius, opts.feature_set, opts.bin_size, opts.nb_clusters
+        opts.radius, opts.feature_set, opts.bin_size, opts.nb_clusters,
+        config_path.stem
     )

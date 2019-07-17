@@ -132,6 +132,12 @@ def kmean_parser(subparser, reference_func):
     parser.add_argument("-k", "--nb-clusters",
                         type=int, required=True,
                         help="Desired amount of clusters")
+    parser.add_argument("-c", "--config-file",
+                        type=str,
+                        help=(
+                            "Config file for clustering analysis, "
+                            "that summarizes feature coefficients"
+                        ))
     parser.set_defaults(func=reference_func)
 
 
