@@ -95,16 +95,23 @@ The output features are stored in
 
 As a final command, `cluster` uses k-mean algorithm in order to classify the
 point of the original point cloud, starting from the features generated through
-the `featurize` command. As an example, one may run:
+the `featurize` command. One may tune the relative importance of each feature
+during the clustering process with the help of a configuration file. As an
+example, one may run:
 
 ```
-geo3d cluster -d data -e democli -p 10000 -n 50 -f full -k 2 -b 1.0
+geo3d cluster -d data -e democli -p 10000 -n 50 -f full -k 2 -b 1.0 -c base.ini
 ```
 
-This command reads the
-`data/output/democli/features/features-n50-full-binsize-1.0.csv` file, and
-computes the corresponding cluster for each of the 10000 points. The results
-are stored in
-`data/output/democli/clustering/kmeans-n50-full-binsize-1.0-2.xyz`. This
-resulting file may be visualized with a 3D data viewer, like CloudCompare. And
-voilà!
+This command reads the `data/output/democli/features/features-n50-full-binsize-1.0.csv`
+file, and computes the corresponding cluster for each of the 10000 points, by
+following the feature scheme depicted in `config/base.ini`. In this
+configuration, each feature has an equivalent importance; however some other
+examples are available in the `config` folder and home-made configurations may
+be designed as well by writing a new `.ini` file.
+
+Once the results have been computed, they are stored in
+`data/output/democli/clustering/kmeans-n50-full-binsize-1.0-base-2.las`. This
+resulting file may be visualized with a 3D data viewer, like CloudCompare. One
+may also generate `.xyz` if desired by adding the option `-xyz` to the
+command. And voilà!
