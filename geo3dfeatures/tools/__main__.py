@@ -138,6 +138,9 @@ def kmean_parser(subparser, reference_func):
                             "Config file for clustering analysis, "
                             "that summarizes feature coefficients"
                         ))
+    parser.add_argument("-xyz", action="store_true",
+                        help=("Output file extension, xyz if true "
+                              "similar to output otherwise"))
     parser.set_defaults(func=reference_func)
 
 
