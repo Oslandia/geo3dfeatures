@@ -88,30 +88,6 @@ any name, the experiment takes the input file name (here, "geolithe-extract-1000
 The output features are stored in
 `data/output/democli/features/features-10000-50-full.csv`.
 
-## Profile
-
-As an alternative to the previous step, one may need to compute the featurize
-program running time. A `pstats` utility that wraps the program is written in
-`./time-measurement.sh`.
-
-The feature generation may be done as follows:
-
-```
-./time-measurement.sh democli 10000 50 full 'x y z r g b' geolithe-extract-10000.las
-```
-
-This command generate the `.csv` file that contains features **and** a
-profiling file `data/output/democli/profiling/profiling-10000-50-full` that
-contains time measurements.
-
-In order to exploit these time measurements, the `profile` command converts profiling files into human-readable files. Hence:
-
-```
-geo3d profile -F csv -e democli
-```
-
-reads every single file in `data/output/democli/profiling/` folder, and write `.csv` versions in `data/output/democli/timers/`.
-
 ## Cluster
 
 As a final command, `cluster` uses k-mean algorithm in order to classify the
