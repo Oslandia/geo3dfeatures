@@ -61,7 +61,7 @@ Once we get the kd-tree structure, we can generate the geometric features that
 are associated to the points of the point cloud:
 
 ```
-geo3d featurize -d data -i geolithe-extract-10000.las -e democli -n 50 -f full -t 1000 -c r g b -b 1 --chunksize 10000
+geo3d featurize -d data -i geolithe-extract-10000.las -e democli -n 50 -f full -t 1000 -c r g b -b 1.0 --chunksize 10000
 ```
 
 Here we build the point neighborhoods with a kd-tree composed of 1000 points
@@ -71,22 +71,25 @@ tree file directly (option `--tree-file`). We decide to consider all the
 geometric features (`-f full`). We do not specify any point quantity (`-p
 <nb-points>`), hence all the 10k points are considered. As another argument, we
 may specify the accumulation feature bin size (`b`), expressed in the same unit
-than the point cloud.
+than the point cloud. Be careful with this parameter : it is considered as a
+floating number in the code (if the parameter is set as `-b 1`, the file will
+be stored like `-binsize-1.0`).
 
 By default the first three fields of the input data are x, y, z coordinates. As
-optional parameters, we can provide some extra fields from the input dataset such as
-the raw RGB-color, the density, etc. with the `-c/--extra-columns` option. You can
-have `-c r g b` to include the RGB-color for instance.
+optional parameters, we can provide some extra fields from the input dataset
+such as the raw RGB-color, the density, etc. with the `-c/--extra-columns`
+option. You can have `-c r g b` to include the RGB-color for instance.
 
 The feature extraction process is multi-threaded, and point features are
 written onto file system by chunks. One may control the writing chunk size with
 the `--chunksize` argument.
 
-We call the experiment "democli", for identifying it afterwards. If we do not give
-any name, the experiment takes the input file name (here, "geolithe-extract-10000").
+We call the experiment "democli", for identifying it afterwards. If we do not
+give any name, the experiment takes the input file name (here,
+"geolithe-extract-10000").
 
 The output features are stored in
-`data/output/democli/features/features-10000-50-full.csv`.
+`data/output/democli/features/features-n50-full-binsize-1.0.csv`.
 
 ## Cluster
 
@@ -95,11 +98,13 @@ point of the original point cloud, starting from the features generated through
 the `featurize` command. As an example, one may run:
 
 ```
-geo3d cluster -d data -e democli -p 10000 -n 50 -f full -k 2
+geo3d cluster -d data -e democli -p 10000 -n 50 -f full -k 2 -b 1.0
 ```
 
-This command reads the `data/output/democli/features/feature-10000-50-full.csv`
-file, and computes the corresponding cluster for each of the 10000 points. The
-results are stored in
-`data/output/democli/clustering/kmeans-10000-50-full.xyz`. This resulting file
-may be visualized with a 3D data viewer, like CloudCompare. And voilà!
+This command reads the
+`data/output/democli/features/features-n50-full-binsize-1.0.csv` file, and
+computes the corresponding cluster for each of the 10000 points. The results
+are stored in
+`data/output/democli/clustering/kmeans-n50-full-binsize-1.0-2.xyz`. This
+resulting file may be visualized with a 3D data viewer, like CloudCompare. And
+voilà!
