@@ -5,12 +5,13 @@ description = "Extract geometry features from 3D point clouds"
 license = "MIT"
 authors = ["Damien Garaud <damien.garaud@oslandia.com>", "Raphaël Delhome <raphael.delhome@oslandia.com>"]
 
+# see versions and constraints https://poetry.eustace.io/docs/versions/
 [tool.poetry.dependencies]
 python = "^3.7"
 numpy = "^1.15"
 dask = "^0.20.2"
 pandas = "^0.23.4"
-scikit-learn = "^0.20.1"
+scikit-learn = "^0.21"
 laspy = "^1.5.1"
 plyfile = "^0.7.0"
 scipy = "^1.2"
