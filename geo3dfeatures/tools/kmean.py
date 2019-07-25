@@ -92,7 +92,32 @@ def load_features(
     return pd.read_csv(filepath)
 
 
-def update_features(df, config_path):
+
+def read_config(config_path):
+    """Create a config object starting from a configuration file in the
+    "config" folder
+
+    Parameters
+    ----------
+    config_path : str
+        Path of the configuration file on the file system; should end with
+    ".ini" extension
+
+    Returns
+    -------
+    configparser.ConfigParser
+        Feature coefficient configuration for the clustering process
+    """
+    feature_config = ConfigParser()
+    feature_config.optionxform = str  # Preserve case in feature names
+    if os.path.isfile(config_path):
+        feature_config.read(config_path)
+    else:
+        logger.error(f"{config_path} is not a valid file.")
+    return feature_config
+
+
+def update_features(df, config):
     """Modify data features with the help of multiplier coefficients associated
     to each data feature, before to fit the k-mean model
 
@@ -100,8 +125,8 @@ def update_features(df, config_path):
     ----------
     df : pd.DataFrame
         Full dataset
-    config_path : str
-        Path of the file where the coefficients are stored
+    config : configparser.ConfigParser
+        Feature coefficient configuration
 
     Returns
     -------
@@ -109,14 +134,10 @@ def update_features(df, config_path):
         Array of feature coefficient; sorted in the same order than feature_list
     """
     coefs = np.ones(shape=df.shape[1])
-    if os.path.isfile(config_path):
-        config = ConfigParser()
-        config.optionxform = str  # Preserve case in feature names
-        config.read(config_path)
-        df_coefs = pd.DataFrame(np.expand_dims(coefs, 0), columns=df.columns)
-        for key in config["clustering"]:
-            df_coefs[key] = float(config["clustering"][key])
-        coefs = np.squeeze(np.array(df_coefs))
+    df_coefs = pd.DataFrame(np.expand_dims(coefs, 0), columns=df.columns)
+    for key in config["clustering"]:
+        df_coefs[key] = float(config["clustering"][key])
+    coefs = np.squeeze(np.array(df_coefs))
     for idx, column in enumerate(df.columns):
         if coefs[idx] != 1:
             logger.info(f"Multiply {column} feature by {coefs[idx]}")
@@ -208,7 +229,7 @@ def save_clusters(
 
 
 def main(opts):
-    config_path = Path("config", opts.config_file)
+
     data = load_features(
         opts.datapath, opts.experiment, opts.neighbors, opts.radius,
         opts.feature_set, opts.bin_size
@@ -223,7 +244,9 @@ def main(opts):
     points = data[["x", "y", "z"]].copy()
     data.drop(["x", "y", "z"], axis=1, inplace=True)
 
-    update_features(data, config_path)
+    config_path = Path("config", opts.config_file)
+    feature_config = read_config(config_path)
+    update_features(data, feature_config)
 
     logger.info(f"Compute {opts.nb_clusters} clusters...")
     model = KMeans(opts.nb_clusters, random_state=SEED)
