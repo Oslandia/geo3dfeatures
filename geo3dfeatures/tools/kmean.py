@@ -114,6 +114,13 @@ def read_config(config_path):
         feature_config.read(config_path)
     else:
         logger.error(f"{config_path} is not a valid file.")
+        sys.exit(1)
+    if not feature_config.has_section("clustering"):
+        logger.error(
+            f"{config_path} is not a valid configuration file "
+            "(no 'clustering' section)."
+        )
+        sys.exit(1)
     return feature_config
 
 
@@ -230,6 +237,9 @@ def save_clusters(
 
 def main(opts):
 
+    config_path = Path("config", opts.config_file)
+    feature_config = read_config(config_path)
+
     data = load_features(
         opts.datapath, opts.experiment, opts.neighbors, opts.radius,
         opts.feature_set, opts.bin_size
@@ -244,8 +254,6 @@ def main(opts):
     points = data[["x", "y", "z"]].copy()
     data.drop(["x", "y", "z"], axis=1, inplace=True)
 
-    config_path = Path("config", opts.config_file)
-    feature_config = read_config(config_path)
     update_features(data, feature_config)
 
     logger.info(f"Compute {opts.nb_clusters} clusters...")
