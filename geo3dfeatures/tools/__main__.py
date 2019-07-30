@@ -88,30 +88,6 @@ def featurize_parser(subparser, reference_func):
     parser.set_defaults(func=reference_func)
 
 
-def profiling_parser(subparser, reference_func):
-    """Add instance-specific arguments from the command line
-
-    Parameters
-    ----------
-    subparser : argparser.parser.SubParsersAction
-    reference_func : function
-    """
-    parser = subparser.add_parser(
-        "profile",
-        help=(
-            "Extract in a human-readable format the "
-            "geometric feature extraction time measurements"
-        )
-    )
-    parser.add_argument("-e", "--experiment",
-                        required=True,
-                        help="Name of the feature extraction experiment")
-    parser.add_argument("-F", "--file-format",
-                        choices=["csv", "json"], default="csv",
-                        help="Timer file format")
-    parser.set_defaults(func=reference_func)
-
-
 def kmean_parser(subparser, reference_func):
     """Add instance-specific arguments from the command line
 
@@ -236,7 +212,6 @@ def main():
     sample_parser(sub_parsers, reference_func=sample.main)
     index_parser(sub_parsers, reference_func=index.main)
     featurize_parser(sub_parsers, reference_func=featurize.main)
-    profiling_parser(sub_parsers, reference_func=profiling.main)
     kmean_parser(sub_parsers, reference_func=kmean.main)
     args = parser.parse_args()
 
