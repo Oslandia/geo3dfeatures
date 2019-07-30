@@ -245,14 +245,14 @@ def main(opts):
         opts.feature_set, opts.bin_size
     )
 
-    for c in data.columns[3:]:
+    points = data[["x", "y", "z"]].copy()
+    data.drop(columns=["x", "y"], inplace=True)
+
+    for c in data.columns:
         data[c] = max_normalize(data[c])
 
     if "bin_z_range" in data.columns:
         data["bin_z_range"].fillna(0, inplace=True)
-
-    points = data[["x", "y", "z"]].copy()
-    data.drop(["x", "y", "z"], axis=1, inplace=True)
 
     update_features(data, feature_config)
 
