@@ -40,11 +40,7 @@ def main(opts):
     tree_file = opts.tree_file
     leaf_size = opts.kdtree_leafs
     if not tree_file:
-        experiment = (
-            opts.experiment
-            if opts.experiment is not None
-            else opts.input_file.split(".")[0]
-            )
+        experiment = opts.input_file.split(".")[0]
         fname = "kd-tree-leaf-{}.pkl".format(leaf_size)
         output_path = Path(opts.datapath, "output", experiment)
         output_path.mkdir(parents=True, exist_ok=True)

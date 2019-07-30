@@ -79,9 +79,6 @@ def featurize_parser(subparser, reference_func):
     add_kdtree_args(parser)
     parser.add_argument('-c', '--extra-columns', nargs="+",
                         help="Extra point cloud feature names (other than x,y,z)")
-    parser.add_argument("-i", "--input-file",
-                        required=True,
-                        help="Input point cloud file")
     parser.add_argument("--chunksize",
                         default=20_000, type=int,
                         help="Number of points in each writing chunk")
@@ -137,8 +134,6 @@ def index_parser(subparser, reference_func):
     parser.add_argument("-d", "--datapath",
                         default="./data",
                         help="Data folder on the file system")
-    parser.add_argument("-e", "--experiment",
-                        help="Name of the feature extraction experiment")
     parser.add_argument("-i", "--input-file",
                         required=True,
                         help="Input point cloud file")
@@ -176,12 +171,12 @@ def add_instance_args(parser, featurized=True):
     parser.add_argument("-d", "--datapath",
                         default="./data",
                         help="Data folder on the file system")
-    parser.add_argument("-e", "--experiment",
-                        required=featurized,
-                        help="Name of the feature extraction experiment")
     parser.add_argument('-f', '--feature-set',
                         choices=FEATURE_SETS, default="full",
                         help="Set of computed features")
+    parser.add_argument("-i", "--input-file",
+                        required=True,
+                        help="Input point cloud file")
     parser.add_argument("-m", "--nb-process",
                         type=int, default=2,
                         help="")

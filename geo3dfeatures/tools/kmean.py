@@ -221,6 +221,9 @@ def save_clusters(
         )
     else:
         input_file_path = Path(datapath, "input", experiment + ".las")
+        if not input_file_path.is_file():
+            logger.error(f"{input_file_path} is not a valid file.")
+            sys.exit(1)
         with laspy.file.File(input_file_path, mode="r") as input_las:
             outfile = laspy.file.File(
                 output_file, mode="w", header=input_las.header
@@ -240,8 +243,9 @@ def main(opts):
     config_path = Path("config", opts.config_file)
     feature_config = read_config(config_path)
 
+    experiment = opts.input_file.split(".")[0]
     data = load_features(
-        opts.datapath, opts.experiment, opts.neighbors, opts.radius,
+        opts.datapath, experiment, opts.neighbors, opts.radius,
         opts.feature_set, opts.bin_size
     )
 
@@ -262,7 +266,7 @@ def main(opts):
 
     colored_results = colorize_clusters(points, model.labels_)
     save_clusters(
-        colored_results, opts.datapath, opts.experiment, opts.neighbors,
+        colored_results, opts.datapath, experiment, opts.neighbors,
         opts.radius, opts.feature_set, opts.bin_size, opts.nb_clusters,
         config_path.stem, opts.xyz
     )
