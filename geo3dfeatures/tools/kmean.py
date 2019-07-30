@@ -143,6 +143,9 @@ def update_features(df, config):
     coefs = np.ones(shape=df.shape[1])
     df_coefs = pd.DataFrame(np.expand_dims(coefs, 0), columns=df.columns)
     for key in config["clustering"]:
+        if key not in df.columns:
+            logger.warning(f"{key} is not a known feature, skipping.")
+            continue
         df_coefs[key] = float(config["clustering"][key])
     coefs = np.squeeze(np.array(df_coefs))
     for idx, column in enumerate(df.columns):
