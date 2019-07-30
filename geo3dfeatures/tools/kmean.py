@@ -11,7 +11,7 @@ import daiquiri
 import numpy as np
 import pandas as pd
 import seaborn as sns
-from sklearn.cluster import KMeans
+from sklearn.cluster import MiniBatchKMeans
 import laspy
 
 from geo3dfeatures.features import max_normalize
@@ -19,7 +19,7 @@ from geo3dfeatures.features import max_normalize
 logger = daiquiri.getLogger(__name__)
 
 SEED = 1337
-
+KMEAN_BATCH = 10_000
 
 def instance(neighbors, radius, feature_set, bin_size):
     """Build the instance name, depending on the input parameters
@@ -261,7 +261,11 @@ def main(opts):
     update_features(data, feature_config)
 
     logger.info(f"Compute {opts.nb_clusters} clusters...")
-    model = KMeans(opts.nb_clusters, random_state=SEED)
+    model = MiniBatchKMeans(
+        n_clusters=opts.nb_clusters,
+        batch_size=KMEAN_BATCH,
+        random_state=SEED
+    )
     model.fit(data)
 
     colored_results = colorize_clusters(points, model.labels_)
