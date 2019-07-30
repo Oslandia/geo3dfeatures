@@ -91,7 +91,7 @@ def max_normalize(a):
     -------
     numpy.array
     """
-    return a / np.max(a)
+    return (a - np.min(a)) / (np.max(a) - np.min(a))
 
 
 def sum_normalize(a):
