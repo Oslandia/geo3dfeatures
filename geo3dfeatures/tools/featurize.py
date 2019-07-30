@@ -34,11 +34,7 @@ def main(opts):
             logger.warning("%d extra fields are expected for the provided input data, however you enter %d field names (%s).", data.shape[1] - 3, len(opts.extra_columns), opts.extra_columns)
             raise ValueError("The given input columns does not match data shape, i.e. x,y,z plus extra columns.")
 
-    experiment = (
-        opts.experiment
-        if opts.experiment is not None
-        else opts.input_file.split(".")[0]
-        )
+    experiment = opts.input_file.split(".")[0]
     tree_file = opts.tree_file
     if not tree_file:
         tree_file = Path(

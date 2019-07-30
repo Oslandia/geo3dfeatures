@@ -79,36 +79,9 @@ def featurize_parser(subparser, reference_func):
     add_kdtree_args(parser)
     parser.add_argument('-c', '--extra-columns', nargs="+",
                         help="Extra point cloud feature names (other than x,y,z)")
-    parser.add_argument("-i", "--input-file",
-                        required=True,
-                        help="Input point cloud file")
     parser.add_argument("--chunksize",
                         default=20_000, type=int,
                         help="Number of points in each writing chunk")
-    parser.set_defaults(func=reference_func)
-
-
-def profiling_parser(subparser, reference_func):
-    """Add instance-specific arguments from the command line
-
-    Parameters
-    ----------
-    subparser : argparser.parser.SubParsersAction
-    reference_func : function
-    """
-    parser = subparser.add_parser(
-        "profile",
-        help=(
-            "Extract in a human-readable format the "
-            "geometric feature extraction time measurements"
-        )
-    )
-    parser.add_argument("-e", "--experiment",
-                        required=True,
-                        help="Name of the feature extraction experiment")
-    parser.add_argument("-F", "--file-format",
-                        choices=["csv", "json"], default="csv",
-                        help="Timer file format")
     parser.set_defaults(func=reference_func)
 
 
@@ -161,8 +134,6 @@ def index_parser(subparser, reference_func):
     parser.add_argument("-d", "--datapath",
                         default="./data",
                         help="Data folder on the file system")
-    parser.add_argument("-e", "--experiment",
-                        help="Name of the feature extraction experiment")
     parser.add_argument("-i", "--input-file",
                         required=True,
                         help="Input point cloud file")
@@ -200,12 +171,12 @@ def add_instance_args(parser, featurized=True):
     parser.add_argument("-d", "--datapath",
                         default="./data",
                         help="Data folder on the file system")
-    parser.add_argument("-e", "--experiment",
-                        required=featurized,
-                        help="Name of the feature extraction experiment")
     parser.add_argument('-f', '--feature-set',
                         choices=FEATURE_SETS, default="full",
                         help="Set of computed features")
+    parser.add_argument("-i", "--input-file",
+                        required=True,
+                        help="Input point cloud file")
     parser.add_argument("-m", "--nb-process",
                         type=int, default=2,
                         help="")
@@ -236,7 +207,6 @@ def main():
     sample_parser(sub_parsers, reference_func=sample.main)
     index_parser(sub_parsers, reference_func=index.main)
     featurize_parser(sub_parsers, reference_func=featurize.main)
-    profiling_parser(sub_parsers, reference_func=profiling.main)
     kmean_parser(sub_parsers, reference_func=kmean.main)
     args = parser.parse_args()
 
