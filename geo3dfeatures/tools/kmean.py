@@ -143,6 +143,9 @@ def update_features(df, config):
     coefs = np.ones(shape=df.shape[1])
     df_coefs = pd.DataFrame(np.expand_dims(coefs, 0), columns=df.columns)
     for key in config["clustering"]:
+        if key not in df.columns:
+            logger.warning(f"{key} is not a known feature, skipping.")
+            continue
         df_coefs[key] = float(config["clustering"][key])
     coefs = np.squeeze(np.array(df_coefs))
     for idx, column in enumerate(df.columns):
@@ -249,14 +252,14 @@ def main(opts):
         opts.feature_set, opts.bin_size
     )
 
-    for c in data.columns[3:]:
+    points = data[["x", "y", "z"]].copy()
+    data.drop(columns=["x", "y"], inplace=True)
+
+    for c in data.columns:
         data[c] = max_normalize(data[c])
 
     if "bin_z_range" in data.columns:
         data["bin_z_range"].fillna(0, inplace=True)
-
-    points = data[["x", "y", "z"]].copy()
-    data.drop(["x", "y", "z"], axis=1, inplace=True)
 
     update_features(data, feature_config)
 
