@@ -299,3 +299,18 @@ def test_eigenentropy_with_null_eigenvalue():
     eigen2 = eigenentropy(np.array([2.43, 0.96]))
     assert len(warning_record) == 0  # Test that no warning is raised
     assert eigen1 == eigen2
+
+
+def test_radius_2D():
+    x = np.array([[0., 0., 0.],
+                  [1., 0., 1.],
+                  [0., 0., 1.],
+                  [1., 1., 0.],
+                  [2., 2., 2.],
+                  [0., 1., 10.],
+                  [-0.05, 1., 2.],
+                  [4., -3., 0.]])
+    point = x[0]
+    expected = 5.0
+    result = radius_2D(point[:2], x[:, :2])
+    assert abs(result - expected) <= 1e-4
