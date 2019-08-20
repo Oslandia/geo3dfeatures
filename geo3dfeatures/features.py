@@ -368,7 +368,7 @@ def radius_2D(point, neighbors_2D):
     float
         2D radius associated to "point"
     """
-    return np.max(np.sum((neighbors_2D - point) ** 2, axis=1))
+    return np.power(((point - neighbors_2D) ** 2).sum(axis=1), 0.5).max()
 
 
 def density_3D(radius, nb_neighbors):
