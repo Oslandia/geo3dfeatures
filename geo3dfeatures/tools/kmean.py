@@ -4,6 +4,7 @@
 from configparser import ConfigParser
 import os
 from pathlib import Path
+import pickle
 import sys
 
 import daiquiri
@@ -13,7 +14,8 @@ import seaborn as sns
 from sklearn.cluster import MiniBatchKMeans
 import laspy
 
-from geo3dfeatures.features import max_normalize, accumulation_2d_neighborhood
+from geo3dfeatures.features import max_normalize
+from geo3dfeatures import postprocess
 
 logger = daiquiri.getLogger(__name__)
 
@@ -192,7 +194,7 @@ def colorize_clusters(points, clusters):
 
 def save_clusters(
         results, datapath, experiment, neighbors, radius,
-        nb_clusters, config_name, xyz=False
+        nb_clusters, config_name, postprocess=False, xyz=False
 ):
     """Save the resulting dataframe into the accurate folder on the file system
 
@@ -213,6 +215,9 @@ def save_clusters(
         Number of cluster, used for identifying the resulting data
     config_name : str
         Cluster configuration filename
+    postprocess : boolean
+        If true, the output clusters are postprocessed, otherwise they are
+    k-mean algorithm outputs
     xyz : boolean
         If true, the output file is a .xyz, otherwise a .las file will be
     produced
@@ -222,15 +227,17 @@ def save_clusters(
     )
     os.makedirs(output_path, exist_ok=True)
     extension = "xyz" if xyz else "las"
+    postprocess_suffix = "-pp" if postprocess else ""
     output_file = Path(
         output_path,
         "kmeans-"
         + instance(neighbors, radius)
-        + "-" + config_name + "-" + str(nb_clusters) + "." + extension
+        + "-" + config_name + "-" + str(nb_clusters) + postprocess_suffix
+        + "." + extension
     )
     if xyz:
         results.to_csv(
-            str(output_file), sep=" ", index=False, header=False
+            str(output_file), sep=" ", index=False, header=True
         )
     else:
         input_file_path = Path(datapath, "input", experiment + ".las")
@@ -278,10 +285,24 @@ def main(opts):
     )
 
     model.fit(data)
+    labels = model.labels_
 
-    colored_results = colorize_clusters(points, model.labels_)
+    # Postprocessing
+    if opts.post_processing:
+        tree_file = Path(
+            "data", "output", experiment,
+            "kd-tree-leaf-" + str(opts.kdtree_leafs) + ".pkl"
+        )
+        with open(tree_file, 'rb') as fobj:
+            logger.info("Load kd-tree from file...")
+            tree = pickle.load(fobj)
+        labels = postprocess.postprocess_labels(
+            points, model.labels_, tree, opts.neighbors, opts.radius
+        )
+
+    colored_results = colorize_clusters(points, labels)
     save_clusters(
         colored_results, opts.datapath, experiment, opts.neighbors,
         opts.radius, opts.nb_clusters,
-        config_path.stem, opts.xyz
+        config_path.stem, opts.post_processing, opts.xyz
     )
