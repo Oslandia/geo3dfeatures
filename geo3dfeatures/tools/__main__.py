@@ -9,9 +9,8 @@ Available choices::
 
 import argparse
 
-from geo3dfeatures import FEATURE_SETS
 from geo3dfeatures.tools import (
-    info, sample, featurize, profiling, kmean, index
+    info, sample, featurize, kmean, index
     )
 
 # default value for kd-tree
@@ -171,9 +170,6 @@ def add_instance_args(parser, featurized=True):
     parser.add_argument("-d", "--datapath",
                         default="./data",
                         help="Data folder on the file system")
-    parser.add_argument('-f', '--feature-set',
-                        choices=FEATURE_SETS, default="full",
-                        help="Set of computed features")
     parser.add_argument("-i", "--input-file",
                         required=True,
                         help="Input point cloud file")

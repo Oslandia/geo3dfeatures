@@ -21,7 +21,8 @@ logger = daiquiri.getLogger(__name__)
 SEED = 1337
 KMEAN_BATCH = 10_000
 
-def instance(neighbors, radius, feature_set, bin_size):
+
+def instance(neighbors, radius, bin_size):
     """Build the instance name, depending on the input parameters
 
     Parameters
@@ -31,8 +32,6 @@ def instance(neighbors, radius, feature_set, bin_size):
     radius : float
         Threshold that define the neighborhood, in order to compute the feature
     set; used if neighbors is None
-    feature_set : str
-        Set of features, i.e. alphabeta, eigenvalues or full
     bin_size : float
         Bin size used to compute accumulation features
 
@@ -51,12 +50,12 @@ def instance(neighbors, radius, feature_set, bin_size):
             "neighbors and radius arguments can't be both undefined"
             )
     return (
-        neighborhood + "-" + feature_set + "-binsize-" + str(bin_size)
+        neighborhood + "-binsize-" + str(bin_size)
     )
 
 
 def load_features(
-        datapath, experiment, neighbors, radius, feature_set, bin_size
+        datapath, experiment, neighbors, radius, bin_size
 ):
     """Read feature set from the file system, starting from the input
         parameters
@@ -72,8 +71,6 @@ def load_features(
     radius : float
         Threshold that define the neighborhood, in order to compute the feature
     set; used if neighbors is None
-    feature_set : str
-        Set of features, i.e. alphabeta, eigenvalues or full
     bin_size : float
         Bin size used to compute accumulation features
 
@@ -85,12 +82,11 @@ def load_features(
     """
     filepath = Path(
         datapath, "output", experiment, "features",
-        "features-" + instance(neighbors, radius, feature_set, bin_size)
+        "features-" + instance(neighbors, radius, bin_size)
         + ".csv"
         )
     logger.info(f"Recover features stored in {filepath}")
     return pd.read_csv(filepath)
-
 
 
 def read_config(config_path):
@@ -178,7 +174,7 @@ def colorize_clusters(points, clusters):
 
 def save_clusters(
         results, datapath, experiment, neighbors, radius,
-        feature_set, bin_size, nb_clusters, config_name, xyz=False
+        bin_size, nb_clusters, config_name, xyz=False
 ):
     """Save the resulting dataframe into the accurate folder on the file system
 
@@ -195,8 +191,6 @@ def save_clusters(
     radius : float
         Threshold that define the neighborhood, in order to compute the feature
     set; used if neighbors is None
-    feature_set : str
-        Set of features, i.e. alphabeta, eigenvalues or full
     bin_size : float
         Bin size used to compute accumulation features
     nb_clusters : int
@@ -215,7 +209,7 @@ def save_clusters(
     output_file = Path(
         output_path,
         "kmeans-"
-        + instance(neighbors, radius, feature_set, bin_size)
+        + instance(neighbors, radius, bin_size)
         + "-" + config_name + "-" + str(nb_clusters) + "." + extension
     )
     if xyz:
@@ -242,14 +236,13 @@ def save_clusters(
 
 
 def main(opts):
-
     config_path = Path("config", opts.config_file)
     feature_config = read_config(config_path)
 
     experiment = opts.input_file.split(".")[0]
     data = load_features(
         opts.datapath, experiment, opts.neighbors, opts.radius,
-        opts.feature_set, opts.bin_size
+        opts.bin_size
     )
 
     points = data[["x", "y", "z"]].copy()
@@ -274,6 +267,6 @@ def main(opts):
     colored_results = colorize_clusters(points, model.labels_)
     save_clusters(
         colored_results, opts.datapath, experiment, opts.neighbors,
-        opts.radius, opts.feature_set, opts.bin_size, opts.nb_clusters,
+        opts.radius, opts.bin_size, opts.nb_clusters,
         config_path.stem, opts.xyz
     )
