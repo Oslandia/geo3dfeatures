@@ -70,7 +70,7 @@ def main(opts):
             "Error in input neighborhood definition: "
             "neighbors and radius arguments can't be both undefined"
             )
-    instance = "features-" + neighborhood + "-binsize-" + str(opts.bin_size)
+    instance = "features-" + neighborhood
     output_path = Path(opts.datapath, "output", experiment, "features")
     output_path.mkdir(parents=True, exist_ok=True)
     output_file = Path(output_path, instance + ".csv")
@@ -79,6 +79,6 @@ def main(opts):
     extract(
         data, tree, output_file, opts.neighbors, opts.radius,
         opts.nb_process, extra_columns,
-        opts.bin_size, opts.chunksize
+        opts.chunksize
     )
     logger.info("Results in %s", output_file)

@@ -164,9 +164,6 @@ def add_instance_args(parser, featurized=True):
         True if the function is called by the featurization program, hence some
         arguments are required; false otherwise
     """
-    parser.add_argument('-b', '--bin-size',
-                        type=float, required=featurized,
-                        help="Bin size for accumulation metric computing")
     parser.add_argument("-d", "--datapath",
                         default="./data",
                         help="Data folder on the file system")

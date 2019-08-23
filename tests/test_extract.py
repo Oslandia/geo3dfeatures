@@ -7,9 +7,9 @@ import pandas as pd
 from scipy.spatial import cKDTree as KDTree
 
 from geo3dfeatures.extract import (
-    compute_tree, request_tree, sequence_full, process_full, extract
+    compute_tree, request_tree, sequence_full, process_full, extract,
+    ExtraFeatures
     )
-from geo3dfeatures.features import accumulation_2d_neighborhood
 
 _here = Path(__file__).resolve().parent
 DATADIR = _here / "data"
@@ -39,7 +39,7 @@ def test_extract_extra_features(sphere):
         data, kd_tree, nb_neighbors=10, csvpath=csvpath,
         extra_columns=("r", "g", "b"), nb_processes=2
     )
-    nb_extra_features = 22
+    nb_extra_features = 19
     nb_output_features = sphere.shape[1] + colors.shape[1] + nb_extra_features
     features = pd.read_csv(csvpath)
     assert features.shape[0] == sphere.shape[0]
@@ -51,15 +51,13 @@ def test_sequence_full(sphere):
     """
     NB_NEIGHBORS = 10
     tree = compute_tree(sphere, leaf_size=500)
-    acc_features = accumulation_2d_neighborhood(sphere)
-    gen = sequence_full(acc_features, tree, nb_neighbors=NB_NEIGHBORS)
+    gen = sequence_full(sphere, tree, nb_neighbors=NB_NEIGHBORS)
     first_item = next(gen)
-    assert len(first_item) == 5
+    assert len(first_item) == 4
     assert first_item[0].shape == (NB_NEIGHBORS + 1, 3)
     assert first_item[1].shape == (NB_NEIGHBORS + 1,)
-    assert first_item[2].shape == (3,)
-    assert len(first_item[3]) == 2
-    assert first_item[3].names == first_item[3].values == ()
+    assert isinstance(first_item[2], ExtraFeatures)
+    assert first_item[3] == "neighbors"
     assert len(list(gen)) == sphere.shape[0] - 1
 
 
@@ -73,14 +71,12 @@ def test_process_full(sphere):
         "scattering", "omnivariance", "anisotropy",
         "eigenentropy", "eigenvalue_sum",
         "radius_2D", "density_2D", "eigenvalue_sum_2D", "eigenvalue_ratio_2D",
-        "bin_density", "bin_z_range", "bin_z_std"
     ]
     tree = compute_tree(sphere, leaf_size=500)
-    acc_features = accumulation_2d_neighborhood(sphere)
-    gen = sequence_full(acc_features, tree, nb_neighbors=10)
+    gen = sequence_full(sphere, tree, nb_neighbors=10)
     item = next(gen)
     features, _ = process_full(
-        item[0], item[1], item[2], extra=None
+        item[0], item[1], extra=None
     )
     assert len(features) == 3 + len(additional_features)
     assert features.x == sphere[0, 0]

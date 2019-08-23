@@ -1,9 +1,10 @@
 import pytest
 
 import numpy as np
-from sklearn.decomposition import PCA
+import pandas as pd
 
 from sklearn.decomposition import PCA
+
 from scipy.spatial import cKDTree as KDTree
 
 from geo3dfeatures.features import (accumulation_2d_neighborhood,
@@ -32,19 +33,20 @@ def _neighbors(data, reference_point, neighbors_size=50, leaf_size=100):
 
 
 def test_accumulation_2d_features(line, plane, sphere):
-    acc1D = accumulation_2d_neighborhood(line)
-    acc2D = accumulation_2d_neighborhood(plane)
-    acc3D = accumulation_2d_neighborhood(sphere)
+    coords = list("xyz")
+    acc1D = accumulation_2d_neighborhood(pd.DataFrame(line, columns=coords))
+    acc2D = accumulation_2d_neighborhood(pd.DataFrame(plane, columns=coords))
+    acc3D = accumulation_2d_neighborhood(pd.DataFrame(sphere, columns=coords))
     # a large density of points for the line
-    assert acc1D["count"].mean() > acc2D["count"].mean()
-    assert acc1D["count"].mean() > acc3D["count"].mean()
+    assert acc1D["bin_density"].mean() > acc2D["bin_density"].mean()
+    assert acc1D["bin_density"].mean() > acc3D["bin_density"].mean()
     # low z-std and z-range for line and plane
-    assert abs(acc1D["std"].mean() - acc2D["std"].mean()) < 1e-4
+    assert abs(acc1D["bin_z_std"].mean() - acc2D["bin_z_std"].mean()) < 1e-4
     # higher z-std and z-range for sphere
-    assert acc3D["std"].mean() > acc1D["std"].mean()
-    assert acc3D["std"].mean() > acc2D["std"].mean()
-    assert acc3D["z_range"].mean() > acc1D["z_range"].mean()
-    assert acc3D["z_range"].mean() > acc2D["z_range"].mean()
+    assert acc3D["bin_z_std"].mean() > acc1D["bin_z_std"].mean()
+    assert acc3D["bin_z_std"].mean() > acc2D["bin_z_std"].mean()
+    assert acc3D["bin_z_range"].mean() > acc1D["bin_z_range"].mean()
+    assert acc3D["bin_z_range"].mean() > acc2D["bin_z_range"].mean()
 
 
 def test_sum_triangle_variance_space(plane):

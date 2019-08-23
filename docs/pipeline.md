@@ -61,18 +61,13 @@ Once we get the kd-tree structure, we can generate the geometric features that
 are associated to the points of the point cloud:
 
 ```
-geo3d featurize -d data -i geocliff-10000.las -n 50 -f full -t 1000 -c r g b -b 1.0 --chunksize 10000
+geo3d featurize -d data -i geocliff-10000.las -n 50 -t 1000 -c r g b --chunksize 10000
 ```
 
 Here we build the point neighborhoods with a kd-tree composed of 1000 points
 per leaf (`-t 1000`), each point having 50 neighbors (`-n 50`). The kd-tree
 file is recovered thanks to this leaf argument, however we can also specify the
-tree file directly (option `--tree-file`). We decide to consider all the
-geometric features (`-f full`). As another argument, we may specify the
-accumulation feature bin size (`b`), expressed in the same unit than the point
-cloud. Be careful with this parameter : it is considered as a floating number
-in the code (if the parameter is set as `-b 1`, the file will be stored like
-`-binsize-1.0`).
+tree file directly (option `--tree-file`).
 
 By default the first three fields of the input data are x, y, z coordinates. As
 optional parameters, we can provide some extra fields from the input dataset
@@ -84,7 +79,7 @@ written onto file system by chunks. One may control the writing chunk size with
 the `--chunksize` argument.
 
 The output features are stored in
-`data/output/geocliff-100000/features/features-n50-full-binsize-1.0.csv`.
+`data/output/geocliff-100000/features/features-n50.csv`.
 
 ## Cluster
 
@@ -95,11 +90,11 @@ during the clustering process with the help of a configuration file. As an
 example, one may run:
 
 ```
-geo3d cluster -d data -i geocliff-100000 -n 50 -f full -k 2 -b 1.0 -c base.ini
+geo3d cluster -d data -i geocliff-100000.las -n 50 -k 2 -c base.ini
 ```
 
 This command reads the
-`data/output/geocliff-100000/features/features-n50-full-binsize-1.0.csv` file, and
+`data/output/geocliff-100000/features/features-n50.csv` file, and
 computes the corresponding cluster for each of the 10000 points, by following
 the feature scheme depicted in `config/base.ini` (*note:* the `-c` argument
 must be followed by a filename, not a path). In this configuration, each
@@ -107,10 +102,13 @@ feature has an equivalent importance; however some other examples are available
 in the `config` folder and home-made configurations may be designed as well by
 writing a new `.ini` file.
 
+A parameter `bin` can be set in the configuratoin file. Its the accumulation feature
+bin size, expressed in the same unit than the point cloud. Be careful with this
+parameter : it is considered as a floating number in the code.
+
 Once the results have been computed, they are stored in
-`data/output/geocliff-100000/clustering/kmeans-n50-full-binsize-1.0-base-2.las`. This
-resulting file may be visualized with a 3D data viewer, like CloudCompare. One
-may also generate `.xyz` if desired by adding the option `-xyz` to the
-command.
+`data/output/geocliff-100000/clustering/kmeans-n50-base-2.las`. This resulting file
+may be visualized with a 3D data viewer, like CloudCompare. One may also generate
+`.xyz` if desired by adding the option `-xyz` to the command.
 
 And voilà!

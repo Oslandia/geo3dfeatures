@@ -23,7 +23,6 @@ from scipy.spatial import cKDTree as KDTree
 from tqdm import tqdm
 
 from geo3dfeatures.features import (
-    accumulation_2d_neighborhood,
     triangle_variance_space,
     sum_normalize, val_sum, val_range, std_deviation,
     curvature_change, linearity, planarity, scattering,
@@ -61,9 +60,6 @@ class NeighborFeatures(NamedTuple):
     density_2D: float
     eigenvalue_sum_2D: float
     eigenvalue_ratio_2D: float
-    bin_density: float
-    bin_z_range: float
-    bin_z_std: float
 
 
 class RadiusFeatures(NamedTuple):
@@ -91,9 +87,6 @@ class RadiusFeatures(NamedTuple):
     density_2D: float
     eigenvalue_sum_2D: float
     eigenvalue_ratio_2D: float
-    bin_density: float
-    bin_z_range: float
-    bin_z_std: float
 
 
 class ExtraFeatures(NamedTuple):
@@ -170,7 +163,7 @@ def fit_pca(point_cloud):
     return PCA().fit(point_cloud)
 
 
-def process_full(neighbors, neighborhood_extra, z_acc, extra, mode="neighbors"):
+def process_full(neighbors, neighborhood_extra, extra, mode="neighbors"):
     """Build the full feature set for a single point
 
     Parameters
@@ -182,8 +175,6 @@ def process_full(neighbors, neighborhood_extra, z_acc, extra, mode="neighbors"):
         If mode == "neighbors", gives distance between the point and all its
     neighbors; otherwise (mode == "radius") gives the number of points in the
     local sphere
-    z_acc : numpy.array
-        Accumulation features associated to the point
     extra : ExtraFeatures
         Names and values of extra input features, e.g. the RGB color
     mode : str
@@ -223,9 +214,6 @@ def process_full(neighbors, neighborhood_extra, z_acc, extra, mode="neighbors"):
                 dens_2D,  # density2D
                 np.nan,  # eigenvalue_sum_2D
                 np.nan,  # eigenvalue_ratio_2D
-                z_acc[-3],    # bin_density
-                z_acc[-2],    # bin_z_range
-                z_acc[-1]   # bin_z_std
             ),
             extra
         )
@@ -237,28 +225,25 @@ def process_full(neighbors, neighborhood_extra, z_acc, extra, mode="neighbors"):
         pca_2d = fit_pca(neighbors[:, :2])  # PCA just on the x,y coords
         eigenvalues_2D = pca_2d.singular_values_ ** 2
         return (FeatureTuple(x, y, z,
-                         alpha,
-                         beta,
-                         extra_3D,
-                         val_range(neighbors[:, 2]),  # z_range
-                         std_deviation(neighbors[:, 2]),  # std_dev
-                         dens_3D,
-                         verticality_coefficient(pca),
-                         curvature_change(norm_eigenvalues_3D),
-                         linearity(norm_eigenvalues_3D),
-                         planarity(norm_eigenvalues_3D),
-                         scattering(norm_eigenvalues_3D),
-                         omnivariance(norm_eigenvalues_3D),
-                         anisotropy(norm_eigenvalues_3D),
-                         eigenentropy(norm_eigenvalues_3D),
-                         val_sum(eigenvalues_3D),  # eigenvalue sum
-                         extra_2D,  # radius 2D
-                         dens_2D,
-                         val_sum(eigenvalues_2D),  # eigenvalue_sum_2D
-                         eigenvalue_ratio_2D(eigenvalues_2D),
-                         z_acc[-3],    # bin_density
-                         z_acc[-2],    # bin_z_range
-                         z_acc[-1]),   # bin_z_std
+                             alpha,
+                             beta,
+                             extra_3D,
+                             val_range(neighbors[:, 2]),  # z_range
+                             std_deviation(neighbors[:, 2]),  # std_dev
+                             dens_3D,
+                             verticality_coefficient(pca),
+                             curvature_change(norm_eigenvalues_3D),
+                             linearity(norm_eigenvalues_3D),
+                             planarity(norm_eigenvalues_3D),
+                             scattering(norm_eigenvalues_3D),
+                             omnivariance(norm_eigenvalues_3D),
+                             anisotropy(norm_eigenvalues_3D),
+                             eigenentropy(norm_eigenvalues_3D),
+                             val_sum(eigenvalues_3D),  # eigenvalue sum
+                             extra_2D,  # radius 2D
+                             dens_2D,
+                             val_sum(eigenvalues_2D),  # eigenvalue_sum_2D
+                             eigenvalue_ratio_2D(eigenvalues_2D)),
                 extra)
 
 
@@ -270,15 +255,15 @@ def _wrap_full_process(args):
 
 
 def sequence_full(
-        acc_features, tree, nb_neighbors, radius=None, extra_columns=None
+        scene, tree, nb_neighbors, radius=None, extra_columns=None
 ):
     """Build a data generator for getting neighborhoods, distances and
         accumulation features for each point
 
     Parameters
     ----------
-    acc_features : pd.DataFrame
-        point cloud + extra columns + z-accumulation features
+    scene : np.array
+        point cloud + extra columns
     tree : scipy.spatial.ckdtree.CKDTree
         Point cloud kd-tree for computing nearest neighborhoods
     nb_neighbors : int
@@ -294,30 +279,31 @@ def sequence_full(
         Geometric coordinates of neighbors
     numpy.array
         Euclidian distance between the reference point and its neighbors
-    numpy.array
-        Reference point accumulation features
+    ExtraFeature
+        Extra input data column names, reused for output dataframe
+    str
+        radius or neigbors mode
     """
     if extra_columns is None:
-        if acc_features.shape[1] != 6:
+        if scene.shape[1] != 3:
             raise ValueError("No extra column declared.")
     else:
-        if acc_features.shape[1] - 6 != len(extra_columns):
+        if scene.shape[1] - 3 != len(extra_columns):
             raise ValueError("Extra column lengths does not match data.")
-    for point in acc_features.values:
+    for point in scene:
         neighborhood_extra, neighbor_idx = request_tree(
             point[:3], tree, nb_neighbors, radius
         )
         mode = "neighbors"
-        z_acc = point[-3:]
         extra_features = (
-            ExtraFeatures(extra_columns, tuple(point[3:-3]))
+            ExtraFeatures(extra_columns, tuple(point[3:]))
             if extra_columns else ExtraFeatures(tuple(), tuple())
         )
         neighbors = tree.data[neighbor_idx]
         if neighborhood_extra is None:  # True if radius is not None
             neighborhood_extra = radius
             mode = "radius"
-        yield neighbors, neighborhood_extra, z_acc, extra_features, mode
+        yield neighbors, neighborhood_extra, extra_features, mode
 
 
 def _dump_results_by_chunk(iterable, csvpath, chunksize, progress_bar):
@@ -350,7 +336,7 @@ def _dump_results_by_chunk(iterable, csvpath, chunksize, progress_bar):
 def extract(
         point_cloud, tree, csvpath, nb_neighbors=None, radius=None,
         nb_processes=2, extra_columns=None,
-        bin_size=1, chunksize=20000
+        chunksize=20000
 ):
     """Extract geometric features from a 3D point cloud.
 
@@ -372,13 +358,8 @@ def extract(
         Number of parallel cores
     extra_columns : list
         Extra input data column names, reused for output (None by default)
-    bin_size: int
-        Size of square accumulation bins (the unit is those of the dataset)
     """
     logger.info("Computation begins!")
-    acc_features = accumulation_2d_neighborhood(
-        point_cloud, extra_columns, bin_size
-    )
     if nb_neighbors is None and radius is None:
         logger.error("nb_neighbors and radius can't be both None.")
         raise ValueError(
@@ -387,7 +368,7 @@ def extract(
         )
     start = timer()
     gen = sequence_full(
-        acc_features, tree, nb_neighbors, radius, extra_columns
+        point_cloud, tree, nb_neighbors, radius, extra_columns
     )
     with Pool(processes=nb_processes) as pool:
         logger.info("Total number of points: %s", point_cloud.shape[0])
