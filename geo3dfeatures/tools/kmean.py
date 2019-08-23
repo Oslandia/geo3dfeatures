@@ -13,7 +13,7 @@ import seaborn as sns
 from sklearn.cluster import MiniBatchKMeans
 import laspy
 
-from geo3dfeatures.features import max_normalize
+from geo3dfeatures.features import max_normalize, accumulation_2d_neighborhood
 
 logger = daiquiri.getLogger(__name__)
 
@@ -133,14 +133,20 @@ def update_features(df, config):
     df_coefs = pd.DataFrame(np.expand_dims(coefs, 0), columns=df.columns)
     for key in config["clustering"]:
         if key not in df.columns:
-            logger.warning(f"{key} is not a known feature, skipping.")
+            logger.warning("%s is not a known feature, skipping.", key)
             continue
         df_coefs[key] = float(config["clustering"][key])
     coefs = np.squeeze(np.array(df_coefs))
     for idx, column in enumerate(df.columns):
         if coefs[idx] != 1:
-            logger.info(f"Multiply {column} feature by {coefs[idx]}")
+            logger.info("Multiply %s feature by %s", column, coefs[idx])
             df[column] = coefs[idx] * df[column]
+    if "bin" in config["clustering"]:
+        bin_size = float(config["clustering"]["bin"])
+        logger.info("Found a 'bin' in the config file. Computation of the accumulation features")
+        logger.info("Bin size %s", bin_size)
+        df = accumulation_2d_neighborhood(df, bin_size)
+    return df
 
 
 def colorize_clusters(points, clusters):
@@ -235,6 +241,8 @@ def main(opts):
         opts.datapath, experiment, opts.neighbors, opts.radius
     )
 
+    data = update_features(data, feature_config)
+
     points = data[["x", "y", "z"]].copy()
     data.drop(columns=["x", "y"], inplace=True)
 
@@ -243,10 +251,9 @@ def main(opts):
 
     if "bin_z_range" in data.columns:
         data["bin_z_range"].fillna(0, inplace=True)
+        data.drop(columns=["bin_z_std"], inplace=True)
 
-    update_features(data, feature_config)
-
-    logger.info(f"Compute {opts.nb_clusters} clusters...")
+    logger.info("Compute %s clusters...", opts.nb_clusters)
     model = MiniBatchKMeans(
         n_clusters=opts.nb_clusters,
         batch_size=KMEAN_BATCH,
