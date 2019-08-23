@@ -101,7 +101,12 @@ and [Pauly et al. (2003)](#references).
 
 ### curvature_change
 
-$`C_{\lambda} = \frac{e_3}{e_1+e_2+e_3}`$
+
+$`C_{\lambda} = \frac{\lambda_3}{\sum_i^3 \lamdba_i}`$
+
+équivalent à
+
+$`C_{\lambda} = e_3`$
 
 ### linearity
 

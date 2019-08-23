@@ -22,7 +22,6 @@ from sklearn.decomposition import PCA
 from scipy.spatial import cKDTree as KDTree
 from tqdm import tqdm
 
-from geo3dfeatures import FEATURE_SETS
 from geo3dfeatures.features import (
     accumulation_2d_neighborhood,
     triangle_variance_space,
@@ -35,34 +34,6 @@ from geo3dfeatures.features import (
 
 
 logger = daiquiri.getLogger(__name__)
-
-
-class AlphaBetaFeatures(NamedTuple):
-    """Alpha & Beta features (barycentric coordinates from PCA eigenvalues)
-    """
-    x: float
-    y: float
-    z: float
-    alpha: float
-    beta: float
-
-
-class EigenvaluesFeatures(NamedTuple):
-    """List of features (eigenvalues)
-    """
-    x: float
-    y: float
-    z: float
-    alpha: float
-    beta: float
-    curvature_change: float
-    linearity: float
-    planarity: float
-    scattering: float
-    omnivariance: float
-    anisotropy: float
-    eigenentropy: float
-    eigenvalue_sum: float
 
 
 class NeighborFeatures(NamedTuple):
@@ -199,90 +170,6 @@ def fit_pca(point_cloud):
     return PCA().fit(point_cloud)
 
 
-def process_alphabeta(neighbors, extra):
-    """Compute 'alpha' and 'beta' features for a single point, according to
-    Brodu et al (2012)
-
-    Apart from the point cloud base features (x, y, z, r, g, b), one has two
-    additional features ('alpha' and 'beta').
-
-    Parameters
-    ----------
-    neighbors : numpy.array
-        Coordinates of all points within the point neighborhood; must be a
-        2D-shaped array with `point_cloud.shape[1] == 3`
-    extra : ExtraFeatures
-        Names and values of extra input features, e.g. the RGB color
-
-    Returns
-    ------
-    list, OrderedDict generator (features for each point)
-    """
-    x, y, z = neighbors[0]
-    if len(neighbors) <= 2:
-        return (AlphaBetaFeatures(x, y, z,
-                                  None, None),  # alpha, beta
-                extra)
-    else:
-        pca = fit_pca(neighbors[:, :3])  # PCA on the x,y,z coords
-        eigenvalues_3D = pca.singular_values_ ** 2
-        norm_eigenvalues_3D = sum_normalize(eigenvalues_3D)
-        alpha, beta = triangle_variance_space(norm_eigenvalues_3D)
-        return (AlphaBetaFeatures(x, y, z,
-                                  alpha,
-                                  beta),
-            extra)
-
-
-def process_eigenvalues(neighbors, extra):
-    """Compute 'alpha' and 'beta' features for a single point, according to
-    Brodu et al (2012), as well as neighborhood attributes based on eigenvalues
-    (see Weinmann et al, 2015, for details about such metrics)
-
-    Apart from the point cloud base features (x, y, z, r, g, b), one has eight
-    additional features: 'alpha' and 'beta', plus 'curvature_change',
-    'linearity', 'planarity', 'scattering', 'omnivariance', 'anisotropy',
-    'eigenentropy' and 'eigenvalue_sum'.
-
-    Parameters
-    ---------
-    neighbors : numpy.array
-        Coordinates of all points within the point neighborhood; must be a
-    2D-shaped array with `point_cloud.shape[1] == 3`
-    extra : ExtraFeatures
-        Names and values of extra input features, e.g. the RGB color
-
-    Returns
-    ------
-    list, OrderedDict generator (features for each point)
-
-    """
-    x, y, z = neighbors[0]
-    if len(neighbors) <= 2:
-        return (EigenvaluesFeatures(x, y, z,
-                                    None, None,  # alpha, beta
-                                    None, None, None, None,
-                                    None, None, None, None),
-                extra)
-    else:
-        pca = fit_pca(neighbors[:, :3])  # PCA on the x,y,z coords
-        eigenvalues_3D = pca.singular_values_ ** 2
-        norm_eigenvalues_3D = sum_normalize(eigenvalues_3D)
-        alpha, beta = triangle_variance_space(norm_eigenvalues_3D)
-        return (EigenvaluesFeatures(x, y, z,
-                                    alpha,
-                                    beta,
-                                    curvature_change(norm_eigenvalues_3D),
-                                    linearity(norm_eigenvalues_3D),
-                                    planarity(norm_eigenvalues_3D),
-                                    scattering(norm_eigenvalues_3D),
-                                    omnivariance(norm_eigenvalues_3D),
-                                    anisotropy(norm_eigenvalues_3D),
-                                    eigenentropy(norm_eigenvalues_3D),
-                                    val_sum(eigenvalues_3D)),  # eigenvalue sum
-                extra)
-
-
 def process_full(neighbors, neighborhood_extra, z_acc, extra, mode="neighbors"):
     """Build the full feature set for a single point
 
@@ -375,65 +262,11 @@ def process_full(neighbors, neighborhood_extra, z_acc, extra, mode="neighbors"):
                 extra)
 
 
-def _wrap_alphabeta_process(args):
-    """Wrap the 'process_alphabeta' function in order to use 'pool.imap_unordered' which takes
-    only one argument
-    """
-    return process_alphabeta(*args)
-
-
-def _wrap_eigenvalues_process(args):
-    """Wrap the 'process_eigenvalues' function in order to use 'pool.imap_unordered' which takes
-    only one argument
-    """
-    return process_eigenvalues(*args)
-
-
 def _wrap_full_process(args):
     """Wrap the 'process_full' function in order to use 'pool.imap_unordered' which takes
     only one argument
     """
     return process_full(*args)
-
-
-def sequence_light(
-        point_cloud, tree, nb_neighbors, radius=None, extra_columns=None
-):
-    """Build a data generator for getting neighborhoods and distances for each
-    point
-
-    Parameters
-    ----------
-    point_cloud : numpy.array
-        3D point cloud
-    tree : scipy.spatial.ckdtree.CKDTree
-        Point cloud kd-tree for computing nearest neighborhoods
-    nb_neighbors : int
-        Number of neighbors in each point neighborhood
-    radius : float
-        Radius that defines the neighboring ball around a given point
-    extra_columns : tuple
-        Extra input data column names, reused for output dataframe
-
-    Yields
-    ------
-    numpy.array
-        Geometric coordinates of neighbors
-    numpy.array
-        Euclidian distance between the reference point and its neighbors
-    """
-    if extra_columns is None:
-        if point_cloud.shape[1] != 3:
-            raise ValueError("No extra column declared.")
-    else:
-        if point_cloud.shape[1] - 3 != len(extra_columns):
-            raise ValueError("Extra column lengths does not match data.")
-    for point in point_cloud:
-        distance, neighbor_idx = request_tree(
-            point[:3], tree, nb_neighbors, radius
-        )
-        extra_features = ExtraFeatures(extra_columns, tuple(point[3:])) if extra_columns else ExtraFeatures(tuple(), tuple())
-        yield tree.data[neighbor_idx], extra_features
 
 
 def sequence_full(
@@ -516,7 +349,7 @@ def _dump_results_by_chunk(iterable, csvpath, chunksize, progress_bar):
 
 def extract(
         point_cloud, tree, csvpath, nb_neighbors=None, radius=None,
-        feature_set="full", nb_processes=2, extra_columns=None,
+        nb_processes=2, extra_columns=None,
         bin_size=1, chunksize=20000
 ):
     """Extract geometric features from a 3D point cloud.
@@ -553,35 +386,15 @@ def extract(
             "nb_neighbors and radius can't be both None."
         )
     start = timer()
-    if feature_set == "full":
-        gen = sequence_full(
-            acc_features, tree, nb_neighbors, radius, extra_columns
-        )
-    else:
-        gen = sequence_light(
-            acc_features.values[:, :-3], tree,
-            nb_neighbors, radius, extra_columns
-        )
+    gen = sequence_full(
+        acc_features, tree, nb_neighbors, radius, extra_columns
+    )
     with Pool(processes=nb_processes) as pool:
         logger.info("Total number of points: %s", point_cloud.shape[0])
         steps = math.ceil(point_cloud.shape[0] / chunksize)
-        if feature_set == "full":
-            result_it = pool.imap_unordered(
-                _wrap_full_process, gen, chunksize=chunksize
-            )
-        elif feature_set == "eigenvalues":
-            result_it = pool.imap_unordered(
-                _wrap_eigenvalues_process, gen, chunksize=chunksize
-            )
-        elif feature_set == "alphabeta":
-            result_it = pool.imap_unordered(
-                _wrap_alphabeta_process, gen, chunksize=chunksize
-            )
-        else:
-            raise ValueError(
-                "Unknown feature set, choose amongst {}"
-                .format(FEATURE_SETS)
-            )
+        result_it = pool.imap_unordered(
+            _wrap_full_process, gen, chunksize=chunksize
+        )
         with tqdm(total=steps) as pbar:
             _dump_results_by_chunk(
                 result_it, csvpath, chunksize, progress_bar=pbar

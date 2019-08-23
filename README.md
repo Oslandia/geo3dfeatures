@@ -85,7 +85,7 @@ points and a leaf size. A name may also be provided to the experiment, for a
 sake of clarity.
 
 ```
-geo3d featurize -b <bin-size> -c <input-columns> -d <datapath> -e <experiment> -i <input-file> -f <feature-set> -n <nb-neighbors> -p <sample-points> -t <kd-tree-leafs> --chunksize <chunk-size>
+geo3d featurize -b <bin-size> -c <input-columns> -d <datapath> -e <experiment> -i <input-file> -n <nb-neighbors> -p <sample-points> -t <kd-tree-leafs> --chunksize <chunk-size>
 ```
 
 ## Profile
@@ -113,7 +113,7 @@ points. Then, it runs a k-means clustering by considering a given number of
 clusters.
 
 ```
-geo3d cluster -d <datapath> -e <experiment> -f <feature-set> -n <nb-neighbors> -p <sample-points> -k <nb-clusters>
+geo3d cluster -d <datapath> -e <experiment> -n <nb-neighbors> -p <sample-points> -k <nb-clusters>
 ```
 
 # Extras
