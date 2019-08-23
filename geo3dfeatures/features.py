@@ -25,7 +25,7 @@ BIN_BUF = 1e-3  # Value that allows to consider max x/y values in bin building
 
 
 def accumulation_2d_neighborhood(
-        point_cloud, extra_columns=None, bin_size=1
+        point_cloud, bin_size=1
 ):
     """Compute accumulation features as a new way of designing a
         2D-neighborhood, following the description of (Weinmann *et al.*,
@@ -36,47 +36,34 @@ def accumulation_2d_neighborhood(
 
     Parameters
     ----------
-    point_cloud : numpy.array
-        Coordinates of all points within the point cloud
-    extra_columns : tuple
-        List of extra input column names; its length must correspond to "point_cloud"
-        number of columns minus 3 (x, y, z are supposed to be the first three
-        columns)
+    point_cloud : pd.DataFrame
+        Data with x,y,z coordinates of all points within the point cloud
     bin_size : int
         Size of each squared bin edge (in meter)
 
     Returns
     -------
     pandas.DataFrame
-        Set of features built through binning process, for each point within
-    the cloud
+        Set of features built through binning process, for each point within the cloud
 
     """
-    input_columns = ("x", "y", "z")
-    if extra_columns is not None:
-        input_columns += extra_columns
-    else:
-        # you only take into account the x, y, z coordinates from the point cloud data
-        point_cloud = point_cloud[:, :3]
-    if len(input_columns) != point_cloud.shape[1]:
-        raise ValueError("Column names does not match the point cloud shape.")
-    df = pd.DataFrame(point_cloud, columns=input_columns)
-    xmin, xmax = np.min(point_cloud[:, 0]), np.max(point_cloud[:, 0])
-    ymin, ymax = np.min(point_cloud[:, 1]), np.max(point_cloud[:, 1])
+    xmin, xmax = np.min(point_cloud["x"]), np.max(point_cloud["x"])
+    ymin, ymax = np.min(point_cloud["y"]), np.max(point_cloud["y"])
     xbins = np.arange(xmin, xmax + bin_size + BIN_BUF, bin_size)
-    df["xbin"] = pd.cut(df.x, xbins, right=False)
+    point_cloud["xbin"] = pd.cut(point_cloud.x, xbins, right=False)
     ybins = np.arange(ymin, ymax + bin_size + BIN_BUF, bin_size)
-    df["ybin"] = pd.cut(df.y, ybins, right=False)
+    point_cloud["ybin"] = pd.cut(point_cloud.y, ybins, right=False)
     aggdf = (
-        df.groupby(["xbin", "ybin"])["z"]
+        point_cloud.groupby(["xbin", "ybin"])["z"]
         .agg(["count", "min", "max", "std"])
         .reset_index()
     )
-    aggdf["z_range"] = aggdf["max"] - aggdf["min"]
+    aggdf["bin_z_range"] = aggdf["max"] - aggdf["min"]
     aggdf.drop(columns=["min", "max"], inplace=True)
-    return df.merge(aggdf, on=["xbin", "ybin"], how="left").drop(
-        columns=["xbin", "ybin"]
-    )
+    return (point_cloud.merge(aggdf, on=["xbin", "ybin"], how="left")
+            .drop(columns=["xbin", "ybin"])
+            .rename(columns={"count": "bin_density",
+                             "std": "bin_z_std"}))
 
 
 def max_normalize(a):

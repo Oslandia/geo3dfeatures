@@ -23,7 +23,6 @@ from scipy.spatial import cKDTree as KDTree
 from tqdm import tqdm
 
 from geo3dfeatures.features import (
-    accumulation_2d_neighborhood,
     triangle_variance_space,
     sum_normalize, val_sum, val_range, std_deviation,
     curvature_change, linearity, planarity, scattering,
