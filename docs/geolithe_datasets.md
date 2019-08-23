@@ -16,8 +16,8 @@ The table below summarizes for all the 3D point clouds provided by Geolithe the 
 
 In order to define more finely the bin features, the second table below
 proposes a bin size for each dataset, computed as the maximum 2D radius with
-10-point neighborhoods. These values may be supplied to the `-b/--bin-size`
-option of the `featurize` program.
+10-point neighborhoods. These values may be supplied to the `cluster` geo3d command
+in the configuration file with the `bin` parameter name.
 
 | file         | bin size |
 |--------------|----------|
