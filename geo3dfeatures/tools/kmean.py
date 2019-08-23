@@ -1,7 +1,6 @@
 """Compute k-means clustering on 3D point cloud with geometric features
 """
 
-import argparse
 from configparser import ConfigParser
 import os
 from pathlib import Path
@@ -22,7 +21,7 @@ SEED = 1337
 KMEAN_BATCH = 10_000
 
 
-def instance(neighbors, radius, bin_size):
+def instance(neighbors, radius):
     """Build the instance name, depending on the input parameters
 
     Parameters
@@ -31,9 +30,7 @@ def instance(neighbors, radius, bin_size):
         Number of neighbors used to compute the feature set
     radius : float
         Threshold that define the neighborhood, in order to compute the feature
-    set; used if neighbors is None
-    bin_size : float
-        Bin size used to compute accumulation features
+        set; used if neighbors is None
 
     Returns
     -------
@@ -49,13 +46,11 @@ def instance(neighbors, radius, bin_size):
             "Error in input neighborhood definition: "
             "neighbors and radius arguments can't be both undefined"
             )
-    return (
-        neighborhood + "-binsize-" + str(bin_size)
-    )
+    return neighborhood
 
 
 def load_features(
-        datapath, experiment, neighbors, radius, bin_size
+        datapath, experiment, neighbors, radius
 ):
     """Read feature set from the file system, starting from the input
         parameters
@@ -71,8 +66,6 @@ def load_features(
     radius : float
         Threshold that define the neighborhood, in order to compute the feature
     set; used if neighbors is None
-    bin_size : float
-        Bin size used to compute accumulation features
 
     Returns
     -------
@@ -82,7 +75,7 @@ def load_features(
     """
     filepath = Path(
         datapath, "output", experiment, "features",
-        "features-" + instance(neighbors, radius, bin_size)
+        "features-" + instance(neighbors, radius)
         + ".csv"
         )
     logger.info(f"Recover features stored in {filepath}")
@@ -174,7 +167,7 @@ def colorize_clusters(points, clusters):
 
 def save_clusters(
         results, datapath, experiment, neighbors, radius,
-        bin_size, nb_clusters, config_name, xyz=False
+        nb_clusters, config_name, xyz=False
 ):
     """Save the resulting dataframe into the accurate folder on the file system
 
@@ -191,8 +184,6 @@ def save_clusters(
     radius : float
         Threshold that define the neighborhood, in order to compute the feature
     set; used if neighbors is None
-    bin_size : float
-        Bin size used to compute accumulation features
     nb_clusters : int
         Number of cluster, used for identifying the resulting data
     config_name : str
@@ -209,7 +200,7 @@ def save_clusters(
     output_file = Path(
         output_path,
         "kmeans-"
-        + instance(neighbors, radius, bin_size)
+        + instance(neighbors, radius)
         + "-" + config_name + "-" + str(nb_clusters) + "." + extension
     )
     if xyz:
@@ -241,8 +232,7 @@ def main(opts):
 
     experiment = opts.input_file.split(".")[0]
     data = load_features(
-        opts.datapath, experiment, opts.neighbors, opts.radius,
-        opts.bin_size
+        opts.datapath, experiment, opts.neighbors, opts.radius
     )
 
     points = data[["x", "y", "z"]].copy()
@@ -267,6 +257,6 @@ def main(opts):
     colored_results = colorize_clusters(points, model.labels_)
     save_clusters(
         colored_results, opts.datapath, experiment, opts.neighbors,
-        opts.radius, opts.bin_size, opts.nb_clusters,
+        opts.radius, opts.nb_clusters,
         config_path.stem, opts.xyz
     )
