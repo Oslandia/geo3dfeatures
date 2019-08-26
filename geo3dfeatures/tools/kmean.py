@@ -38,7 +38,7 @@ def instance(neighbors, radius):
         Name of the instance
     """
     if neighbors is not None:
-        neighborhood = "n" + str(neighbors)
+        return "-".join(str(x) for x in neighbors)
     elif radius is not None:
         neighborhood = "r" + str(radius)
     else:
@@ -49,9 +49,7 @@ def instance(neighbors, radius):
     return neighborhood
 
 
-def load_features(
-        datapath, experiment, neighbors, radius
-):
+def load_features(datapath, experiment):
     """Read feature set from the file system, starting from the input
         parameters
 
@@ -61,25 +59,20 @@ def load_features(
         Root of the data folder
     experiment : str
         Name of the experiment, used for identifying the accurate subfolder
-    neighbors : int
-        Number of neighbors used to compute the feature set
-    radius : float
-        Threshold that define the neighborhood, in order to compute the feature
-    set; used if neighbors is None
 
     Returns
     -------
     pandas.DataFrame
-        Feature set, each record refering to a point; columns correspond to
-    geometric features
+        Feature set, each record refering to a point; columns correspond to geometric features
     """
     filepath = Path(
-        datapath, "output", experiment, "features",
-        "features-" + instance(neighbors, radius)
-        + ".csv"
-        )
+        datapath, "output", experiment, "features", "features.h5"
+    )
     logger.info(f"Recover features stored in {filepath}")
-    return pd.read_csv(filepath)
+    with pd.HDFStore(filepath, mode="r") as store:
+        # XXX for now, just take the smallest number of neighbors
+        key = min(store.keys())
+    return pd.read_hdf(filepath, key)
 
 
 def read_config(config_path):
@@ -237,14 +230,11 @@ def main(opts):
     feature_config = read_config(config_path)
 
     experiment = opts.input_file.split(".")[0]
-    data = load_features(
-        opts.datapath, experiment, opts.neighbors, opts.radius
-    )
-
+    data = load_features(opts.datapath, experiment)
     data = update_features(data, feature_config)
 
     points = data[["x", "y", "z"]].copy()
-    data.drop(columns=["x", "y"], inplace=True)
+    data.drop(columns=["x", "y", "num_neighbors"], inplace=True)
 
     for c in data.columns:
         data[c] = max_normalize(data[c])
@@ -259,6 +249,7 @@ def main(opts):
         batch_size=KMEAN_BATCH,
         random_state=SEED
     )
+
     model.fit(data)
 
     colored_results = colorize_clusters(points, model.labels_)
