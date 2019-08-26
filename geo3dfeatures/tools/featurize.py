@@ -4,6 +4,8 @@ from pathlib import Path
 
 import daiquiri
 
+import pandas as pd
+
 from geo3dfeatures.io import (
     xyz as read_xyz,
     las as read_las,
@@ -13,6 +15,26 @@ from geo3dfeatures.extract import extract
 
 
 logger = daiquiri.getLogger(__name__)
+
+
+def _check_neighbors_feature_file(h5path, neighbors):
+    """Check if the features are already computed in the output h5 file
+
+    according to the number of neighbors.
+    """
+    neighbors = neighbors[:]  # copy the list
+    # if the file does not exists, one computes features for all neighbors list
+    if not h5path.exists():
+        return neighbors
+    with pd.HDFStore(h5path, mode="r") as store:
+        # key in the format '/num_xxxx'
+        already_computed = [int(x.split("_")[-1]) for x in store.keys()]
+        for num_neighbor in neighbors:
+            if num_neighbor in already_computed:
+                logger.warning("File '%s' exists with the following number of neighbors '%s'.", h5path, num_neighbor)
+                logger.warning("The features won't be computed for this neighborhood (%s).", num_neighbor)
+                neighbors.remove(num_neighbor)
+    return neighbors
 
 
 def main(opts):
@@ -70,14 +92,16 @@ def main(opts):
             "Error in input neighborhood definition: "
             "neighbors and radius arguments can't be both undefined"
             )
-    instance = "features-" + neighborhood
     output_path = Path(opts.datapath, "output", experiment, "features")
     output_path.mkdir(parents=True, exist_ok=True)
-    output_file = Path(output_path, instance + ".h5")
+    output_file = output_path / "features.h5"
+    print(opts.neighbors)
+    neighbors = _check_neighbors_feature_file(output_file, opts.neighbors)
+    neighbors = list(sorted(neighbors))
 
     extra_columns = tuple(opts.extra_columns) if opts.extra_columns is not None else tuple()
     extract(
-        data, tree, output_file, opts.neighbors, opts.radius,
+        data, tree, output_file, neighbors, opts.radius,
         opts.nb_process, extra_columns,
         opts.chunksize
     )

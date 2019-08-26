@@ -175,8 +175,9 @@ def add_instance_args(parser, featurized=True):
                         help="")
     neighbor_group = parser.add_mutually_exclusive_group()
     neighbor_group.add_argument('-n', '--neighbors',
+                                nargs="+",
                                 type=int,
-                                help="Number of neighbors to consider. "
+                                help="List of neighbors numbers to consider. "
                                 "Alternative neighborhood definition: "
                                 "--radius.")
     neighbor_group.add_argument('-r', '--radius',
