@@ -388,7 +388,7 @@ def extract(
     )
     with Pool(processes=nb_processes) as pool:
         logger.info("Total number of points: %s", point_cloud.shape[0])
-        steps = math.ceil(point_cloud.shape[0] / chunksize)
+        steps = math.ceil(point_cloud.shape[0] / chunksize * len(nb_neighbors))
         result_it = pool.imap_unordered(
             _wrap_full_process, gen, chunksize=chunksize
         )

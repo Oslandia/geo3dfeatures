@@ -19,6 +19,7 @@ logger = daiquiri.getLogger(__name__)
 
 SEED = 1337
 KMEAN_BATCH = 10_000
+KEY_H5_FORMAT = "/num_{:04d}"
 
 
 def instance(neighbors, radius):
@@ -49,7 +50,7 @@ def instance(neighbors, radius):
     return neighborhood
 
 
-def load_features(datapath, experiment):
+def load_features(datapath, experiment, neighbors):
     """Read feature set from the file system, starting from the input
         parameters
 
@@ -59,6 +60,8 @@ def load_features(datapath, experiment):
         Root of the data folder
     experiment : str
         Name of the experiment, used for identifying the accurate subfolder
+    neighbors : list
+        List of number of neigbors
 
     Returns
     -------
@@ -69,10 +72,30 @@ def load_features(datapath, experiment):
         datapath, "output", experiment, "features", "features.h5"
     )
     logger.info(f"Recover features stored in {filepath}")
+    no_rename = ["x", "y", "z", "r", "g", "b"]
     with pd.HDFStore(filepath, mode="r") as store:
-        # XXX for now, just take the smallest number of neighbors
-        key = min(store.keys())
-    return pd.read_hdf(filepath, key)
+        # loop on the possible number of neighbors and concatenate features
+        # we have to sort each dataframe in order to align each point x,y,z
+        num_neighbor = neighbors[0]
+        key = KEY_H5_FORMAT.format(num_neighbor)
+        df = store[key]
+        df.sort_values(by=list("xyz"), inplace=True)
+        df.drop(columns=["num_neighbors"], inplace=True)
+        cols = [x for x in df if x not in no_rename]
+        df.rename(columns={key: key + "_" + str(num_neighbor) for key in cols}, inplace=True)
+        df.index = pd.Index(range(df.shape[0]))
+        dataframes = [df]
+        for num_neighbor in neighbors[1:]:
+            key = KEY_H5_FORMAT.format(num_neighbor)
+            newdf = store[key]
+            newdf.drop(columns=["num_neighbors", "r", "g", "b"], inplace=True)
+            newdf.sort_values(by=list("xyz"), inplace=True)
+            newdf.drop(columns=["x", "y", "z"], inplace=True)
+            newdf.rename(columns={key: key + "_" + str(num_neighbor) for key in cols}, inplace=True)
+            newdf.index = pd.Index(range(newdf.shape[0]))
+            dataframes.append(newdf)
+
+    return pd.concat(dataframes, axis="columns")
 
 
 def read_config(config_path):
@@ -230,13 +253,13 @@ def main(opts):
     feature_config = read_config(config_path)
 
     experiment = opts.input_file.split(".")[0]
-    data = load_features(opts.datapath, experiment)
+    data = load_features(opts.datapath, experiment, opts.neighbors)
     data = update_features(data, feature_config)
 
     points = data[["x", "y", "z"]].copy()
-    data.drop(columns=["x", "y", "num_neighbors"], inplace=True)
+    data.drop(columns=["x", "y"], inplace=True)
 
-    for c in data.columns:
+    for c in data:
         data[c] = max_normalize(data[c])
 
     if "bin_z_range" in data.columns:

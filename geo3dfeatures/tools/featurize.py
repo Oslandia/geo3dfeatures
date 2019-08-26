@@ -95,7 +95,6 @@ def main(opts):
     output_path = Path(opts.datapath, "output", experiment, "features")
     output_path.mkdir(parents=True, exist_ok=True)
     output_file = output_path / "features.h5"
-    print(opts.neighbors)
     neighbors = _check_neighbors_feature_file(output_file, opts.neighbors)
     neighbors = list(sorted(neighbors))
 
