@@ -73,7 +73,7 @@ def main(opts):
     instance = "features-" + neighborhood
     output_path = Path(opts.datapath, "output", experiment, "features")
     output_path.mkdir(parents=True, exist_ok=True)
-    output_file = Path(output_path, instance + ".csv")
+    output_file = Path(output_path, instance + ".h5")
 
     extra_columns = tuple(opts.extra_columns) if opts.extra_columns is not None else tuple()
     extract(

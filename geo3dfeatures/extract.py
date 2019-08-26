@@ -10,17 +10,21 @@ and efficient classifiers. ISPRS Journal of Photogrammetry and Remote Sensing,
 vol 105, pp 286-304.
 """
 
-from csv import writer as CSVWriter
 import math
+from collections import defaultdict
 from multiprocessing import Pool
 from timeit import default_timer as timer
 from typing import NamedTuple, Tuple
 
-import daiquiri
 import numpy as np
+import pandas as pd
+
 from sklearn.decomposition import PCA
 from scipy.spatial import cKDTree as KDTree
+
 from tqdm import tqdm
+
+import daiquiri
 
 from geo3dfeatures.features import (
     triangle_variance_space,
@@ -41,6 +45,7 @@ class NeighborFeatures(NamedTuple):
     x: float
     y: float
     z: float
+    num_neighbors: int
     alpha: float
     beta: float
     radius: float
@@ -185,6 +190,7 @@ def process_full(neighbors, neighborhood_extra, extra, mode="neighbors"):
     list, OrderedDict generator (features for each point)
 
     """
+    num_neighbors = neighbors.shape[0] - 1
     x, y, z = neighbors[0]
     extra_2D = radius_2D(neighbors[0, :2], neighbors[:, :2])
     if mode == "neighbors":
@@ -225,6 +231,7 @@ def process_full(neighbors, neighborhood_extra, extra, mode="neighbors"):
         pca_2d = fit_pca(neighbors[:, :2])  # PCA just on the x,y coords
         eigenvalues_2D = pca_2d.singular_values_ ** 2
         return (FeatureTuple(x, y, z,
+                             num_neighbors,
                              alpha,
                              beta,
                              extra_3D,
@@ -266,8 +273,8 @@ def sequence_full(
         point cloud + extra columns
     tree : scipy.spatial.ckdtree.CKDTree
         Point cloud kd-tree for computing nearest neighborhoods
-    nb_neighbors : int
-        Number of neighbors in each point neighborhood
+    nb_neighbors : list
+        List of neighbors numbers in each point neighborhood
     radius : float
         Radius that defines the neighboring ball around a given point
     extra_columns : tuple
@@ -275,6 +282,8 @@ def sequence_full(
 
     Yields
     ------
+    int
+        Number of neighbors (or radius)
     numpy.array
         Geometric coordinates of neighbors
     numpy.array
@@ -290,51 +299,54 @@ def sequence_full(
     else:
         if scene.shape[1] - 3 != len(extra_columns):
             raise ValueError("Extra column lengths does not match data.")
+    num_max_neighbors = list(reversed(nb_neighbors))[0]
     for point in scene:
         neighborhood_extra, neighbor_idx = request_tree(
-            point[:3], tree, nb_neighbors, radius
+            point[:3], tree, num_max_neighbors, radius
         )
         mode = "neighbors"
         extra_features = (
             ExtraFeatures(extra_columns, tuple(point[3:]))
             if extra_columns else ExtraFeatures(tuple(), tuple())
         )
-        neighbors = tree.data[neighbor_idx]
-        if neighborhood_extra is None:  # True if radius is not None
-            neighborhood_extra = radius
-            mode = "radius"
-        yield neighbors, neighborhood_extra, extra_features, mode
+        # XXX we have some issues with radius
+        # https://git.oslandia.net/Oslandia-data/geo3dfeatures/issues/46
+        # if neighborhood_extra is None:  # True if radius is not None
+        #     neighborhood_extra = radius
+        #     mode = "radius"
+        #     yield radius, tree.data[neighbor_idx], neighborhood_extra, extra_features, mode
+        # else:
+        for num_neighbors in reversed(nb_neighbors):
+            # add 1 neighbor because we have the reference point
+            index = neighbor_idx[:num_neighbors + 1]
+            neighbors = tree.data[index]
+            yield neighbors, neighborhood_extra, extra_features, mode
 
 
-def _dump_results_by_chunk(iterable, csvpath, chunksize, progress_bar):
-    """Write result in a CSV file by chunk.
+def _dump_results_by_chunk(iterable, h5path, chunksize, progress_bar):
+    """Write result in a hdf5 file by chunk.
     """
     def chunkgenerator(iterable):
-        group = []
+        group = defaultdict(list)
         for num, (features, extra) in enumerate(iterable):
-            group.append(features + extra.values)
+            group[features.num_neighbors].append(features + extra.values)
             if (num+1) % chunksize == 0:
-                yield group
-                group = []
-        yield group
+                names = features._fields + extra.names
+                yield names, group
+                group = defaultdict(list)
+        yield names, group
 
-    features, extra = next(iterable)
-    with open(csvpath, 'w') as fobj:
-        writer = CSVWriter(fobj)
-        # write the headers. 'extra.names' can be an empty tuple
-        writer.writerow(features._fields + extra.names)
-        # write the first line
-        writer.writerow(features + extra.values)
-        # write results by chunk
-        num_processed_points = chunksize
-        for chunk in chunkgenerator(iterable):
-            writer.writerows(chunk)
-            num_processed_points += chunksize
-            progress_bar.update()
+    with pd.HDFStore(h5path) as store:
+        for names, chunk in chunkgenerator(iterable):
+            for num, data in chunk.items():
+                df = pd.DataFrame(data, columns=names)
+                key = "/num_{:04d}".format(num)
+                store.append(key, df)
+                progress_bar.update()
 
 
 def extract(
-        point_cloud, tree, csvpath, nb_neighbors=None, radius=None,
+        point_cloud, tree, h5path, nb_neighbors, radius=None,
         nb_processes=2, extra_columns=None,
         chunksize=20000
 ):
@@ -348,9 +360,9 @@ def extract(
         3D point cloud
     tree : scipy.spatial.ckdtree.CKDTree
         Point cloud kd-tree for computing nearest neighborhoods
-    csvpath : Path
-        CSV output path (extracted features)
-    nb_neighbors : int
+    h5path : Path
+        hdf5 output path (extracted features)
+    nb_neighbors : int of list
         Number of neighbors in each point neighborhood
     radius : float
         Radius that defines the neighboring ball around a given point
@@ -366,6 +378,10 @@ def extract(
             "Error in input neighborhood definition: "
             "nb_neighbors and radius can't be both None."
         )
+    if radius is not None:
+        raise NotImplementedError("we have some issues with radius")
+    if isinstance(nb_neighbors, int):
+        nb_neighbors = [nb_neighbors]
     start = timer()
     gen = sequence_full(
         point_cloud, tree, nb_neighbors, radius, extra_columns
@@ -378,7 +394,7 @@ def extract(
         )
         with tqdm(total=steps) as pbar:
             _dump_results_by_chunk(
-                result_it, csvpath, chunksize, progress_bar=pbar
+                result_it, h5path, chunksize, progress_bar=pbar
             )
     stop = timer()
     logger.info("Time spent: %.2fs", stop - start)
