@@ -88,6 +88,9 @@ sake of clarity.
 geo3d featurize -c <input-columns> -d <datapath> -e <experiment> -i <input-file> -n <nb-neighbors> -p <sample-points> -t <kd-tree-leafs> --chunksize <chunk-size>
 ```
 
+`-n <nb-neighbors>` can take several values if you want to extract features from
+different neighborhood size, e.g. 50, 200 and 1000 neighbor points.
+
 ## Profile
 
 The third program is highly linked to the previous one, as it postprocess time
