@@ -342,7 +342,7 @@ def _dump_results_by_chunk(iterable, h5path, chunksize, progress_bar):
                 df = pd.DataFrame(data, columns=names)
                 key = "/num_{:04d}".format(num)
                 store.append(key, df)
-                progress_bar.update()
+            progress_bar.update()
 
 
 def extract(
