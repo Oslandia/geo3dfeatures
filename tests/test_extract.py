@@ -19,11 +19,12 @@ def test_extract(sphere):
     """Test the feature set extraction
     """
     kd_tree = KDTree(sphere, leafsize=100)
-    csvpath = DATADIR / "test_extract.csv"
+    h5path = DATADIR / "test_extract.h5"
     extract(
-        sphere, kd_tree, nb_neighbors=10, csvpath=csvpath, nb_processes=2
+        sphere, kd_tree, nb_neighbors=[10], h5path=h5path, nb_processes=2
     )
-    features = pd.read_csv(csvpath)
+    features = pd.read_hdf(h5path, "/num_0010")
+    h5path.unlink()
     assert features.shape[0] == sphere.shape[0]
 
 
@@ -34,14 +35,15 @@ def test_extract_extra_features(sphere):
     kd_tree = KDTree(sphere, leafsize=100)
     colors = np.random.randint(0, 255, sphere.shape)
     data = np.concatenate((sphere, colors), axis=1)
-    csvpath = DATADIR / "test_extract.csv"
+    h5path = DATADIR / "test_extract.h5"
     extract(
-        data, kd_tree, nb_neighbors=10, csvpath=csvpath,
+        data, kd_tree, nb_neighbors=[10], h5path=h5path,
         extra_columns=("r", "g", "b"), nb_processes=2
     )
-    nb_extra_features = 19
+    nb_extra_features = 20
     nb_output_features = sphere.shape[1] + colors.shape[1] + nb_extra_features
-    features = pd.read_csv(csvpath)
+    features = pd.read_hdf(h5path, "/num_0010")
+    h5path.unlink()
     assert features.shape[0] == sphere.shape[0]
     assert features.shape[1] == nb_output_features
 
@@ -51,7 +53,7 @@ def test_sequence_full(sphere):
     """
     NB_NEIGHBORS = 10
     tree = compute_tree(sphere, leaf_size=500)
-    gen = sequence_full(sphere, tree, nb_neighbors=NB_NEIGHBORS)
+    gen = sequence_full(sphere, tree, nb_neighbors=[NB_NEIGHBORS])
     first_item = next(gen)
     assert len(first_item) == 4
     assert first_item[0].shape == (NB_NEIGHBORS + 1, 3)
@@ -65,7 +67,7 @@ def test_process_full(sphere):
     """Test the full feature set processing for the first "sphere" point
     """
     additional_features = [
-        "alpha", "beta", "radius",
+        "num_neighbors", "alpha", "beta", "radius",
         "z_range", "std_dev", "density", "verticality",
         "curvature_change", "linearity", "planarity",
         "scattering", "omnivariance", "anisotropy",
@@ -73,7 +75,7 @@ def test_process_full(sphere):
         "radius_2D", "density_2D", "eigenvalue_sum_2D", "eigenvalue_ratio_2D",
     ]
     tree = compute_tree(sphere, leaf_size=500)
-    gen = sequence_full(sphere, tree, nb_neighbors=10)
+    gen = sequence_full(sphere, tree, nb_neighbors=[10])
     item = next(gen)
     features, _ = process_full(
         item[0], item[1], extra=None

@@ -328,7 +328,10 @@ def _dump_results_by_chunk(iterable, h5path, chunksize, progress_bar):
     """
     def chunkgenerator(iterable):
         group = defaultdict(list)
-        for num, (features, extra) in enumerate(iterable):
+        features, extra = next(iterable)
+        names = features._fields + extra.names
+        group[features.num_neighbors].append(features + extra.values)
+        for num, (features, extra) in enumerate(iterable, start=1):
             group[features.num_neighbors].append(features + extra.values)
             if (num+1) % chunksize == 0:
                 names = features._fields + extra.names
