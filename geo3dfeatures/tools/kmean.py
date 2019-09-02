@@ -290,14 +290,17 @@ def main(opts):
     # Postprocessing
     if opts.post_processing:
         tree_file = Path(
-            "data", "output", experiment,
+            opts.datapath, "output", experiment,
             "kd-tree-leaf-" + str(opts.kdtree_leafs) + ".pkl"
         )
         with open(tree_file, 'rb') as fobj:
             logger.info("Load kd-tree from file...")
             tree = pickle.load(fobj)
-        labels = postprocess.postprocess_labels(
-            points, model.labels_, tree, opts.neighbors, opts.radius
+        # postprocess batch of labels
+        logger.info(f"Post-process point labels by batches of {KMEAN_BATCH}")
+        gen = postprocess.batch_points(points, KMEAN_BATCH)
+        labels = postprocess.postprocess_batch_labels(
+            gen, labels, tree, opts.neighbors
         )
 
     colored_results = colorize_clusters(points, labels)

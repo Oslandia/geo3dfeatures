@@ -27,8 +27,27 @@ from geo3dfeatures import extract, io
 logger = daiquiri.getLogger(__name__)
 
 
-def postprocess_labels(
-        point_cloud, labels, tree, n_neighbors=None, radius=None
+def batch_points(points, batch_size):
+    """Batch the point structure so as to split the postprocessing phase
+
+    Parameters
+    ----------
+    points : np.array
+        Full point structure
+    batch_size : int
+        Number of points to consider in each subsample
+
+    Yields
+    ------
+    np.array
+        Point subsample
+    """
+    for value in np.arange(0, points.shape[0], batch_size):
+        yield points[value:(value+batch_size)]
+
+
+def postprocess_batch_labels(
+        generator, labels, tree, n_neighbors=None, radius=None
 ):
     """
 
@@ -42,20 +61,23 @@ def postprocess_labels(
     radius : float
         Radius that defines the neighboring ball around a given point
     """
-    point_cloud_array = point_cloud.values
-    _, neighbors = extract.request_tree(
-        point_cloud_array, tree, n_neighbors, radius
-    )
-    point_neighborhoods = labels[neighbors]
-    u, indices = np.unique(point_neighborhoods, return_inverse=True)
-    new_clusters = u[
-        np.argmax(
-            np.apply_along_axis(
-                np.bincount, 1, indices.reshape(point_neighborhoods.shape),
-                None, np.max(indices) + 1),
-            axis=1)
-    ]
-    return new_clusters
+    new_labels = np.zeros(shape=labels.shape, dtype=labels.dtype)
+    for idx, item in enumerate(generator):
+        batch_size = item.shape[0]
+        _, neighbors = extract.request_tree(
+            item, tree, n_neighbors, radius
+        )
+        point_neighborhoods = labels[neighbors]
+        u, indices = np.unique(point_neighborhoods, return_inverse=True)
+        new_clusters = u[
+            np.argmax(
+                np.apply_along_axis(
+                    np.bincount, 1, indices.reshape(point_neighborhoods.shape),
+                    None, np.max(indices) + 1),
+                axis=1)
+        ]
+        new_labels[idx*batch_size:(idx+1)*batch_size] = new_clusters
+    return new_labels
 
 
 class Row(NamedTuple):
@@ -110,6 +132,7 @@ def process_point(point, new_cluster, updated):
         new_cluster[2],
         updated
     )
+
 
 def _wrap_process(args):
     """Wrap the 'process_point' function in order to use 'pool.imap_unordered'
@@ -209,6 +232,7 @@ def mode(a, axis=0):
         mostfrequent[counts > oldcounts] = score
         oldcounts = np.maximum(counts, oldcounts)
     return mostfrequent
+
 
 def modpy(a, axis=1):
     """
