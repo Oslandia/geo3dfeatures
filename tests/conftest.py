@@ -5,6 +5,8 @@ import pytest
 
 import numpy as np
 
+from geo3dfeatures.extract import compute_tree
+
 
 SEED = 1337
 np.random.seed(SEED)
@@ -99,3 +101,10 @@ def roof(size):
     zmax = data[:size//2, 2].max()
     data[size//2:, 2] = 2 * zmax - z0 - 1/3 * data[size//2:, 1]
     return data
+
+
+@pytest.fixture
+def sphere_tree(sphere):
+    """Compute a kd-tree for the sphere dataset
+    """
+    return compute_tree(sphere, leaf_size=100)
