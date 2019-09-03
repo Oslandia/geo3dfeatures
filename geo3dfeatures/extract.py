@@ -365,7 +365,7 @@ def extract(
         Point cloud kd-tree for computing nearest neighborhoods
     h5path : Path
         hdf5 output path (extracted features)
-    nb_neighbors : int of list
+    nb_neighbors : list of ints
         Number of neighbors in each point neighborhood
     radius : float
         Radius that defines the neighboring ball around a given point

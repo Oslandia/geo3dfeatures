@@ -117,7 +117,7 @@ def main(opts):
             sys.exit(0)
 
     with open(tree_file, 'rb') as fobj:
-        logger.info("Load kd-tree from file...")
+        logger.info("Load kd-tree from file %s...", tree_file)
         tree = pickle.load(fobj)
 
     # the shape must be the same between the data read from file and the data stored

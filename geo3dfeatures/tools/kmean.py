@@ -299,8 +299,9 @@ def main(opts):
         # postprocess batch of labels
         logger.info(f"Post-process point labels by batches of {KMEAN_BATCH}")
         gen = postprocess.batch_points(points, KMEAN_BATCH)
+        max_n_neighbors = list(reversed(opts.neighbors))[0]
         labels = postprocess.postprocess_batch_labels(
-            gen, labels, tree, opts.neighbors
+            gen, labels, tree, max_n_neighbors
         )
 
     colored_results = colorize_clusters(points, labels)

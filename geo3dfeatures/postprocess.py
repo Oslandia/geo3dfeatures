@@ -8,6 +8,7 @@ Compute the mode in an alternative pure-numpy way:
 """
 
 import daiquiri
+import numpy as np
 
 from geo3dfeatures import extract
 
