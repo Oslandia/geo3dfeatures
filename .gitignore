@@ -1,4 +1,7 @@
 *.pyc
+.dir-locals.el
+poetry.lock
 *~
 geo3dfeatures.egg-info/
 data/
+workspace/
