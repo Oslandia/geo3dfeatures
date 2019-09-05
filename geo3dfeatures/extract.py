@@ -299,7 +299,7 @@ def sequence_full(
     else:
         if scene.shape[1] - 3 != len(extra_columns):
             raise ValueError("Extra column lengths does not match data.")
-    num_max_neighbors = list(reversed(nb_neighbors))[0]
+    num_max_neighbors = max(nb_neighbors)
     for point in scene:
         neighborhood_extra, neighbor_idx = request_tree(
             point[:3], tree, num_max_neighbors, radius
