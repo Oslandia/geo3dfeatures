@@ -82,6 +82,9 @@ The output features are stored in a HDF5 file such as
 `data/output/geocliff-100000/features/features.h5`. The computed features can be
 loaded with the following hdf keys: `/num_0050` and `/num_0200`.
 
+If you use the `--label-scene` option, you can extract features from a sample file
+where you know the label.
+
 ## Cluster
 
 As a final command, `cluster` uses k-mean algorithm in order to classify the

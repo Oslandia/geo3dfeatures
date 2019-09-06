@@ -70,7 +70,7 @@ the next step, *i.e.* featurization.
 The `index` program can be used as follows:
 
 ```
-geo3d index -d <datapath> -i <input-file> -e <experiment> -t <tree-leaf-size>
+geo3d index -d <datapath> -i <input-file> -t <tree-leaf-size>
 ```
 
 ## Featurize
@@ -85,11 +85,26 @@ points and a leaf size. A name may also be provided to the experiment, for a
 sake of clarity.
 
 ```
-geo3d featurize -c <input-columns> -d <datapath> -e <experiment> -i <input-file> -n <nb-neighbors> -p <sample-points> -t <kd-tree-leafs> --chunksize <chunk-size>
+geo3d featurize -c <input-columns> -d <datapath> -i <input-file> -n <nb-neighbors> -t <kd-tree-leafs> --chunksize <chunk-size>
 ```
 
 `-n <nb-neighbors>` can take several values if you want to extract features from
 different neighborhood size, e.g. 50, 200 and 1000 neighbor points.
+
+If you have some files which are samples of your complete scene with a **label**
+information such as `location_vegetation.las` or `location_cliff.las`, it's possible
+to extract some features from them. You need to pass the `--label-scene` option. By
+convention, the name of the label is a suffix of your input file name with a `_`
+separator. You also need to compute the kd-tree of the complete scene. The
+neighborhood look-up must be carried out in the **complete scene**. The output files
+will be HDF5 file with the suffix 'label',
+e.g. `output/location/features/features_vegetation.h5`.
+
+For instance:
+
+```
+geo3d featurize  -d ./workspace -i location_cliff.las -n 50 200 1000 -m 4 -c r g b
+```
 
 ## Profile
 
