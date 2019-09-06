@@ -29,8 +29,9 @@ def main(opts):
         sys.exit(1)
     output_path = Path(opts.datapath, "output", opts.input_file.split(".")[0])
     kdtrees = [f.name for f in output_path.glob("*.pkl")]
-    features = [f.name for f in Path(output_path, "features").glob("*.csv")]
+    features = [f.name for f in Path(output_path, "features").glob("*.h5")]
     kmeans = [f.name for f in Path(output_path, "clustering").glob("*.xyz")]
+    kmeans = kmeans + [f.name for f in Path(output_path, "clustering").glob("*.las")]
     if input_path.suffix == ".las":
         header = laspy.header.Header()
         reader = laspy.base.FileManager(input_path, mode="r")
