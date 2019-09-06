@@ -29,12 +29,12 @@ def _check_neighbors_feature_file(h5path, neighbors):
     with pd.HDFStore(h5path, mode="r") as store:
         # key in the format '/num_xxxx'
         already_computed = [int(x.split("_")[-1]) for x in store.keys()]
+        new_neighbors = [x for x in neighbors if x not in already_computed]
         for num_neighbor in neighbors:
             if num_neighbor in already_computed:
-                logger.warning("File '%s' exists with the following number of neighbors '%s'.", h5path, num_neighbor)
-                logger.warning("The features won't be computed for this neighborhood (%s).", num_neighbor)
-                neighbors.remove(num_neighbor)
-    return neighbors
+                logger.warning("The features won't be computed for this neighborhood (%s) file '%s'.",
+                               num_neighbor, h5path.name)
+    return new_neighbors
 
 
 def main(opts):
