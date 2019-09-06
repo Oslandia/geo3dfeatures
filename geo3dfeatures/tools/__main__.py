@@ -78,6 +78,9 @@ def featurize_parser(subparser, reference_func):
     add_kdtree_args(parser)
     parser.add_argument('-c', '--extra-columns', nargs="+",
                         help="Extra point cloud feature names (other than x,y,z)")
+    parser.add_argument('--label-scene', action="store_true",
+                        help=("If the scene is a sample of an existing "
+                              "scene with the '_label.{.las, .xyz}' suffix?"))
     parser.add_argument("--chunksize",
                         default=20_000, type=int,
                         help="Number of points in each writing chunk")

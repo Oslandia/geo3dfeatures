@@ -37,6 +37,50 @@ def _check_neighbors_feature_file(h5path, neighbors):
     return new_neighbors
 
 
+def experiment_folder_name(filename, is_label_scene=False):
+    """Return the name of the folder where the output data will be stored.
+
+    - features extraction
+    - clustering
+
+    Parameters
+    ----------
+    fpath: str
+        Input scene filename.
+    is_label_scene: bool
+        Is the file a sample of a complete scene with a '_label' suffix at the end of
+        the filename?
+
+    Returns
+    -------
+    str
+
+    Examples
+    --------
+    >>> experiment_folder_name('location.las')
+    'location'
+    >>> experiment_folder_name('location_cliff.las', True)
+    'location'
+    """
+    label_suffix_separator = "_"
+    if not is_label_scene:
+        return filename.split(".")[0]
+    seq = filename.split(label_suffix_separator)
+    return label_suffix_separator.join(seq[:-1])
+
+
+def label_from_file(filename):
+    """Return the label from the file name.
+
+    Suppose you have the label name as a suffix of a
+    filename. 'location_vegetation.las' will return 'vegetation'.
+    """
+    label_suffix_separator = "_"
+    # remove the extension and split by '_'
+    seq = filename.split(".")[0].split(label_suffix_separator)
+    return seq[-1]
+
+
 def main(opts):
     input_path = Path(opts.datapath, "input", opts.input_file)
     if not input_path.is_file():
@@ -56,7 +100,7 @@ def main(opts):
             logger.warning("%d extra fields are expected for the provided input data, however you enter %d field names (%s).", data.shape[1] - 3, len(opts.extra_columns), opts.extra_columns)
             raise ValueError("The given input columns does not match data shape, i.e. x,y,z plus extra columns.")
 
-    experiment = opts.input_file.split(".")[0]
+    experiment = experiment_folder_name(opts.input_file, opts.label_scene)
     tree_file = opts.tree_file
     if not tree_file:
         tree_file = Path(
@@ -76,7 +120,10 @@ def main(opts):
         logger.info("Load kd-tree from file...")
         tree = pickle.load(fobj)
 
-    if tree.data.shape[0] != data.shape[0]:
+    # the shape must be the same between the data read from file and the data stored
+    # in the kd-tree file, except for the '--label-scene' option (where you have a
+    # sample of the scene)
+    if not opts.label_scene and tree.data.shape[0] != data.shape[0]:
         logger.info(
             "Input data and data stored in the kd-tree "
             "do not have the same length"
@@ -94,9 +141,20 @@ def main(opts):
             )
     output_path = Path(opts.datapath, "output", experiment, "features")
     output_path.mkdir(parents=True, exist_ok=True)
-    output_file = output_path / "features.h5"
+    if opts.label_scene:
+        hdf5name = "features_" + label_from_file(opts.input_file) + ".h5"
+    else:
+        hdf5name = "features.h5"  # complete scene
+    output_file = output_path / hdf5name
+
     neighbors = _check_neighbors_feature_file(output_file, opts.neighbors)
     neighbors = list(sorted(neighbors))
+
+    if len(neighbors) == 0:
+        logger.info("Features was extracted for all neighboorhoods %s.", opts.neighbors)
+        logger.info("Check the file '%s'", output_file)
+        logger.info("Exit program")
+        sys.exit(0)
 
     extra_columns = tuple(opts.extra_columns) if opts.extra_columns is not None else tuple()
     extract(
