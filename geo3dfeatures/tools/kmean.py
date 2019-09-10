@@ -88,7 +88,10 @@ def load_features(datapath, experiment, neighbors):
         for num_neighbor in neighbors[1:]:
             key = KEY_H5_FORMAT.format(num_neighbor)
             newdf = store[key]
-            newdf.drop(columns=["num_neighbors", "r", "g", "b"], inplace=True)
+            newdf.drop(
+                columns=["num_neighbors", "r", "g", "b"],
+                errors="ignore", inplace=True
+            )
             newdf.sort_values(by=list("xyz"), inplace=True)
             newdf.drop(columns=["x", "y", "z"], inplace=True)
             newdf.rename(columns={key: key + "_" + str(num_neighbor) for key in cols}, inplace=True)
