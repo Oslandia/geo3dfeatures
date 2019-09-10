@@ -4,7 +4,6 @@
 from configparser import ConfigParser
 import os
 from pathlib import Path
-import pickle
 import sys
 
 import daiquiri
@@ -14,7 +13,9 @@ import seaborn as sns
 from sklearn.cluster import MiniBatchKMeans
 import laspy
 
-from geo3dfeatures.features import max_normalize
+from geo3dfeatures.features import accumulation_2d_neighborhood, max_normalize
+from geo3dfeatures.extract import compute_tree
+
 from geo3dfeatures import postprocess
 
 logger = daiquiri.getLogger(__name__)
@@ -283,25 +284,21 @@ def main(opts):
         batch_size=KMEAN_BATCH,
         random_state=SEED
     )
-
     model.fit(data)
     labels = model.labels_
 
     # Postprocessing
     if opts.post_processing:
-        tree_file = Path(
-            opts.datapath, "output", experiment,
-            "kd-tree-leaf-" + str(opts.kdtree_leafs) + ".pkl"
-        )
-        with open(tree_file, 'rb') as fobj:
-            logger.info("Load kd-tree from file...")
-            tree = pickle.load(fobj)
-        # postprocess batch of labels
         logger.info(f"Post-process point labels by batches of {KMEAN_BATCH}")
+        tree = compute_tree(points, opts.kdtree_leafs)
         gen = postprocess.batch_points(points, KMEAN_BATCH)
-        max_n_neighbors = list(reversed(opts.neighbors))[0]
+        pp_neighbors = (
+            opts.postprocessing_neighbors
+            if opts.postprocessing_neighbors is not None
+            else max(opts.neighbors)
+            )
         labels = postprocess.postprocess_batch_labels(
-            gen, labels, tree, max_n_neighbors
+            gen, labels, tree, pp_neighbors
         )
 
     colored_results = colorize_clusters(points, labels)

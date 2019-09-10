@@ -119,6 +119,12 @@ def kmean_parser(subparser, reference_func):
         "-p", "--post-processing", action="store_true",
         help="Post-process the kmean output to clean out the point cloud"
         )
+    parser.add_argument(
+        "-pn", "--postprocessing-neighbors", type=int,
+        help=(
+            "Neighbor number for clustering label postprocessing"
+            )
+        )
     parser.add_argument("-xyz", action="store_true",
                         help=("Output file extension, xyz if true "
                               "similar to output otherwise"))
