@@ -257,17 +257,18 @@ def main(opts):
 
     experiment = opts.input_file.split(".")[0]
     data = load_features(opts.datapath, experiment, opts.neighbors)
-    data = update_features(data, feature_config)
-
     points = data[["x", "y", "z"]].copy()
-    data.drop(columns=["x", "y"], inplace=True)
 
-    for c in data:
+    for c in data.drop(columns=["x", "y"]):
         data[c] = max_normalize(data[c])
 
-    if "bin_z_range" in data.columns:
-        data["bin_z_range"].fillna(0, inplace=True)
-        data.drop(columns=["bin_z_std"], inplace=True)
+    data = update_features(data, feature_config)
+
+    data.drop(columns=["x", "y"], inplace=True)
+    if "bin_density" in data.columns:  # There are accumulation features
+        for c in ("bin_z_range", "bin_z_std", "bin_density"):
+            data[c] = max_normalize(data[c])
+            data[c].fillna(0, inplace=True)
 
     logger.info("Compute %s clusters...", opts.nb_clusters)
     model = MiniBatchKMeans(
