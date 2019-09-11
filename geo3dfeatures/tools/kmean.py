@@ -22,6 +22,7 @@ logger = daiquiri.getLogger(__name__)
 
 SEED = 1337
 KMEAN_BATCH = 10_000
+POSTPROCESSING_BATCH = 10_000
 KEY_H5_FORMAT = "/num_{:04d}"
 
 
@@ -291,14 +292,14 @@ def main(opts):
     if opts.post_processing:
         logger.info(f"Post-process point labels by batches of {KMEAN_BATCH}")
         tree = compute_tree(points, opts.kdtree_leafs)
-        gen = postprocess.batch_points(points, KMEAN_BATCH)
+        gen = postprocess.batch_points(points, POSTPROCESSING_BATCH)
         pp_neighbors = (
             opts.postprocessing_neighbors
             if opts.postprocessing_neighbors is not None
             else max(opts.neighbors)
             )
         labels = postprocess.postprocess_batch_labels(
-            gen, labels, tree, pp_neighbors
+            gen, POSTPROCESSING_BATCH, labels, tree, pp_neighbors
         )
 
     colored_results = colorize_clusters(points, labels)

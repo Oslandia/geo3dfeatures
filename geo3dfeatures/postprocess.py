@@ -36,7 +36,7 @@ def batch_points(points, batch_size):
 
 
 def postprocess_batch_labels(
-        point_generator, labels, tree, n_neighbors=None, radius=None
+        point_generator, batch_size, labels, tree, n_neighbors=None, radius=None
 ):
     """Postprocess the clustered labels by considering a batched point cloud
         for memory-saving purpose
@@ -44,8 +44,14 @@ def postprocess_batch_labels(
     Parameters
     ----------
     point_generator : iterator
+        Generator of points, built to reduce the memory footprint
+    batch_size : int
+        Number of points in each batch, by definition (one passes this argument
+    in order to avoid confusion for the last item)
     labels : np.array
+        Set of output labels, after k-mean algorithm
     tree : scipy.spatial.ckdtree.cKDTree
+        Spatial kd-tree designed to identify the clustered point neighbors
     nb_neighbors : int
         Number of neighbors in each point neighborhood
     radius : float
@@ -53,7 +59,6 @@ def postprocess_batch_labels(
     """
     new_labels = np.zeros_like(labels)
     for idx, item in enumerate(point_generator):
-        batch_size = item.shape[0]
         _, neighbors = extract.request_tree(item, tree, n_neighbors, radius)
         point_neighborhoods = labels[neighbors]
         u, indices = np.unique(point_neighborhoods, return_inverse=True)

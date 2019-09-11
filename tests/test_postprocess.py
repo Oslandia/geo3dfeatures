@@ -32,12 +32,12 @@ def test_postprocess_batch_labels(sphere, sphere_tree):
     Let define a k-mean output with 1 as the first label, and the remaining
     values are 0. The postprocessing must output an array of 0.
     """
-    BATCH_SIZE = 1_000
+    BATCH_SIZE = 1_500
     NB_NEIGHBORS = 100
     LABELS = np.zeros((sphere.shape[0],), dtype=int)
     LABELS[0] = 1
     batched_sphere = postprocess.batch_points(sphere, BATCH_SIZE)
     new_labels = postprocess.postprocess_batch_labels(
-        batched_sphere, LABELS, sphere_tree, n_neighbors=NB_NEIGHBORS
+        batched_sphere, BATCH_SIZE, LABELS, sphere_tree, n_neighbors=NB_NEIGHBORS
     )
     assert np.all([new_labels == 0])
