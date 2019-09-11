@@ -104,6 +104,7 @@ def kmean_parser(subparser, reference_func):
         help="Cluster a set of 3D points with a k-means algorithm"
     )
     add_instance_args(parser, featurized=True)
+    add_kdtree_args(parser)
     parser.add_argument("-k", "--nb-clusters",
                         type=int, required=True,
                         help="Desired amount of clusters")
@@ -114,6 +115,14 @@ def kmean_parser(subparser, reference_func):
                             "Config file for clustering analysis, "
                             "that summarizes feature coefficients"
                         ))
+    parser.add_argument(
+        "-p", "--postprocessing-neighbors", type=int, default=0,
+        help=(
+            "Clean the k-mean output by postprocessing the result.",
+            "The parameter gives the postprocessing neighborhood definition, "
+            "as a neighboring point quantity. If 0, no postprocessing."
+            )
+        )
     parser.add_argument("-xyz", action="store_true",
                         help=("Output file extension, xyz if true "
                               "similar to output otherwise"))

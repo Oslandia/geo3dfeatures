@@ -13,12 +13,16 @@ import seaborn as sns
 from sklearn.cluster import MiniBatchKMeans
 import laspy
 
-from geo3dfeatures.features import max_normalize, accumulation_2d_neighborhood
+from geo3dfeatures.features import accumulation_2d_neighborhood, max_normalize
+from geo3dfeatures.extract import compute_tree
+
+from geo3dfeatures import postprocess
 
 logger = daiquiri.getLogger(__name__)
 
 SEED = 1337
 KMEAN_BATCH = 10_000
+POSTPROCESSING_BATCH = 10_000
 KEY_H5_FORMAT = "/num_{:04d}"
 
 
@@ -192,7 +196,7 @@ def colorize_clusters(points, clusters):
 
 def save_clusters(
         results, datapath, experiment, neighbors, radius,
-        nb_clusters, config_name, xyz=False
+        nb_clusters, config_name, pp_neighbors, xyz=False
 ):
     """Save the resulting dataframe into the accurate folder on the file system
 
@@ -213,6 +217,9 @@ def save_clusters(
         Number of cluster, used for identifying the resulting data
     config_name : str
         Cluster configuration filename
+    pp_neighbors : int
+        If >0, the output clusters are postprocessed, otherwise they are k-mean
+    algorithm outputs
     xyz : boolean
         If true, the output file is a .xyz, otherwise a .las file will be
     produced
@@ -222,15 +229,19 @@ def save_clusters(
     )
     os.makedirs(output_path, exist_ok=True)
     extension = "xyz" if xyz else "las"
+    postprocess_suffix = (
+        "-pp" + str(pp_neighbors) if pp_neighbors > 0 else ""
+        )
     output_file = Path(
         output_path,
         "kmeans-"
         + instance(neighbors, radius)
-        + "-" + config_name + "-" + str(nb_clusters) + "." + extension
+        + "-" + config_name + "-" + str(nb_clusters) + postprocess_suffix
+        + "." + extension
     )
     if xyz:
         results.to_csv(
-            str(output_file), sep=" ", index=False, header=False
+            str(output_file), sep=" ", index=False, header=True
         )
     else:
         input_file_path = Path(datapath, "input", experiment + ".las")
@@ -276,12 +287,21 @@ def main(opts):
         batch_size=KMEAN_BATCH,
         random_state=SEED
     )
-
     model.fit(data)
+    labels = model.labels_
 
-    colored_results = colorize_clusters(points, model.labels_)
+    # Postprocessing
+    if opts.postprocessing_neighbors > 0:
+        logger.info(f"Post-process point labels by batches of {KMEAN_BATCH}")
+        tree = compute_tree(points, opts.kdtree_leafs)
+        gen = postprocess.batch_points(points, POSTPROCESSING_BATCH)
+        labels = postprocess.postprocess_batch_labels(
+            gen, POSTPROCESSING_BATCH, labels, tree, opts.postprocessing_neighbors
+        )
+
+    colored_results = colorize_clusters(points, labels)
     save_clusters(
         colored_results, opts.datapath, experiment, opts.neighbors,
         opts.radius, opts.nb_clusters,
-        config_path.stem, opts.xyz
+        config_path.stem, opts.postprocessing_neighbors, opts.xyz
     )
