@@ -31,19 +31,19 @@ def batch_points(points, batch_size):
     np.array
         Point subsample
     """
-    for value in np.arange(0, points.shape[0], batch_size):
+    for value in range(0, points.shape[0], batch_size):
         yield points[value:(value+batch_size)]
 
 
 def postprocess_batch_labels(
-        generator, labels, tree, n_neighbors=None, radius=None
+        point_generator, labels, tree, n_neighbors=None, radius=None
 ):
     """Postprocess the clustered labels by considering a batched point cloud
         for memory-saving purpose
 
     Parameters
     ----------
-    point_cloud : pd.DataFrame
+    point_generator : iterator
     labels : np.array
     tree : scipy.spatial.ckdtree.cKDTree
     nb_neighbors : int
@@ -51,12 +51,10 @@ def postprocess_batch_labels(
     radius : float
         Radius that defines the neighboring ball around a given point
     """
-    new_labels = np.zeros(shape=labels.shape, dtype=labels.dtype)
-    for idx, item in enumerate(generator):
+    new_labels = np.zeros_like(labels)
+    for idx, item in enumerate(point_generator):
         batch_size = item.shape[0]
-        _, neighbors = extract.request_tree(
-            item, tree, n_neighbors, radius
-        )
+        _, neighbors = extract.request_tree(item, tree, n_neighbors, radius)
         point_neighborhoods = labels[neighbors]
         u, indices = np.unique(point_neighborhoods, return_inverse=True)
         new_clusters = u[
