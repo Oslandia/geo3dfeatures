@@ -116,13 +116,11 @@ def kmean_parser(subparser, reference_func):
                             "that summarizes feature coefficients"
                         ))
     parser.add_argument(
-        "-p", "--post-processing", action="store_true",
-        help="Post-process the kmean output to clean out the point cloud"
-        )
-    parser.add_argument(
-        "-pn", "--postprocessing-neighbors", type=int,
+        "-p", "--postprocessing-neighbors", type=int, default=0,
         help=(
-            "Neighbor number for clustering label postprocessing"
+            "Clean the k-mean output by postprocessing the result.",
+            "The parameter gives the postprocessing neighborhood definition, "
+            "as a neighboring point quantity. If 0, no postprocessing."
             )
         )
     parser.add_argument("-xyz", action="store_true",

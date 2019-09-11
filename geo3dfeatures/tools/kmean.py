@@ -196,7 +196,7 @@ def colorize_clusters(points, clusters):
 
 def save_clusters(
         results, datapath, experiment, neighbors, radius,
-        nb_clusters, config_name, postprocess=False, xyz=False
+        nb_clusters, config_name, pp_neighbors, xyz=False
 ):
     """Save the resulting dataframe into the accurate folder on the file system
 
@@ -217,9 +217,9 @@ def save_clusters(
         Number of cluster, used for identifying the resulting data
     config_name : str
         Cluster configuration filename
-    postprocess : boolean
-        If true, the output clusters are postprocessed, otherwise they are
-    k-mean algorithm outputs
+    pp_neighbors : int
+        If >0, the output clusters are postprocessed, otherwise they are k-mean
+    algorithm outputs
     xyz : boolean
         If true, the output file is a .xyz, otherwise a .las file will be
     produced
@@ -229,7 +229,9 @@ def save_clusters(
     )
     os.makedirs(output_path, exist_ok=True)
     extension = "xyz" if xyz else "las"
-    postprocess_suffix = "-pp" if postprocess else ""
+    postprocess_suffix = (
+        "-pp" + str(pp_neighbors) if pp_neighbors > 0 else ""
+        )
     output_file = Path(
         output_path,
         "kmeans-"
@@ -289,22 +291,17 @@ def main(opts):
     labels = model.labels_
 
     # Postprocessing
-    if opts.post_processing:
+    if opts.postprocessing_neighbors > 0:
         logger.info(f"Post-process point labels by batches of {KMEAN_BATCH}")
         tree = compute_tree(points, opts.kdtree_leafs)
         gen = postprocess.batch_points(points, POSTPROCESSING_BATCH)
-        pp_neighbors = (
-            opts.postprocessing_neighbors
-            if opts.postprocessing_neighbors is not None
-            else max(opts.neighbors)
-            )
         labels = postprocess.postprocess_batch_labels(
-            gen, POSTPROCESSING_BATCH, labels, tree, pp_neighbors
+            gen, POSTPROCESSING_BATCH, labels, tree, opts.postprocessing_neighbors
         )
 
     colored_results = colorize_clusters(points, labels)
     save_clusters(
         colored_results, opts.datapath, experiment, opts.neighbors,
         opts.radius, opts.nb_clusters,
-        config_path.stem, opts.post_processing, opts.xyz
+        config_path.stem, opts.postprocessing_neighbors, opts.xyz
     )
