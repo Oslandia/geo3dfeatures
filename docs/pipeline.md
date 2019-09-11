@@ -94,7 +94,7 @@ during the clustering process with the help of a configuration file. As an
 example, one may run:
 
 ```
-geo3d cluster -d data -i geocliff-100000.las -n 50 200 -k 2 -c base.ini
+geo3d cluster -d data -i geocliff-100000.las -n 50 200 -k 2 -c base.ini -p 100
 ```
 
 This command reads the
@@ -106,13 +106,21 @@ feature has an equivalent importance; however some other examples are available
 in the `config` folder and home-made configurations may be designed as well by
 writing a new `.ini` file.
 
-A parameter `bin` can be set in the configuratoin file. Its the accumulation feature
-bin size, expressed in the same unit than the point cloud. Be careful with this
-parameter : it is considered as a floating number in the code.
+A parameter `bin` can be set in the configuration file. Its the accumulation
+feature bin size, expressed in the same unit than the point cloud. Be careful
+with this parameter : it is considered as a floating number in the code.
+
+The k-mean output may be postprocessed in order to make the transitions between
+classes smoother and reduce the prediction noise. If such a procedure is
+desired, the `-p` parameter must be added to the command, with an integer that
+represents the number of neighbors to consider so as to reassess the point
+cluster. The underlying postprocessing strategy relies on the computation of a
+new kd-tree on the point cloud, and for each point, the computation of the most
+frequent clustering label within the neighborhood.
 
 Once the results have been computed, they are stored in
-`data/output/geocliff-100000/clustering/kmeans-50-200-base-2.las`. This resulting file
-may be visualized with a 3D data viewer, like CloudCompare. One may also generate
-`.xyz` if desired by adding the option `-xyz` to the command.
+`data/output/geocliff-100000/clustering/kmeans-50-200-base-2-pp100.las`. This
+resulting file may be visualized with a 3D data viewer, like CloudCompare. One
+may also generate `.xyz` if desired by adding the option `-xyz` to the command.
 
 And voilà!
