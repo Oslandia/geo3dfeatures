@@ -136,6 +136,36 @@ def read_config(config_path):
     return feature_config
 
 
+def add_accumulation_features(df, config):
+    """Add the accumulation features to the set of existing features before to
+    compute k-means
+
+    The bin definition is provided within the specified configuration object.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        Set of features
+    config : configparser.ConfigParser
+        Configuration parameters, as provided by the chosen configuration file;
+    contains a "bin" section within its "clustering" main section
+
+    Returns
+    -------
+    pd.DataFrame
+        Updated set of features with bin-related information
+    """
+    bin_size = float(config["clustering"]["bin"])
+    logger.info(
+        "Computation of the accumulation features with bin_size=%s", bin_size
+    )
+    df = accumulation_2d_neighborhood(df, bin_size)
+    for c in ("bin_z_range", "bin_z_std", "bin_density"):
+        df[c] = max_normalize(df[c])
+        df[c].fillna(0, inplace=True)
+    return df
+
+
 def update_features(df, config):
     """Modify data features with the help of multiplier coefficients associated
     to each data feature, before to fit the k-mean model
@@ -155,21 +185,16 @@ def update_features(df, config):
     coefs = np.ones(shape=df.shape[1])
     df_coefs = pd.DataFrame(np.expand_dims(coefs, 0), columns=df.columns)
     for key in config["clustering"]:
-        if key not in df.columns:
-            logger.warning("%s is not a known feature, skipping.", key)
-            continue
-        df_coefs[key] = float(config["clustering"][key])
+        if key in ("r", "g", "b", "z"):
+            df_coefs[key] = float(config["clustering"][key])
+        else:
+            key_columns = df.columns.str.startswith(key)
+            coefs[key_columns] = float(config["clustering"][key])
     coefs = np.squeeze(np.array(df_coefs))
     for idx, column in enumerate(df.columns):
         if coefs[idx] != 1:
             logger.info("Multiply %s feature by %s", column, coefs[idx])
             df[column] = coefs[idx] * df[column]
-    if "bin" in config["clustering"]:
-        bin_size = float(config["clustering"]["bin"])
-        logger.info("Found a 'bin' in the config file. Computation of the accumulation features")
-        logger.info("Bin size %s", bin_size)
-        df = accumulation_2d_neighborhood(df, bin_size)
-    return df
 
 
 def colorize_clusters(points, clusters):
@@ -273,13 +298,11 @@ def main(opts):
     for c in data.drop(columns=["x", "y"]):
         data[c] = max_normalize(data[c])
 
-    data = update_features(data, feature_config)
+    if "bin" in feature_config["clustering"]:
+        data = add_accumulation_features(data, feature_config)
 
+    update_features(data, feature_config)
     data.drop(columns=["x", "y"], inplace=True)
-    if "bin_density" in data.columns:  # There are accumulation features
-        for c in ("bin_z_range", "bin_z_std", "bin_density"):
-            data[c] = max_normalize(data[c])
-            data[c].fillna(0, inplace=True)
 
     logger.info("Compute %s clusters...", opts.nb_clusters)
     model = MiniBatchKMeans(
