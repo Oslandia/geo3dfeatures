@@ -46,7 +46,7 @@ def sample_xyz(input_path, output_path, nb_points):
     output_path : Path
     nb_points : int
     """
-    df = pd.DataFrame(io.xyz(input_path)).sample(nb_points)
+    df = pd.DataFrame(io.read_xyz(input_path)).sample(nb_points)
     df.columns = ("x", "y", "z", "r", "g", "b")
     df = df.astype(dtype={"r": np.uint8, "g": np.uint8, "b": np.uint8})
     df.to_csv(str(output_path), sep=" ", index=False, header=False)

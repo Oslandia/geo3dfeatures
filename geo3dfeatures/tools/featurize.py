@@ -6,11 +6,7 @@ import daiquiri
 
 import pandas as pd
 
-from geo3dfeatures.io import (
-    xyz as read_xyz,
-    las as read_las,
-    ply as read_ply,
-    )
+from geo3dfeatures.io import read_xyz, read_las, read_ply
 from geo3dfeatures.extract import extract
 
 

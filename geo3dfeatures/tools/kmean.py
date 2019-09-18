@@ -15,8 +15,9 @@ import laspy
 
 from geo3dfeatures.features import accumulation_2d_neighborhood, max_normalize
 from geo3dfeatures.extract import compute_tree
-
+from geo3dfeatures import io
 from geo3dfeatures import postprocess
+
 
 logger = daiquiri.getLogger(__name__)
 
@@ -52,57 +53,6 @@ def instance(neighbors, radius):
             "neighbors and radius arguments can't be both undefined"
             )
     return neighborhood
-
-
-def load_features(datapath, experiment, neighbors):
-    """Read feature set from the file system, starting from the input
-        parameters
-
-    Parameters
-    ----------
-    datapath : str
-        Root of the data folder
-    experiment : str
-        Name of the experiment, used for identifying the accurate subfolder
-    neighbors : list
-        List of number of neigbors
-
-    Returns
-    -------
-    pandas.DataFrame
-        Feature set, each record refering to a point; columns correspond to geometric features
-    """
-    filepath = Path(
-        datapath, "output", experiment, "features", "features.h5"
-    )
-    logger.info(f"Recover features stored in {filepath}")
-    no_rename = ["x", "y", "z", "r", "g", "b"]
-    with pd.HDFStore(filepath, mode="r") as store:
-        # loop on the possible number of neighbors and concatenate features
-        # we have to sort each dataframe in order to align each point x,y,z
-        num_neighbor = neighbors[0]
-        key = KEY_H5_FORMAT.format(num_neighbor)
-        df = store[key]
-        df.sort_values(by=list("xyz"), inplace=True)
-        df.drop(columns=["num_neighbors"], inplace=True)
-        cols = [x for x in df if x not in no_rename]
-        df.rename(columns={key: key + "_" + str(num_neighbor) for key in cols}, inplace=True)
-        df.index = pd.Index(range(df.shape[0]))
-        dataframes = [df]
-        for num_neighbor in neighbors[1:]:
-            key = KEY_H5_FORMAT.format(num_neighbor)
-            newdf = store[key]
-            newdf.drop(
-                columns=["num_neighbors", "r", "g", "b"],
-                errors="ignore", inplace=True
-            )
-            newdf.sort_values(by=list("xyz"), inplace=True)
-            newdf.drop(columns=["x", "y", "z"], inplace=True)
-            newdf.rename(columns={key: key + "_" + str(num_neighbor) for key in cols}, inplace=True)
-            newdf.index = pd.Index(range(newdf.shape[0]))
-            dataframes.append(newdf)
-
-    return pd.concat(dataframes, axis="columns")
 
 
 def read_config(config_path):
@@ -257,7 +207,7 @@ def save_clusters(
     postprocess_suffix = (
         "-pp" + str(pp_neighbors) if pp_neighbors > 0 else ""
         )
-    output_file = Path(
+    output_file_path = Path(
         output_path,
         "kmeans-"
         + instance(neighbors, radius)
@@ -265,26 +215,11 @@ def save_clusters(
         + "." + extension
     )
     if xyz:
-        results.to_csv(
-            str(output_file), sep=" ", index=False, header=True
-        )
+        io.write_xyz(results, output_file_path)
     else:
         input_file_path = Path(datapath, "input", experiment + ".las")
-        if not input_file_path.is_file():
-            logger.error(f"{input_file_path} is not a valid file.")
-            sys.exit(1)
-        with laspy.file.File(input_file_path, mode="r") as input_las:
-            outfile = laspy.file.File(
-                output_file, mode="w", header=input_las.header
-            )
-            outfile.x = results.x
-            outfile.y = results.y
-            outfile.z = results.z
-            outfile.red = results.r
-            outfile.green = results.g
-            outfile.blue = results.b
-            outfile.close()
-    logger.info(f"Clusters saved into {output_file}")
+        io.write_las(results, output_file_path, input_file_path)
+    logger.info("Clusters saved into %s", output_file_path)
 
 
 def main(opts):
@@ -292,7 +227,7 @@ def main(opts):
     feature_config = read_config(config_path)
 
     experiment = opts.input_file.split(".")[0]
-    data = load_features(opts.datapath, experiment, opts.neighbors)
+    data = io.load_features(opts.datapath, experiment, opts.neighbors)
     points = data[["x", "y", "z"]].copy()
 
     for c in data.drop(columns=["x", "y"]):

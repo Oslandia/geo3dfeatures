@@ -16,7 +16,7 @@ import daiquiri
 import numpy as np
 import laspy
 
-from geo3dfeatures.io import ply, xyz
+from geo3dfeatures.io import read_ply, read_xyz
 
 
 logger = daiquiri.getLogger(__name__)
@@ -44,7 +44,7 @@ def main(opts):
         logger.warning(
             "The file is read; it may take time regarding the file size"
         )
-        data = xyz(input_path)
+        data = read_xyz(input_path)
         nb_points = len(data)
         feature_list = "x, y, z, r, g, b"
         xmin, ymin, zmin = np.min(data[:, :3], axis=0)
@@ -53,7 +53,7 @@ def main(opts):
         logger.warning(
             "The file is read; it may take time regarding the file size"
         )
-        data = ply(input_path)
+        data = read_ply(input_path)
         nb_points = len(data)
         feature_list = "x, y, z"
         xmin, ymin, zmin = np.min(data, axis=0)
