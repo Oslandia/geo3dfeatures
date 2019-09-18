@@ -1,17 +1,23 @@
 """I/O module to load/write some point clouds files
 """
 
-
 import csv
+from pathlib import Path
+import sys
 
+import daiquiri
 import laspy
-
-from plyfile import PlyData
-
 import numpy as np
+from plyfile import PlyData
+import pandas as pd
 
 
-def xyz(fpath, names=None, header=True):
+KEY_H5_FORMAT = "/num_{:04d}"
+
+logger = daiquiri.getLogger(__name__)
+
+
+def read_xyz(fpath, names=None, header=True):
     """Read a .xyz file
 
     This is a ASCII text file with 3D coordinates and some extra columns
@@ -30,7 +36,20 @@ def xyz(fpath, names=None, header=True):
     return np.loadtxt(fpath, delimiter=" ", skiprows=header)
 
 
-def las(fpath):
+def write_xyz(data, filepath):
+    """Write a .xyz file, which is a simple csv-like format
+
+    Parameters
+    ----------
+    data : pd.DataFrame
+        Data to save
+    filepath : pathlib.Path
+        Path where to save the data
+    """
+    data.to_csv(filepath, sep=" ", index=False, header=True)
+
+
+def read_las(fpath):
     """Read a .las file with `laspy` package
 
     Parameters
@@ -64,7 +83,35 @@ def las(fpath):
     return data.transpose()
 
 
-def ply(fpath):
+def write_las(data, output_filepath, input_filepath):
+    """Write a .las file with the "laspy" package, by reusing the input file
+    features
+
+    Parameters
+    ----------
+    data : pd.DataFrame
+        Data to save
+    output_filepath : pathlib.Path
+        Path where to save the data
+    input_filepath : pathlib.Path
+        Path of the template input file
+    """
+    if not input_filepath.is_file():
+        logger.error("%s is not a valid file.", input_filepath)
+        sys.exit(1)
+    with laspy.file.File(input_filepath, mode="r") as input_las:
+        with laspy.file.File(
+                output_filepath, mode="w", header=input_las.header
+        ) as output_las:
+            output_las.x = data.x
+            output_las.y = data.y
+            output_las.z = data.z
+            output_las.red = data.r
+            output_las.green = data.g
+            output_las.blue = data.b
+
+
+def read_ply(fpath):
     """Read .ply file with 'plyfile'.
 
     For now, just read the (x, y, z) coordinates.
@@ -103,3 +150,66 @@ def write_features(fpath, gen):
         writer.writerow(first)
         for row in gen:
             writer.writerow(row)
+
+
+def load_features(datapath, experiment, neighbors, sample=None):
+    """Read the featurized data stored in a h5 file, and aggregate all the
+    neighborhood sizes by suffixing the feature column names
+
+    The dataframe rows are stored with respect to XYZ columns to assign the
+    feature values to the relevant points, as featurization does not
+    guarantee it.
+
+    Parameters
+    ----------
+    datapath : str
+        Root of the data folder
+    experiment : str
+        Name of the experiment, used for identifying the accurate subfolder
+    neighbors : list
+        List of number of neigbors
+    sample : str
+        If None, consider the whole scene, otherwise load the features only for
+    the relevant class sample
+
+    Returns
+    -------
+    pandas.DataFrame
+        Feature set, each record refering to a point; columns correspond to
+    geometric features
+    """
+    sample_suffix = "" if sample is None else "_" + sample
+    filename = "features" + sample_suffix + ".h5"
+    filepath = Path(datapath, "output", experiment, "features", filename)
+    if not filepath.is_file():
+        raise ValueError(
+            f"File {filepath} does not exist, verify the 'sample' argument!"
+        )
+    logger.info("Recover features stored in %s", filepath)
+    no_rename = ["x", "y", "z", "r", "g", "b"]
+    with pd.HDFStore(filepath, mode="r") as store:
+        # loop on the possible number of neighbors and concatenate features
+        # we have to sort each dataframe in order to align each point x,y,z
+        num_neighbor = neighbors[0]
+        key = KEY_H5_FORMAT.format(num_neighbor)
+        df = store[key]
+        df.sort_values(by=list("xyz"), inplace=True)
+        df.drop(columns=["num_neighbors"], inplace=True)
+        cols = [x for x in df if x not in no_rename]
+        df.rename(columns={key: key + "_" + str(num_neighbor) for key in cols}, inplace=True)
+        df.index = pd.Index(range(df.shape[0]))
+        dataframes = [df]
+        for num_neighbor in neighbors[1:]:
+            key = KEY_H5_FORMAT.format(num_neighbor)
+            newdf = store[key]
+            newdf.drop(
+                columns=["num_neighbors", "r", "g", "b"],
+                errors="ignore", inplace=True
+            )
+            newdf.sort_values(by=list("xyz"), inplace=True)
+            newdf.drop(columns=["x", "y", "z"], inplace=True)
+            newdf.rename(columns={key: key + "_" + str(num_neighbor) for key in cols}, inplace=True)
+            newdf.index = pd.Index(range(newdf.shape[0]))
+            dataframes.append(newdf)
+
+    return pd.concat(dataframes, axis="columns")
