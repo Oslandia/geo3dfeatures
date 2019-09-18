@@ -9,10 +9,9 @@ import sys
 import daiquiri
 import numpy as np
 import pandas as pd
-import seaborn as sns
-from sklearn.cluster import MiniBatchKMeans
 import laspy
 
+from geo3dfeatures.classification import colorize_labels, compute_clusters
 from geo3dfeatures.features import accumulation_2d_neighborhood, max_normalize
 from geo3dfeatures.extract import compute_tree
 from geo3dfeatures import io
@@ -147,28 +146,6 @@ def update_features(df, config):
             df[column] = coefs[idx] * df[column]
 
 
-def colorize_clusters(points, clusters):
-    """Associated a (r, g, b) color for each record of a dataframe, depending
-    on the cluster id
-
-    Parameters
-    ----------
-    points : pandas.DataFrame
-        Set of (x, y, z) points
-    clusters : list
-        Resulting cluster id; must be of the same length than points
-
-    Returns
-    -------
-    pandas.DataFrame
-        Colorized points, i.e. set of (x, y, z, r, g, b) clustered points
-    """
-    palette = sns.color_palette("colorblind", len(np.unique(clusters)))
-    colors = np.array([palette[l] for l in clusters]) * 256
-    colors = pd.DataFrame(colors, columns=["r", "g", "b"], dtype=np.uint8)
-    return points.join(colors)
-
-
 def save_clusters(
         results, datapath, experiment, neighbors, radius,
         nb_clusters, config_name, pp_neighbors, xyz=False
@@ -240,13 +217,9 @@ def main(opts):
     data.drop(columns=["x", "y"], inplace=True)
 
     logger.info("Compute %s clusters...", opts.nb_clusters)
-    model = MiniBatchKMeans(
-        n_clusters=opts.nb_clusters,
-        batch_size=KMEAN_BATCH,
-        random_state=SEED
+    labels = compute_clusters(
+        data, n_clusters=opts.nb_clusters, batch_size=KMEAN_BATCH, seed=SEED
     )
-    model.fit(data)
-    labels = model.labels_
 
     # Postprocessing
     if opts.postprocessing_neighbors > 0:
@@ -257,7 +230,7 @@ def main(opts):
             gen, POSTPROCESSING_BATCH, labels, tree, opts.postprocessing_neighbors
         )
 
-    colored_results = colorize_clusters(points, labels)
+    colored_results = colorize_labels(points, labels)
     save_clusters(
         colored_results, opts.datapath, experiment, opts.neighbors,
         opts.radius, opts.nb_clusters,

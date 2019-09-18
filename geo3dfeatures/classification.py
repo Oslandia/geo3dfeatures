@@ -5,8 +5,14 @@ regarding their spatial organization, and most specifically, the geometric
 structure of their neighborhood.
 """
 
-
-from sklearn.cluster import KMeans
+import numpy as np
+import pandas as pd
+import seaborn as sns
+from sklearn.cluster import KMeans, MiniBatchKMeans
+from sklearn.linear_model import LogisticRegression
+from sklearn.model_selection import train_test_split, cross_validate, cross_val_score
+from sklearn.pipeline import make_pipeline
+from sklearn.preprocessing import MinMaxScaler
 
 
 def standard_normalization(sample):
@@ -45,21 +51,87 @@ def normalize_features(df_features):
     return df_out
 
 
-def compute_cluster(df_features, nb_clusters=2, seed=1337):
-    """Compute a KMeans clustering on `df_features`
+def compute_clusters(data, n_clusters, batch_size, seed=1337):
+    """Predict k-mean labels on the provided dataset
+
+    If batch_size > 0, the MiniBatchKMeans is used instead of KMeans
 
     Parameters
     ----------
     df_features : pandas.DataFrame
         Input geometric features on a sample of 3D points
-    nb_clusters : int
+    n_clusters : int
         Number of clusters to consider
+    batch_size : int
+        Batch size for MiniBatchKMeans; if 0 a simple KMeans algorithm is run
+    seed : int
+        Random seed for k-mean algorithm initialization
 
     Returns
     -------
-    sklearn.cluster.KMeans
-        Clustering model applied on input features
+    list
+        Predicted clusters according to the k-mean clustering
     """
-    model = KMeans(nb_clusters, random_state=seed)
-    model.fit(df_features)
-    return model
+    if batch_size == 0:
+        model = KMeans(n_clusters=n_clusters, random_state=seed)
+    else:
+        model = MiniBatchKMeans(
+            n_clusters=n_clusters, batch_size=batch_size, random_state=seed
+        )
+    model.fit(data)
+    return model.labels_
+
+
+def colorize_labels(points, labels, palette=None):
+    """Associated a (r, g, b) color for each record of a dataframe, depending
+    on the label id
+
+    Parameters
+    ----------
+    points : pandas.DataFrame
+        Set of (x, y, z) points
+    labels : list
+        Resulting label id; must be of the same length than points
+    palette : seaborn.palettes._ColorPalette
+        Colorization palette; if None a default 'colorblind' palette is applied
+
+    Returns
+    -------
+    pandas.DataFrame
+        Colorized points, i.e. set of (x, y, z, r, g, b) clustered points
+    """
+    if palette is None:
+        palette = sns.color_palette("colorblind", len(np.unique(labels)))
+    colors = np.array([palette[l] for l in labels]) * 256
+    colors = pd.DataFrame(colors, columns=["r", "g", "b"], dtype=np.uint8)
+    return points.join(colors)
+
+
+def train_predictive_model(data, labels, seed=1337):
+    """Normalize the data and apply a logistic regression on input data in
+    order to train a model able to predict 3D point labels with regards to
+    their geometric properties
+
+    Parameters
+    ----------
+    data : pd.DataFrame
+        Input geometric features on a sample of 3D points
+    labels : pd.Series
+        3D point expected output, targetted by the predictive model
+    seed : int
+        Random seed for algorithm initialization
+
+    Returns
+    -------
+    sklearn.pipeline.Pipeline
+        Classifier, as a combination of a scaler and a predictive model
+    """
+    classifier = make_pipeline(
+        MinMaxScaler(),
+        LogisticRegression(
+            solver="lbfgs", multi_class="multinomial",
+            max_iter=200, random_state=seed
+        )
+    )
+    classifier.fit(data, labels)
+    return classifier
