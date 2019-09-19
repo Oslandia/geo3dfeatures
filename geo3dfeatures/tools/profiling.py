@@ -10,11 +10,9 @@ into 'pstats' module code
 
 """
 
-import argparse
 import json
 from pathlib import Path
 import pstats
-import sys
 
 import daiquiri
 import pandas as pd

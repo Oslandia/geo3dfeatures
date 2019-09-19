@@ -183,7 +183,7 @@ def test_3D_properties_plane_and_sphere_comparison(plane, sphere):
     reference_point_plane = plane[index]
     reference_point_sphere = sphere[index]
     dist_plane, neighbors_plane = _neighbors(plane, reference_point_plane)
-    dist_sphere, neighbors_sphere  = _neighbors(sphere, reference_point_sphere)
+    dist_sphere, neighbors_sphere = _neighbors(sphere, reference_point_sphere)
     radius_plane = radius_3D(dist_plane)
     radius_sphere = radius_3D(dist_sphere)
     assert radius_sphere > radius_plane

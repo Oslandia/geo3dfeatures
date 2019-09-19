@@ -1,7 +1,6 @@
 """Extract a subsample of a .las point cloud and save it into another .las file
 """
 
-import argparse
 from pathlib import Path
 import sys
 

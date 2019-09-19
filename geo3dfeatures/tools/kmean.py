@@ -9,7 +9,6 @@ import sys
 import daiquiri
 import numpy as np
 import pandas as pd
-import laspy
 
 from geo3dfeatures.classification import colorize_labels, compute_clusters
 from geo3dfeatures.features import accumulation_2d_neighborhood, max_normalize
