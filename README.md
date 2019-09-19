@@ -28,6 +28,21 @@ $ source venv/bin/activate
 (venv)$ poetry install
 ```
 
+## Contribution
+
+All contributions are welcome ! We just set a condition: respect
+the [PEP8](https://www.python.org/dev/peps/pep-0008/). Our favorite tool in
+that way is `flake8` (configuration in `.flake8` file), available here as a
+pre-commit hook. To activate the hook, just run the following command after the
+project installation:
+
+```
+(venv)$ pre-commit install -f
+```
+
+Alternatively, you can run `flake8` on your own way. Be careful, *With great
+power, comes great responsibility.* :)
+
 # Run commands
 
 Six commands are currently available:
