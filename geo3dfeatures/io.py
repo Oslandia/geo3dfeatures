@@ -83,7 +83,7 @@ def read_las(fpath):
     return data.transpose()
 
 
-def write_las(data, output_filepath, input_filepath):
+def write_las(data, input_filepath, output_filepath):
     """Write a .las file with the "laspy" package, by reusing the input file
     features
 
@@ -91,10 +91,10 @@ def write_las(data, output_filepath, input_filepath):
     ----------
     data : pd.DataFrame
         Data to save
+    input_filepath : pathlib.Path
+        Path of the input file, from which header metadata is extracted
     output_filepath : pathlib.Path
         Path where to save the data
-    input_filepath : pathlib.Path
-        Path of the template input file
     """
     if not input_filepath.is_file():
         logger.error("%s is not a valid file.", input_filepath)

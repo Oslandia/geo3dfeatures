@@ -195,7 +195,7 @@ def save_clusters(
         io.write_xyz(results, output_file_path)
     else:
         input_file_path = Path(datapath, "input", experiment + ".las")
-        io.write_las(results, output_file_path, input_file_path)
+        io.write_las(results, input_file_path, output_file_path)
     logger.info("Clusters saved into %s", output_file_path)
 
 
