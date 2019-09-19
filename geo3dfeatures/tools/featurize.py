@@ -6,11 +6,7 @@ import daiquiri
 
 import pandas as pd
 
-from geo3dfeatures.io import (
-    xyz as read_xyz,
-    las as read_las,
-    ply as read_ply,
-    )
+from geo3dfeatures.io import read_xyz, read_las, read_ply
 from geo3dfeatures.extract import extract
 
 
@@ -97,8 +93,13 @@ def main(opts):
 
     if opts.extra_columns is not None:
         if len(opts.extra_columns) + 3 != data.shape[1]:
-            logger.warning("%d extra fields are expected for the provided input data, however you enter %d field names (%s).", data.shape[1] - 3, len(opts.extra_columns), opts.extra_columns)
-            raise ValueError("The given input columns does not match data shape, i.e. x,y,z plus extra columns.")
+            logger.warning(
+                "%d extra fields are expected for the provided input data, however you enter %d field names (%s).",
+                data.shape[1] - 3, len(opts.extra_columns), opts.extra_columns
+            )
+            raise ValueError(
+                "The given input columns does not match data shape, i.e. x,y,z plus extra columns."
+            )
 
     experiment = experiment_folder_name(opts.input_file, opts.label_scene)
     tree_file = opts.tree_file
@@ -120,9 +121,9 @@ def main(opts):
         logger.info("Load kd-tree from file %s...", tree_file)
         tree = pickle.load(fobj)
 
-    # the shape must be the same between the data read from file and the data stored
-    # in the kd-tree file, except for the '--label-scene' option (where you have a
-    # sample of the scene)
+    # the shape must be the same between the data read from file
+    # and the data stored in the kd-tree file, except for the '--label-scene'
+    # option (where you have a sample of the scene)
     if not opts.label_scene and tree.data.shape[0] != data.shape[0]:
         logger.info(
             "Input data and data stored in the kd-tree "
@@ -130,15 +131,6 @@ def main(opts):
         )
         sys.exit(0)
 
-    if opts.neighbors is not None:
-        neighborhood = "n" + str(opts.neighbors)
-    elif opts.radius is not None:
-        neighborhood = "r" + str(opts.radius)
-    else:
-        raise ValueError(
-            "Error in input neighborhood definition: "
-            "neighbors and radius arguments can't be both undefined"
-            )
     output_path = Path(opts.datapath, "output", experiment, "features")
     output_path.mkdir(parents=True, exist_ok=True)
     if opts.label_scene:

@@ -10,5 +10,5 @@ PLYFILE = DATADIR / "tet.ply"
 
 def test_read_xyz_from_ply_file():
     fpath = str(PLYFILE)
-    data = io.ply(fpath)
+    data = io.read_ply(fpath)
     assert data.shape == (4, 3)
