@@ -28,6 +28,10 @@ $ source venv/bin/activate
 (venv)$ poetry install
 ```
 
+# Contribution
+
+See [CONTRIBUTING.md](./CONTRIBUTING.md).
+
 # Run commands
 
 Six commands are currently available:
@@ -153,4 +157,4 @@ a [CANUPO](http://nicolas.brodu.net/en/recherche/canupo/) dataset (file `scene.x
 
 ___
 
-Oslandia, march 2019
+Oslandia, september 2019
