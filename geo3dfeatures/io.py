@@ -3,7 +3,6 @@
 
 from configparser import ConfigParser
 from pathlib import Path
-import sys
 
 import daiquiri
 import laspy
@@ -97,8 +96,7 @@ def write_las(data, input_filepath, output_filepath):
         Path where to save the data
     """
     if not input_filepath.is_file():
-        logger.error("%s is not a valid file.", input_filepath)
-        sys.exit(1)
+        raise IOError("%s is not a valid file.", input_filepath)
     with laspy.file.File(input_filepath, mode="r") as input_las:
         with laspy.file.File(
                 output_filepath, mode="w", header=input_las.header

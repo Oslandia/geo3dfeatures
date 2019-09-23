@@ -112,7 +112,7 @@ def colorize_labels(points, labels, glossary=None):
         palette = sns.color_palette("colorblind", len(np.unique(labels)))
     else:
         palette = [label["color"] for _, label in glossary.items()]
-    colors = np.array([palette[l] for l in labels]) * 256
+    colors = np.array([palette[l] for l in labels]) * 255
     colors = pd.DataFrame(colors, columns=["r", "g", "b"], dtype=np.uint8)
     return points.join(colors)
 
@@ -136,6 +136,11 @@ def train_predictive_model(data, labels, seed=1337):
     sklearn.pipeline.Pipeline
         Classifier, as a combination of a scaler and a predictive model
     """
+    if len(data) != len(labels):
+        raise ValueError(
+            "Data and label shapes do not correspond: there are "
+            f"{len(data)} records in data, and {len(labels)} labels",
+        )
     classifier = make_pipeline(
         MinMaxScaler(),
         LogisticRegression(
@@ -183,7 +188,7 @@ def save_labels(
     output_path = Path(
         datapath, "output", experiment, "prediction",
     )
-    output_path.mkdir(exist_ok=True)
+    output_path.mkdir(exist_ok=True, parents=True)
     extension = "xyz" if xyz else "las"
     postprocess_suffix = (
         "-pp" + str(pp_neighbors) if pp_neighbors > 0 else ""

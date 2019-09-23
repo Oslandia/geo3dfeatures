@@ -27,55 +27,6 @@ GLOSSARY = {
     }
 
 
-def save_predictions(
-        results, datapath, experiment, neighbors, radius,
-        config_name, pp_neighbors, xyz=False
-):
-    """Save the resulting dataframe into the accurate folder on the file system
-
-    Parameters
-    ----------
-    results : pandas.DataFrame
-        Data to save
-    datapath : str
-        Root of the data folder
-    experiment : str
-        Name of the experiment, used for identifying the accurate subfolder
-    neighbors : int
-        Number of neighbors used to compute the feature set
-    radius : float
-        Threshold that define the neighborhood, in order to compute the feature
-    set; used if neighbors is None
-    config_name : str
-        Feature configuration filename
-    pp_neighbors : int
-        If >0, the predicted labels are postprocessed, otherwise they are
-    outputs of the supervised learning algorithm
-    xyz : boolean
-        If true, the output file is a .xyz, otherwise a .las file will be
-    produced
-    """
-    output_path = Path(
-        datapath, "output", experiment, "prediction",
-    )
-    output_path.mkdir(exist_ok=True)
-    extension = "xyz" if xyz else "las"
-    postprocess_suffix = (
-        "-pp" + str(pp_neighbors) if pp_neighbors > 0 else ""
-        )
-    output_file_path = Path(
-        output_path,
-        "logreg-" + io.instance(neighbors, radius)
-        + "-" + config_name + postprocess_suffix + "." + extension
-    )
-    if xyz:
-        io.write_xyz(results, output_file_path)
-    else:
-        input_file_path = Path(datapath, "input", experiment + ".las")
-        io.write_las(results, input_file_path, output_file_path)
-    logger.info("Predictions saved into %s", output_file_path)
-
-
 def main(opts):
     experiment = opts.input_file.split(".")[0]
     df = io.load_features(opts.datapath, experiment, opts.neighbors)
