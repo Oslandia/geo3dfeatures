@@ -183,9 +183,10 @@ def load_features(datapath, experiment, neighbors, sample=None):
     filename = "features" + sample_suffix + ".h5"
     filepath = Path(datapath, "output", experiment, "features", filename)
     if not filepath.is_file():
-        raise ValueError(
-            f"File {filepath} does not exist, verify the 'sample' argument!"
+        logger.warning(
+            "File %s does not exist, verify the 'sample' argument!", filepath
         )
+        return None
     logger.info("Recover features stored in %s", filepath)
     no_rename = ["x", "y", "z", "r", "g", "b"]
     with pd.HDFStore(filepath, mode="r") as store:
