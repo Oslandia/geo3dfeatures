@@ -5,12 +5,14 @@ Available choices::
     - geo3d featurize [args]
     - geo3d profiling [args]
     - geo3d kmean [args]
+    - geo3d train [args]
+    - geo3d predict [args]
 """
 
 import argparse
 
 from geo3dfeatures.tools import (
-    info, sample, featurize, kmean, index
+    info, sample, featurize, kmean, index, train, predict
     )
 
 # default value for kd-tree
@@ -129,6 +131,70 @@ def kmean_parser(subparser, reference_func):
     parser.set_defaults(func=reference_func)
 
 
+def train_parser(subparser, reference_func):
+    """Add instance-specific arguments from the command line
+
+    Train a supervised learning model for predicting 3D point semantic
+    classes.
+
+    Parameters
+    ----------
+    subparser : argparser.parser.SubParsersAction
+    reference_func : function
+    """
+    parser = subparser.add_parser(
+        "train",
+        help="Train a semantic segmentation model"
+    )
+    add_instance_args(parser, featurized=True)
+    parser.add_argument("-c", "--config-file",
+                        default="base.ini",
+                        type=str,
+                        help=(
+                            "Config file for clustering analysis, "
+                            "that summarizes feature coefficients"
+                        ))
+    parser.set_defaults(func=reference_func)
+
+
+def predict_parser(subparser, reference_func):
+    """Add instance-specific arguments from the command line
+
+    Use a logistic regression trained model in order to predict 3D point
+    semantic classes in a point cloud.
+
+    Parameters
+    ----------
+    subparser : argparser.parser.SubParsersAction
+    reference_func : function
+    """
+    parser = subparser.add_parser(
+        "predict",
+        help="Predict 3D point semantic class starting from a trained model"
+    )
+    add_instance_args(parser, featurized=True)
+    add_kdtree_args(parser)
+    parser.add_argument("-c", "--config-file",
+                        default="base.ini",
+                        type=str,
+                        help=(
+                            "Config file for clustering analysis, "
+                            "that summarizes feature coefficients"
+                        ))
+    parser.add_argument(
+        "-p", "--postprocessing-neighbors", type=int, default=0,
+        help=(
+            "Clean the prediction output by postprocessing the result.",
+            "The parameter gives the postprocessing neighborhood definition, "
+            "as a neighboring point quantity. If 0, no postprocessing."
+            )
+        )
+    parser.add_argument("-xyz", action="store_true",
+                        help=("Output file extension, xyz if true "
+                              "similar to output otherwise"))
+    parser.set_defaults(func=reference_func)
+
+
 def index_parser(subparser, reference_func):
     """Index a point cloud scene.
 
@@ -214,6 +280,8 @@ def main():
     index_parser(sub_parsers, reference_func=index.main)
     featurize_parser(sub_parsers, reference_func=featurize.main)
     kmean_parser(sub_parsers, reference_func=kmean.main)
+    train_parser(sub_parsers, reference_func=train.main)
+    predict_parser(sub_parsers, reference_func=predict.main)
     args = parser.parse_args()
 
     if args.func:
