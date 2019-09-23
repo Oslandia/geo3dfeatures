@@ -1,10 +1,7 @@
 """Compute k-means clustering on 3D point cloud with geometric features
 """
 
-from configparser import ConfigParser
-import os
 from pathlib import Path
-import sys
 
 import daiquiri
 import numpy as np
@@ -23,65 +20,6 @@ SEED = 1337
 KMEAN_BATCH = 10_000
 POSTPROCESSING_BATCH = 10_000
 KEY_H5_FORMAT = "/num_{:04d}"
-
-
-def instance(neighbors, radius):
-    """Build the instance name, depending on the input parameters
-
-    Parameters
-    ----------
-    neighbors : int
-        Number of neighbors used to compute the feature set
-    radius : float
-        Threshold that define the neighborhood, in order to compute the feature
-        set; used if neighbors is None
-
-    Returns
-    -------
-    str
-        Name of the instance
-    """
-    if neighbors is not None:
-        return "-".join(str(x) for x in neighbors)
-    elif radius is not None:
-        neighborhood = "r" + str(radius)
-    else:
-        raise ValueError(
-            "Error in input neighborhood definition: "
-            "neighbors and radius arguments can't be both undefined"
-            )
-    return neighborhood
-
-
-def read_config(config_path):
-    """Create a config object starting from a configuration file in the
-    "config" folder
-
-    Parameters
-    ----------
-    config_path : str
-        Path of the configuration file on the file system; should end with
-    ".ini" extension
-
-    Returns
-    -------
-    configparser.ConfigParser
-        Feature coefficient configuration for the clustering process
-    """
-    feature_config = ConfigParser()
-    feature_config.optionxform = str  # Preserve case in feature names
-    if os.path.isfile(config_path):
-        feature_config.read(config_path)
-    else:
-        logger.error(f"{config_path} is not a valid file.")
-        sys.exit(1)
-    if not feature_config.has_section("clustering"):
-        logger.error(
-            f"{config_path} is not a valid configuration file "
-            "(no 'clustering' section)."
-        )
-        sys.exit(1)
-    return feature_config
 
 
 def add_accumulation_features(df, config):
@@ -176,9 +114,9 @@ def save_clusters(
     produced
     """
     output_path = Path(
-        datapath, "output", experiment, "clustering",
+        datapath, "output", experiment, "prediction",
     )
-    os.makedirs(output_path, exist_ok=True)
+    output_path.mkdir(exist_ok=True)
     extension = "xyz" if xyz else "las"
     postprocess_suffix = (
         "-pp" + str(pp_neighbors) if pp_neighbors > 0 else ""
@@ -186,7 +124,7 @@ def save_clusters(
     output_file_path = Path(
         output_path,
         "kmeans-"
-        + instance(neighbors, radius)
+        + io.instance(neighbors, radius)
         + "-" + config_name + "-" + str(nb_clusters) + postprocess_suffix
         + "." + extension
     )
@@ -200,7 +138,7 @@ def save_clusters(
 
 def main(opts):
     config_path = Path("config", opts.config_file)
-    feature_config = read_config(config_path)
+    feature_config = io.read_config(config_path)
 
     experiment = opts.input_file.split(".")[0]
     data = io.load_features(opts.datapath, experiment, opts.neighbors)
