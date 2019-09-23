@@ -34,115 +34,35 @@ See [CONTRIBUTING.md](./CONTRIBUTING.md).
 
 # Run commands
 
-Six commands are currently available:
+In order to get the available program commands, consider the program help (`geo3d -h`):
 
 ```
-geo3d info -h
-geo3d sample -h
-geo3d index -h
-geo3d featurize -h
-geo3d profile -h
-geo3d cluster -h
+usage: geo3d [-h] {info,sample,index,featurize,cluster,train,predict} ...
+
+Geo3dfeatures framework for 3D semantic analysis
+
+positional arguments:
+  {info,sample,index,featurize,cluster,train,predict}
+    info                Describe an input .las file
+    sample              Extract a sample of a .las file
+    index               Index a point cloud file and serialize it
+    featurize           Extract the geometric feature associated to 3D points
+    cluster             Cluster a set of 3D points with a k-means algorithm
+    train               Train a semantic segmentation model
+    predict             Predict 3D point semantic class starting from a
+                        trained model
+
+optional arguments:
+  -h, --help            show this help message and exit
 ```
 
-## Info
+Any further CLI documentation may be printed with `geo3d <command> -h`.
 
-This first program provides basic informations about an input point cloud file.
+# Documentation
 
-```
-geo3d info -d <datapath> -i <input-file>
-```
-
-## Sample
-
-This program aims at generating small subsets of data starting from a raw
-`.las` file.
-
-It considers a input file located in a specified data folder, read it, and
-write a lighter dataset that contains the given point quantity:
-
-```
-geo3d sample -d <datapath> -i <input-file> -p <sample-points>
-```
-
-## Index
-
-This program aims at computing a kd-tree on a given-as-argument point cloud, in
-order to pre-compute local neighborhoods. This information will be useful for
-the next step, *i.e.* featurization.
-
-The `index` program can be used as follows:
-
-```
-geo3d index -d <datapath> -i <input-file> -t <tree-leaf-size>
-```
-
-## Featurize
-
-The `featurize` program is focused on geometric feature generation, given a raw
-3D point cloud.
-
-By considering an input file in the given data folder (whose columns must be
-explicited), a set of some geometric features are generated on a subset of the
-point cloud, given a kd-tree method parametrized by a number of neighoring
-points and a leaf size. A name may also be provided to the experiment, for a
-sake of clarity.
-
-```
-geo3d featurize -c <input-columns> -d <datapath> -i <input-file> -n <nb-neighbors> -t <kd-tree-leafs> --chunksize <chunk-size>
-```
-
-`-n <nb-neighbors>` can take several values if you want to extract features from
-different neighborhood size, e.g. 50, 200 and 1000 neighbor points.
-
-If you have some files which are samples of your complete scene with a **label**
-information such as `location_vegetation.las` or `location_cliff.las`, it's possible
-to extract some features from them. You need to pass the `--label-scene` option. By
-convention, the name of the label is a suffix of your input file name with a `_`
-separator. You also need to compute the kd-tree of the complete scene. The
-neighborhood look-up must be carried out in the **complete scene**. The output files
-will be HDF5 file with the suffix 'label',
-e.g. `output/location/features/features_vegetation.h5`.
-
-For instance:
-
-```
-geo3d featurize  -d ./workspace -i location_cliff.las -n 50 200 1000 -m 4 -c r g b
-```
-
-## Profile
-
-The third program is highly linked to the previous one, as it postprocess time
-measurements. Such measurements are produced by `pstats` when running
-`featurize` with the `./time-measurement.sh` program.
-
-This program only refers to the experiment name (in order to retrieve the
-accurate measurements in subfolders), and produces `csv` or `json` output
-files.
-
-```
-geo3d profile -e <experiment> -F <file-format>
-```
-
-## Cluster
-
-The `cluster` program consider the outputs of `featurize` so as to classify
-points of the 3D point cloud.
-
-It first retrieves the features saved in the data folder, under specific
-experiment name, feature set, number of neighbors and number of sampled
-points. Then, it runs a k-means clustering by considering a given number of
-clusters.
-
-```
-geo3d cluster -d <datapath> -e <experiment> -n <nb-neighbors> -p <sample-points> -k <nb-clusters>
-```
-
-# Extras
-
-Some extra documentation is also available, that describes the set of
-considered geometric features, the fixtures (*i.e.* dummy datasets) used for
-test purpose and a practical pipeline use case:
+Some documentation is available, that describes the set of considered geometric
+features, the fixtures (*i.e.* dummy datasets) used for test purpose and a
+practical pipeline use case:
 
 - [Feature set](./docs/features.md)
 - [Test fixtures](./docs/test_fixtures.md)
