@@ -87,7 +87,7 @@ def max_normalize(a):
     numpy.array
     """
     if len(np.unique(a)) == 1:
-        return a * 0
+        return pd.Series(np.zeros_like(a))
     else:
         return (a - np.min(a)) / (np.max(a) - np.min(a))
 
