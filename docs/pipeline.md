@@ -3,6 +3,7 @@
 This document describes the way the different commands must be run in order to
 produce point cloud classifications.
 
+
 ## Info
 
 Before any data treatment, one may want to know better the data one targets to
@@ -22,7 +23,11 @@ have bonus information with classic terminal commands for `ply` and `xyz` files
 as they design text files. For `las` file, one may have full metadata with
 `lasinfo` command (through `liblas` package under Linux/Ubuntu).
 
+
 ## Sample
+
+This program aims at generating small subsets of data starting from a raw
+`.las` file.
 
 First we have a 3D point cloud stored as a `.las` file. This dataset may be
 literally huge, by containing tens of millions of 3D points. Considering
@@ -36,6 +41,7 @@ geo3d sample -d data -i geocliff.las -p 10000
 It will generate a new `.las` file with the 10k points, in
 `./data/input/geocliff-10000.las`. This tinier dataset will be far more
 practical for testing purpose...
+
 
 ## Index
 
@@ -58,7 +64,8 @@ free use (option `--tree-file`).
 ## Featurize
 
 Once we get the kd-tree structure, we can generate the geometric features that
-are associated to the points of the point cloud:
+are associated to the points of the point cloud. The `featurize` program is
+focused on geometric feature generation, given a raw 3D point cloud.
 
 ```
 geo3d featurize -d data -i geocliff-10000.las -n 50 200 -t 1000 -c r g b --chunksize 10000
@@ -82,16 +89,29 @@ The output features are stored in a HDF5 file such as
 `data/output/geocliff-100000/features/features.h5`. The computed features can be
 loaded with the following hdf keys: `/num_0050` and `/num_0200`.
 
-If you use the `--label-scene` option, you can extract features from a sample file
-where you know the label.
+If you have some files which are samples of your complete scene with a
+**label** information such as `location_vegetation.las` or
+`location_cliff.las`, it's possible to extract some features from them. You
+need to pass the `--label-scene` option. By convention, the name of the label
+is a suffix of your input file name with a `_` separator. You also need to
+compute the kd-tree of the complete scene. The neighborhood look-up must be
+carried out in the **complete scene**. The output files will be HDF5 file with
+the suffix 'label', e.g. `output/location/features/features_vegetation.h5`.
+
+For instance:
+
+```
+geo3d featurize  -d ./workspace -i location_cliff.las --label-scene -n 50 200 1000 -m 4 -c r g b
+```
+
 
 ## Cluster
 
-As a final command, `cluster` uses k-mean algorithm in order to classify the
-point of the original point cloud, starting from the features generated through
-the `featurize` command. One may tune the relative importance of each feature
-during the clustering process with the help of a configuration file. As an
-example, one may run:
+`cluster` uses k-mean algorithm in order to classify the point of the original
+point cloud, starting from the features generated through the `featurize`
+command. One may tune the relative importance of each feature during the
+clustering process with the help of a configuration file. As an example, one
+may run:
 
 ```
 geo3d cluster -d data -i geocliff-100000.las -n 50 200 -k 2 -c base.ini -p 100
@@ -123,4 +143,51 @@ Once the results have been computed, they are stored in
 resulting file may be visualized with a 3D data viewer, like CloudCompare. One
 may also generate `.xyz` if desired by adding the option `-xyz` to the command.
 
-And voilà!
+## Train
+
+As an alternative to clustering, one can train supervised learning algorithms
+in order to do 3D point semantic segmentation. This is done through the following command:
+
+```
+geo3d train -d data -i Pombourg.las -n 50 200 1000
+```
+
+This command considers the dataset provided in `data/input/Pombourg.las`, and
+more specifically, every `data/input/Pombourg_<class>.las`, from which
+geometric features have been computed (*i.e.* as a pre-requisite, the
+`featurize` command had to be run on these sample point clouds) for three
+different local neighborhood sizes: 50, 200 and 1000 neighbors.
+
+The `train` command produces as an output a pickelized trained model save in
+`data/trained_models/Pombourg.pkl`.
+
+## Predict
+
+The prediction command uses the trained model saved after `train` command
+execution, and determines the labels within a 3D point cloud. The chosen model
+is logistic regression.
+
+It may be run as follows:
+
+```
+geo3d predict -d data -i Pombourg.las -n 50 200 1000 -p 500
+```
+
+where `-d data` provides the data folder, `-i Pombourg.las` indicates the
+reference point cloud, `-n 50 200 1000` the local neighborhood sizes and `-p
+500` the post-processing tuning.
+
+In such a configuration, we will recover the model stored as
+`data/trained_models/Pombourg.pkl`, and apply it on
+`data/input/Pombourg.las`. The resulting predicted labels are stored in
+`data/output/Pombourg/prediction/logreg-50-200-1000-full-pp500.las`.
+
+The whole feature set (except `(x, y, z)` coordinates) is used to train the
+model, and as a corollary, to predict labels. This modelling choice is set with
+the `full` keyword.
+
+Like in the `cluster` case, one has the possibility to post-process results in
+order to mitigate the prediction noise. The `-p` refers to the local
+neighborhood size in which the kd-tree is queried, in order to denoise the
+label outputs. If the `-p` argument is not specified, the results are saved
+without post-processing treatment.

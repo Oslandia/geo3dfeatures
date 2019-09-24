@@ -1,16 +1,15 @@
 """Compute k-means clustering on 3D point cloud with geometric features
 """
 
-from configparser import ConfigParser
-import os
 from pathlib import Path
-import sys
 
 import daiquiri
 import numpy as np
 import pandas as pd
 
-from geo3dfeatures.classification import colorize_labels, compute_clusters
+from geo3dfeatures.classification import (
+    colorize_labels, compute_clusters, save_labels
+    )
 from geo3dfeatures.features import accumulation_2d_neighborhood, max_normalize
 from geo3dfeatures.extract import compute_tree
 from geo3dfeatures import io
@@ -23,65 +22,6 @@ SEED = 1337
 KMEAN_BATCH = 10_000
 POSTPROCESSING_BATCH = 10_000
 KEY_H5_FORMAT = "/num_{:04d}"
-
-
-def instance(neighbors, radius):
-    """Build the instance name, depending on the input parameters
-
-    Parameters
-    ----------
-    neighbors : int
-        Number of neighbors used to compute the feature set
-    radius : float
-        Threshold that define the neighborhood, in order to compute the feature
-        set; used if neighbors is None
-
-    Returns
-    -------
-    str
-        Name of the instance
-    """
-    if neighbors is not None:
-        return "-".join(str(x) for x in neighbors)
-    elif radius is not None:
-        neighborhood = "r" + str(radius)
-    else:
-        raise ValueError(
-            "Error in input neighborhood definition: "
-            "neighbors and radius arguments can't be both undefined"
-            )
-    return neighborhood
-
-
-def read_config(config_path):
-    """Create a config object starting from a configuration file in the
-    "config" folder
-
-    Parameters
-    ----------
-    config_path : str
-        Path of the configuration file on the file system; should end with
-    ".ini" extension
-
-    Returns
-    -------
-    configparser.ConfigParser
-        Feature coefficient configuration for the clustering process
-    """
-    feature_config = ConfigParser()
-    feature_config.optionxform = str  # Preserve case in feature names
-    if os.path.isfile(config_path):
-        feature_config.read(config_path)
-    else:
-        logger.error(f"{config_path} is not a valid file.")
-        sys.exit(1)
-    if not feature_config.has_section("clustering"):
-        logger.error(
-            f"{config_path} is not a valid configuration file "
-            "(no 'clustering' section)."
-        )
-        sys.exit(1)
-    return feature_config
 
 
 def add_accumulation_features(df, config):
@@ -145,62 +85,9 @@ def update_features(df, config):
             df[column] = coefs[idx] * df[column]
 
 
-def save_clusters(
-        results, datapath, experiment, neighbors, radius,
-        nb_clusters, config_name, pp_neighbors, xyz=False
-):
-    """Save the resulting dataframe into the accurate folder on the file system
-
-    Parameters
-    ----------
-    results : pandas.DataFrame
-        Data to save
-    datapath : str
-        Root of the data folder
-    experiment : str
-        Name of the experiment, used for identifying the accurate subfolder
-    neighbors : int
-        Number of neighbors used to compute the feature set
-    radius : float
-        Threshold that define the neighborhood, in order to compute the feature
-    set; used if neighbors is None
-    nb_clusters : int
-        Number of cluster, used for identifying the resulting data
-    config_name : str
-        Cluster configuration filename
-    pp_neighbors : int
-        If >0, the output clusters are postprocessed, otherwise they are k-mean
-    algorithm outputs
-    xyz : boolean
-        If true, the output file is a .xyz, otherwise a .las file will be
-    produced
-    """
-    output_path = Path(
-        datapath, "output", experiment, "clustering",
-    )
-    os.makedirs(output_path, exist_ok=True)
-    extension = "xyz" if xyz else "las"
-    postprocess_suffix = (
-        "-pp" + str(pp_neighbors) if pp_neighbors > 0 else ""
-        )
-    output_file_path = Path(
-        output_path,
-        "kmeans-"
-        + instance(neighbors, radius)
-        + "-" + config_name + "-" + str(nb_clusters) + postprocess_suffix
-        + "." + extension
-    )
-    if xyz:
-        io.write_xyz(results, output_file_path)
-    else:
-        input_file_path = Path(datapath, "input", experiment + ".las")
-        io.write_las(results, input_file_path, output_file_path)
-    logger.info("Clusters saved into %s", output_file_path)
-
-
 def main(opts):
     config_path = Path("config", opts.config_file)
-    feature_config = read_config(config_path)
+    feature_config = io.read_config(config_path)
 
     experiment = opts.input_file.split(".")[0]
     data = io.load_features(opts.datapath, experiment, opts.neighbors)
@@ -230,8 +117,8 @@ def main(opts):
         )
 
     colored_results = colorize_labels(points, labels)
-    save_clusters(
+    save_labels(
         colored_results, opts.datapath, experiment, opts.neighbors,
-        opts.radius, opts.nb_clusters,
+        opts.radius, "kmeans", opts.nb_clusters,
         config_path.stem, opts.postprocessing_neighbors, opts.xyz
     )

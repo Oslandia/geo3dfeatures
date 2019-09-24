@@ -1,6 +1,7 @@
 """I/O module to load/write some point clouds files
 """
 
+from configparser import ConfigParser
 import csv
 from pathlib import Path
 import sys
@@ -167,7 +168,7 @@ def load_features(datapath, experiment, neighbors, sample=None):
     experiment : str
         Name of the experiment, used for identifying the accurate subfolder
     neighbors : list
-        List of number of neigbors
+        List of number of neighbors
     sample : str
         If None, consider the whole scene, otherwise load the features only for
     the relevant class sample
@@ -182,9 +183,10 @@ def load_features(datapath, experiment, neighbors, sample=None):
     filename = "features" + sample_suffix + ".h5"
     filepath = Path(datapath, "output", experiment, "features", filename)
     if not filepath.is_file():
-        raise ValueError(
-            f"File {filepath} does not exist, verify the 'sample' argument!"
+        logger.warning(
+            "File %s does not exist, verify the 'sample' argument!", filepath
         )
+        return None
     logger.info("Recover features stored in %s", filepath)
     no_rename = ["x", "y", "z", "r", "g", "b"]
     with pd.HDFStore(filepath, mode="r") as store:
@@ -213,3 +215,62 @@ def load_features(datapath, experiment, neighbors, sample=None):
             dataframes.append(newdf)
 
     return pd.concat(dataframes, axis="columns")
+
+
+def read_config(config_path):
+    """Create a config object starting from a configuration file in the
+    "config" folder
+
+    Parameters
+    ----------
+    config_path : str
+        Path of the configuration file on the file system; should end with
+    ".ini" extension
+
+    Returns
+    -------
+    configparser.ConfigParser
+        Feature coefficient configuration for the clustering process
+    """
+    feature_config = ConfigParser()
+    feature_config.optionxform = str  # Preserve case in feature names
+    if config_path.is_file():
+        feature_config.read(config_path)
+    else:
+        logger.error(f"{config_path} is not a valid file.")
+        sys.exit(1)
+    if not feature_config.has_section("clustering"):
+        logger.error(
+            f"{config_path} is not a valid configuration file "
+            "(no 'clustering' section)."
+        )
+        sys.exit(1)
+    return feature_config
+
+
+def instance(neighbors, radius):
+    """Build the instance name, depending on the input parameters
+
+    Parameters
+    ----------
+    neighbors : int
+        Number of neighbors used to compute the feature set
+    radius : float
+        Threshold that define the neighborhood, in order to compute the feature
+        set; used if neighbors is None
+
+    Returns
+    -------
+    str
+        Name of the instance
+    """
+    if neighbors is not None:
+        return "-".join(str(x) for x in neighbors)
+    elif radius is not None:
+        neighborhood = "r" + str(radius)
+    else:
+        raise ValueError(
+            "Error in input neighborhood definition: "
+            "neighbors and radius arguments can't be both undefined"
+            )
+    return neighborhood
