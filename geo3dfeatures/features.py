@@ -60,15 +60,23 @@ def accumulation_2d_neighborhood(
     )
     aggdf["bin_z_range"] = aggdf["max"] - aggdf["min"]
     aggdf.drop(columns=["min", "max"], inplace=True)
-    return (point_cloud.merge(aggdf, on=["xbin", "ybin"], how="left")
-            .drop(columns=["xbin", "ybin"])
-            .rename(columns={"count": "bin_density",
-                             "std": "bin_z_std"}))
+    bin_point_cloud = (
+        point_cloud
+        .merge(aggdf, on=["xbin", "ybin"], how="left")
+        .drop(columns=["xbin", "ybin"])
+        .rename(columns={"count": "bin_density",
+                         "std": "bin_z_std"})
+    )
+    point_cloud.drop(columns=["xbin", "ybin"], inplace=True)
+    return bin_point_cloud
 
 
 def max_normalize(a):
     """Compute and normalize values in "a". The normalized values are comprised
     between 0 and 1, 1 being the values of the larger value.
+
+    If there is only one value in a, return an array of 0 (otherwise the
+    normalization will produce a NaN).
 
     Parameters
     ----------
@@ -78,7 +86,10 @@ def max_normalize(a):
     -------
     numpy.array
     """
-    return (a - np.min(a)) / (np.max(a) - np.min(a))
+    if len(np.unique(a)) == 1:
+        return a * 0
+    else:
+        return (a - np.min(a)) / (np.max(a) - np.min(a))
 
 
 def sum_normalize(a):

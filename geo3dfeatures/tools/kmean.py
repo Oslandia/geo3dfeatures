@@ -43,14 +43,13 @@ def add_accumulation_features(df, config):
     pd.DataFrame
         Updated set of features with bin-related information
     """
-    bin_size = float(config["clustering"]["bin"])
+    bin_size = float(config.get("clustering", "bin"))
     logger.info(
         "Computation of the accumulation features with bin_size=%s", bin_size
     )
     df = accumulation_2d_neighborhood(df, bin_size)
     for c in ("bin_z_range", "bin_z_std", "bin_density"):
         df[c] = max_normalize(df[c])
-        df[c].fillna(0, inplace=True)
     return df
 
 
@@ -85,59 +84,6 @@ def update_features(df, config):
             df[column] = coefs[idx] * df[column]
 
 
-def save_clusters(
-        results, datapath, experiment, neighbors, radius,
-        nb_clusters, config_name, pp_neighbors, xyz=False
-):
-    """Save the resulting dataframe into the accurate folder on the file system
-
-    Parameters
-    ----------
-    results : pandas.DataFrame
-        Data to save
-    datapath : str
-        Root of the data folder
-    experiment : str
-        Name of the experiment, used for identifying the accurate subfolder
-    neighbors : list
-        Numbers of neighbors used to compute the feature set
-    radius : float
-        Threshold that define the neighborhood, in order to compute the feature
-    set; used if neighbors is None
-    nb_clusters : int
-        Number of cluster, used for identifying the resulting data
-    config_name : str
-        Cluster configuration filename
-    pp_neighbors : int
-        If >0, the output clusters are postprocessed, otherwise they are k-mean
-    algorithm outputs
-    xyz : boolean
-        If true, the output file is a .xyz, otherwise a .las file will be
-    produced
-    """
-    output_path = Path(
-        datapath, "output", experiment, "prediction",
-    )
-    output_path.mkdir(exist_ok=True)
-    extension = "xyz" if xyz else "las"
-    postprocess_suffix = (
-        "-pp" + str(pp_neighbors) if pp_neighbors > 0 else ""
-        )
-    output_file_path = Path(
-        output_path,
-        "kmeans-"
-        + io.instance(neighbors, radius)
-        + "-" + config_name + "-" + str(nb_clusters) + postprocess_suffix
-        + "." + extension
-    )
-    if xyz:
-        io.write_xyz(results, output_file_path)
-    else:
-        input_file_path = Path(datapath, "input", experiment + ".las")
-        io.write_las(results, input_file_path, output_file_path)
-    logger.info("Clusters saved into %s", output_file_path)
-
-
 def main(opts):
     config_path = Path("config", opts.config_file)
     feature_config = io.read_config(config_path)
@@ -149,9 +95,7 @@ def main(opts):
     for c in data.drop(columns=["x", "y"]):
         data[c] = max_normalize(data[c])
 
-    if "bin" in feature_config["clustering"]:
-        data = add_accumulation_features(data, feature_config)
-
+    data = add_accumulation_features(data, feature_config)
     update_features(data, feature_config)
     data.drop(columns=["x", "y"], inplace=True)
 
