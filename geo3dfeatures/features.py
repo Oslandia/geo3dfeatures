@@ -27,12 +27,16 @@ BIN_BUF = 1e-3  # Value that allows to consider max x/y values in bin building
 def accumulation_2d_neighborhood(
         point_cloud, bin_size=1
 ):
-    """Compute accumulation features as a new way of designing a
-        2D-neighborhood, following the description of (Weinmann *et al.*,
-        2015): such features are built by binning the 2D-space, and evaluating
-        the number of points contained, the Z-range and the Z-standard
-        deviation in each bin. The features are then assigned to the points
-        regarding the bin that they belong to.
+    """
+    Compute accumulation features as a new way of designing a 2D-neighborhood,
+    following the description of (Weinmann *et al.*, 2015): such features are
+    built by binning the 2D-space, and evaluating the number of points
+    contained, the Z-range and the Z-standard deviation in each bin. The
+    features are then assigned to the points regarding the bin that they belong
+    to.
+
+    The "point_cloud" structure is modified during the processing, with two
+    additional columns ("xbin" and "ybin").
 
     Parameters
     ----------
@@ -44,7 +48,8 @@ def accumulation_2d_neighborhood(
     Returns
     -------
     pandas.DataFrame
-        Set of features built through binning process, for each point within the cloud
+        Set of features built through binning process, for each point within
+    the cloud
 
     """
     xmin, xmax = np.min(point_cloud["x"]), np.max(point_cloud["x"])
@@ -60,15 +65,13 @@ def accumulation_2d_neighborhood(
     )
     aggdf["bin_z_range"] = aggdf["max"] - aggdf["min"]
     aggdf.drop(columns=["min", "max"], inplace=True)
-    bin_point_cloud = (
+    return (
         point_cloud
         .merge(aggdf, on=["xbin", "ybin"], how="left")
         .drop(columns=["xbin", "ybin"])
         .rename(columns={"count": "bin_density",
                          "std": "bin_z_std"})
     )
-    point_cloud.drop(columns=["xbin", "ybin"], inplace=True)
-    return bin_point_cloud
 
 
 def max_normalize(a):

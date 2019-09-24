@@ -32,16 +32,16 @@ def test_add_accumulation_features():
     df = pd.DataFrame(data, columns=list("xyz"))
     nobin_config = io.read_config(CONFIG_PATH / "base.ini")
     with pytest.raises(NoOptionError):  # No-bin-key side scenario
-        df_acc = add_accumulation_features(df, nobin_config)
+        df_acc = add_accumulation_features(df.copy(), nobin_config)
     valid_config = io.read_config(CONFIG_PATH / "bin.ini")
-    df_acc = add_accumulation_features(df, valid_config)
+    df_acc = add_accumulation_features(df.copy(), valid_config)
     assert float(valid_config.get("clustering", "bin")) == 1.
     assert df_acc.shape[1] == df.shape[1] + 3
     bins = df_acc[["bin_density", "bin_z_range", "bin_z_std"]].drop_duplicates()
     assert len(bins) == 1
     assert np.all(bins.values == [0, 0, 0])
     df *= 2  # Second scenario
-    df_acc = add_accumulation_features(df, valid_config)
+    df_acc = add_accumulation_features(df.copy(), valid_config)
     bins = df_acc[["bin_density", "bin_z_range", "bin_z_std"]].drop_duplicates()
     assert len(bins) == 4
 
