@@ -101,7 +101,7 @@ the suffix 'label', e.g. `output/location/features/features_vegetation.h5`.
 For instance:
 
 ```
-geo3d featurize  -d ./workspace -i location_cliff.las -n 50 200 1000 -m 4 -c r g b
+geo3d featurize  -d ./workspace -i location_cliff.las --label-scene -n 50 200 1000 -m 4 -c r g b
 ```
 
 

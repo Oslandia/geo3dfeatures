@@ -5,6 +5,9 @@ regarding their spatial organization, and most specifically, the geometric
 structure of their neighborhood.
 """
 
+from pathlib import Path
+
+import daiquiri
 import numpy as np
 import pandas as pd
 import seaborn as sns
@@ -12,6 +15,11 @@ from sklearn.cluster import KMeans, MiniBatchKMeans
 from sklearn.linear_model import LogisticRegression
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import MinMaxScaler
+
+from geo3dfeatures import io
+
+
+logger = daiquiri.getLogger(__name__)
 
 
 def standard_normalization(sample):
@@ -81,7 +89,7 @@ def compute_clusters(data, n_clusters, batch_size, seed=1337):
     return model.labels_
 
 
-def colorize_labels(points, labels, palette=None):
+def colorize_labels(points, labels, glossary=None):
     """Associated a (r, g, b) color for each record of a dataframe, depending
     on the label id
 
@@ -91,16 +99,19 @@ def colorize_labels(points, labels, palette=None):
         Set of (x, y, z) points
     labels : list
         Resulting label id; must be of the same length than points
-    palette : seaborn.palettes._ColorPalette
-        Colorization palette; if None a default 'colorblind' palette is applied
+    glossary : dict
+        Label glossary; if None the label color is defined by a default
+    'colorblind' palette
 
     Returns
     -------
     pandas.DataFrame
         Colorized points, i.e. set of (x, y, z, r, g, b) clustered points
     """
-    if palette is None:
+    if glossary is None:
         palette = sns.color_palette("colorblind", len(np.unique(labels)))
+    else:
+        palette = [label["color"] for _, label in glossary.items()]
     colors = np.array([palette[l] for l in labels]) * 256
     colors = pd.DataFrame(colors, columns=["r", "g", "b"], dtype=np.uint8)
     return points.join(colors)
@@ -134,3 +145,62 @@ def train_predictive_model(data, labels, seed=1337):
     )
     classifier.fit(data, labels)
     return classifier
+
+
+def save_labels(
+        results, datapath, experiment, neighbors, radius, algorithm,
+        nb_clusters=None, config_name="full", pp_neighbors=0, xyz=False
+):
+    """Save the resulting dataframe into the accurate folder on the file system
+
+    Parameters
+    ----------
+    results : pandas.DataFrame
+        Data to save
+    datapath : str
+        Root of the data folder
+    experiment : str
+        Name of the experiment, used for identifying the accurate subfolder
+    neighbors : int
+        Number of neighbors used to compute the feature set
+    radius : float
+        Threshold that define the neighborhood, in order to compute the feature
+    set; used if neighbors is None
+    algorithm : str
+        Algorithm used in label prediction purpose ("kmeans", "logreg", etc)
+    nb_clusters : int
+        Number of cluster, used for identifying the resulting data (used only
+    if algorithm is "kmeans")
+    config_name : str
+        Cluster configuration filename
+    pp_neighbors : int
+        If >0, the output clusters are postprocessed, otherwise they are k-mean
+    algorithm outputs
+    xyz : boolean
+        If true, the output file is a .xyz, otherwise a .las file will be
+    produced
+    """
+    output_path = Path(
+        datapath, "output", experiment, "prediction",
+    )
+    output_path.mkdir(exist_ok=True)
+    extension = "xyz" if xyz else "las"
+    postprocess_suffix = (
+        "-pp" + str(pp_neighbors) if pp_neighbors > 0 else ""
+        )
+    algo_str = algorithm + (
+        "-" + str(nb_clusters) if algorithm == "kmeans" else ""
+    )
+    output_file_path = Path(
+        output_path,
+        algo_str + "-"
+        + io.instance(neighbors, radius)
+        + "-" + config_name + postprocess_suffix
+        + "." + extension
+    )
+    if xyz:
+        io.write_xyz(results, output_file_path)
+    else:
+        input_file_path = Path(datapath, "input", experiment + ".las")
+        io.write_las(results, input_file_path, output_file_path)
+    logger.info("Predicted labels saved into %s", output_file_path)

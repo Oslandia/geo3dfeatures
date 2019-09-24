@@ -17,32 +17,14 @@ from geo3dfeatures import postprocess
 logger = daiquiri.getLogger(__name__)
 
 POSTPROCESSING_BATCH = 10_000
-LABELS = {
-    "vegetation": 0,
-    "falaise": 1,
-    "eboulis": 2,
-    "route": 3,
-    "structure": 4
+PALETTE = sns.color_palette("colorblind")
+GLOSSARY = {
+    "vegetation": {"id": 0, "color": PALETTE[2]},  # Vegetation: green
+    "falaise": {"id": 1, "color": PALETTE[7]},  # Vegetation: grey
+    "eboulis": {"id": 2, "color": PALETTE[5]},  # Vegetation: marron
+    "route": {"id": 3, "color": PALETTE[0]},  # Vegetation: blue
+    "structure": {"id": 4, "color": PALETTE[1]},  # Vegetation: orange
     }
-
-
-def define_label_colors():
-    """Define a home-made palette that fits the label definition
-
-    Returns
-    -------
-    list of tuple
-        Set of RGB triplets that are associated with labels
-    """
-    palette = sns.color_palette("colorblind")
-    colors = [
-        palette[2],  # Vegetation: green
-        palette[7],  # Cliff: grey
-        palette[5],  # Scree: marron
-        palette[0],  # Road: blue
-        palette[1]  # Structure: orange
-        ]
-    return colors
 
 
 def save_predictions(
@@ -64,13 +46,11 @@ def save_predictions(
     radius : float
         Threshold that define the neighborhood, in order to compute the feature
     set; used if neighbors is None
-    nb_clusters : int
-        Number of cluster, used for identifying the resulting data
     config_name : str
-        Cluster configuration filename
+        Feature configuration filename
     pp_neighbors : int
-        If >0, the output clusters are postprocessed, otherwise they are k-mean
-    algorithm outputs
+        If >0, the predicted labels are postprocessed, otherwise they are
+    outputs of the supervised learning algorithm
     xyz : boolean
         If true, the output file is a .xyz, otherwise a .las file will be
     produced
@@ -93,7 +73,7 @@ def save_predictions(
     else:
         input_file_path = Path(datapath, "input", experiment + ".las")
         io.write_las(results, input_file_path, output_file_path)
-    logger.info("Clusters saved into %s", output_file_path)
+    logger.info("Predictions saved into %s", output_file_path)
 
 
 def main(opts):
@@ -122,9 +102,9 @@ def main(opts):
         )
 
     logger.info("Save predictions on disk...")
-    palette = define_label_colors()
-    outdf = classification.colorize_labels(points, labels, palette)
-    save_predictions(
+    outdf = classification.colorize_labels(points, labels, GLOSSARY)
+    classification.save_labels(
         outdf, opts.datapath, experiment, opts.neighbors, opts.radius,
-        "full", opts.postprocessing_neighbors, xyz=False
+        algorithm="logreg", config_name="full",
+        pp_neighbors=opts.postprocessing_neighbors, xyz=False
     )
