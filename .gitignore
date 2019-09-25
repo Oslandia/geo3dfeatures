@@ -3,5 +3,5 @@
 poetry.lock
 *~
 geo3dfeatures.egg-info/
-data/
-workspace/
+./data/
+./workspace/

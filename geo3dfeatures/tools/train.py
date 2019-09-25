@@ -23,7 +23,7 @@ LABELS = {
     }
 
 
-def create_training_dataset(datapath, experiment, neighborhood_sizes):
+def create_training_dataset(datapath, experiment, neighborhood_sizes, labels):
     """Create a training dataset that will feed the classifier in the training
     step
 
@@ -35,6 +35,8 @@ def create_training_dataset(datapath, experiment, neighborhood_sizes):
         Name of the experiment, used for identifying the accurate subfolder
     neighbors : list
         List of number of neighbors
+    labels : dict
+        Dataset glossary
 
     Returns
     -------
@@ -42,10 +44,10 @@ def create_training_dataset(datapath, experiment, neighborhood_sizes):
         Shuffled training dataset, without point coordinates
     """
     dfs = []
-    for label in LABELS.keys():
+    for label in labels.keys():
         df = io.load_features(datapath, experiment, neighborhood_sizes, label)
         if df is not None:
-            df["label"] = LABELS[label]
+            df["label"] = labels[label]
             dfs.append(df)
     df = pd.concat(dfs, axis=0)
     return df.sample(frac=1.).drop(columns=["x", "y", "z"])
@@ -55,7 +57,7 @@ def main(opts):
     logger.info("Prepare the training dataset...")
     experiment = opts.input_file.split(".")[0]
     dataset = create_training_dataset(
-        opts.datapath, experiment, opts.neighbors
+        opts.datapath, experiment, opts.neighbors, LABELS
     )
     print(dataset.shape)
 

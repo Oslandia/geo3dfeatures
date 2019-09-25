@@ -2,9 +2,7 @@
 """
 
 from configparser import ConfigParser
-import csv
 from pathlib import Path
-import sys
 
 import daiquiri
 import laspy
@@ -98,8 +96,7 @@ def write_las(data, input_filepath, output_filepath):
         Path where to save the data
     """
     if not input_filepath.is_file():
-        logger.error("%s is not a valid file.", input_filepath)
-        sys.exit(1)
+        raise IOError(f"{input_filepath} is not a valid file.")
     with laspy.file.File(input_filepath, mode="r") as input_las:
         with laspy.file.File(
                 output_filepath, mode="w", header=input_las.header
@@ -131,26 +128,6 @@ def read_ply(fpath):
     vertex = reader["vertex"]
     result = np.array([vertex["x"], vertex["y"], vertex["z"]])
     return np.transpose(result)
-
-
-def write_features(fpath, gen):
-    """Write the fields from a data generator into a .csv file
-
-    Parameters
-    ----------
-    fpath : str
-        Path of the output file
-    gen : generator
-        Data stored as an ordered dict
-    """
-    with open(fpath, "w") as fobj:
-        # get the first data to get the field names
-        first = next(gen)
-        writer = csv.DictWriter(fobj, first.keys())
-        writer.writeheader()
-        writer.writerow(first)
-        for row in gen:
-            writer.writerow(row)
 
 
 def load_features(datapath, experiment, neighbors, sample=None):
@@ -237,14 +214,12 @@ def read_config(config_path):
     if config_path.is_file():
         feature_config.read(config_path)
     else:
-        logger.error(f"{config_path} is not a valid file.")
-        sys.exit(1)
+        raise IOError(f"{config_path} is not a valid file.")
     if not feature_config.has_section("clustering"):
-        logger.error(
+        raise ValueError(
             f"{config_path} is not a valid configuration file "
             "(no 'clustering' section)."
         )
-        sys.exit(1)
     return feature_config
 
 
@@ -253,8 +228,8 @@ def instance(neighbors, radius):
 
     Parameters
     ----------
-    neighbors : int
-        Number of neighbors used to compute the feature set
+    neighbors : list
+        Numbers of neighbors used to compute the feature set
     radius : float
         Threshold that define the neighborhood, in order to compute the feature
         set; used if neighbors is None
