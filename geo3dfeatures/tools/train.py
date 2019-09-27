@@ -9,18 +9,12 @@ import pandas as pd
 
 from geo3dfeatures import classification
 from geo3dfeatures import io
+from geo3dfeatures.tools import GLOSSARY
 
 
 logger = daiquiri.getLogger(__name__)
 
 SEED = 1337
-LABELS = {
-    "vegetation": 0,
-    "falaise": 1,
-    "eboulis": 2,
-    "route": 3,
-    "structure": 4
-    }
 
 
 def create_training_dataset(datapath, experiment, neighborhood_sizes, labels):
@@ -47,7 +41,7 @@ def create_training_dataset(datapath, experiment, neighborhood_sizes, labels):
     for label in labels.keys():
         df = io.load_features(datapath, experiment, neighborhood_sizes, label)
         if df is not None:
-            df["label"] = labels[label]
+            df["label"] = labels[label]["id"]
             dfs.append(df)
     df = pd.concat(dfs, axis=0)
     return df.sample(frac=1.).drop(columns=["x", "y", "z"])
@@ -57,7 +51,7 @@ def main(opts):
     logger.info("Prepare the training dataset...")
     experiment = opts.input_file.split(".")[0]
     dataset = create_training_dataset(
-        opts.datapath, experiment, opts.neighbors, LABELS
+        opts.datapath, experiment, opts.neighbors, GLOSSARY
     )
     print(dataset.shape)
 
