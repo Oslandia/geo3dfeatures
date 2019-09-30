@@ -13,6 +13,7 @@ import pandas as pd
 import seaborn as sns
 from sklearn.cluster import KMeans, MiniBatchKMeans
 from sklearn.linear_model import LogisticRegression
+from sklearn.model_selection import train_test_split
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import MinMaxScaler
 
@@ -115,6 +116,20 @@ def colorize_labels(points, labels, glossary=None):
     colors = np.array([palette[l] for l in labels]) * 255
     colors = pd.DataFrame(colors, columns=["r", "g", "b"], dtype=np.uint8)
     return points.join(colors)
+
+
+def split_dataset(df, test_part=0.25):
+    """
+    """
+    train_dataset, test_dataset = train_test_split(
+        df, test_size=test_part, shuffle=True
+    )
+    return (
+        train_dataset.drop(columns=["label"]),
+        train_dataset["label"],
+        test_dataset.drop(columns=["label"]),
+        test_dataset["label"]
+        )
 
 
 def train_predictive_model(data, labels, seed=1337):

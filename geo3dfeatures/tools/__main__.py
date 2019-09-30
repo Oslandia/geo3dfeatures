@@ -246,8 +246,8 @@ def add_instance_args(parser, by_dataset=True):
     ----------
     parser : argparse.ArgumentParser
     by_dataset : bool
-        True if the function is the "input-file" argument is required; false
-    otherwise (program "featurize" and "kmean")
+        True if the "input-file" argument is required; false otherwise
+    ("featurize", "kmean" and "predict" programs)
     """
     parser.add_argument("-d", "--datapath",
                         default="./data",
