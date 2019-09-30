@@ -9,7 +9,12 @@ from geo3dfeatures import io
 
 _here = Path(__file__).absolute().parent
 DATADIR = _here / "data"
-LABELS = {"vegetation": 0, "roof": 1, "ground": 2}
+LABELS = {
+    "vegetation": {"id": 0, "color": (0.1, 0.8, 0.1)},
+    "roof": {"id": 1, "color": (0.9, 0.1, 0.1)},
+    "ground": {"id": 2, "color": (0.5, 0.8, 0.8)}
+}
+
 NEIGHBORS = [10, 50, 200]
 N_FEATURES = 19
 

@@ -6,25 +6,17 @@ from pathlib import Path
 import pickle
 
 import daiquiri
-import seaborn as sns
 
 from geo3dfeatures.extract import compute_tree
 from geo3dfeatures import classification
 from geo3dfeatures import io
 from geo3dfeatures import postprocess
+from geo3dfeatures.tools import GLOSSARY
 
 
 logger = daiquiri.getLogger(__name__)
 
 POSTPROCESSING_BATCH = 10_000
-PALETTE = sns.color_palette("colorblind")
-GLOSSARY = {
-    "vegetation": {"id": 0, "color": PALETTE[2]},  # Vegetation: green
-    "falaise": {"id": 1, "color": PALETTE[7]},  # Vegetation: grey
-    "eboulis": {"id": 2, "color": PALETTE[5]},  # Vegetation: marron
-    "route": {"id": 3, "color": PALETTE[0]},  # Vegetation: blue
-    "structure": {"id": 4, "color": PALETTE[1]},  # Vegetation: orange
-    }
 
 
 def main(opts):
