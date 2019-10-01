@@ -58,8 +58,8 @@ In such a case, we compute a kd-tree on a sampled file located as
 1000-leafed branches. We use the input file name for serializing the output at
 `data/output/geocliff-100000/kd-tree-leaf-1000.pkl`.
 
-The output file may also be saved at a path specified by the user, for a more
-free use (option `--tree-file`).
+The output file may also be saved at a path specified by the user, for a freer
+use (option `--tree-file`).
 
 ## Featurize
 
@@ -68,7 +68,7 @@ are associated to the points of the point cloud. The `featurize` program is
 focused on geometric feature generation, given a raw 3D point cloud.
 
 ```
-geo3d featurize -d data -i geocliff-10000.las -n 50 200 -t 1000 -c r g b --chunksize 10000
+geo3d featurize -d data -i geocliff-10000.las -n 50 200 -t 1000 -c r g b --chunksize 10000 -m 4
 ```
 
 Here we build the point neighborhoods with a kd-tree composed of 1000 points per leaf
@@ -84,6 +84,11 @@ option. You can have `-c r g b` to include the RGB-color for instance.
 The feature extraction process is multi-threaded, and point features are
 written onto file system by chunks. One may control the writing chunk size with
 the `--chunksize` argument.
+
+Finally the `-m/--nb-process` argument allows to control the amount of threads
+exploited for the feature computation (default to 2). ***/!\ Warning /!\***
+This can be an intensive process, it is recommended not to use all the computer
+threads; at the opposite, considering several threads may save a lot of time.
 
 The output features are stored in a HDF5 file such as
 `data/output/geocliff-100000/features/features.h5`. The computed features can be
@@ -101,9 +106,8 @@ the suffix 'label', e.g. `output/location/features/features_vegetation.h5`.
 For instance:
 
 ```
-geo3d featurize  -d ./workspace -i location_cliff.las --label-scene -n 50 200 1000 -m 4 -c r g b
+geo3d featurize  -d ./workspace -i location_cliff.las --label-scene -n 50 200 1000 -c r g b
 ```
-
 
 ## Cluster
 
