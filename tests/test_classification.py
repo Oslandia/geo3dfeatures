@@ -127,20 +127,20 @@ def test_save_labels():
     pred_dir = DATADIR / "output" / "test" / "prediction"
     results = pd.DataFrame(columns=list("xyzrgb"))
     save_labels(
-        results, DATADIR, "test", NEIGHBORHOOD_SIZES, None,
+        results, DATADIR, "test", NEIGHBORHOOD_SIZES,
         algorithm="logreg", config_name="full", pp_neighbors=0, xyz=False
     )
     pred_path = pred_dir / "logreg-10-50-200-full.las"
     assert pred_path.is_file()
     save_labels(
-        results, DATADIR, "test", NEIGHBORHOOD_SIZES, None,
+        results, DATADIR, "test", NEIGHBORHOOD_SIZES,
         algorithm="kmeans", nb_clusters=N_CLUSTERS,
         config_name="full", pp_neighbors=0, xyz=True
     )
     pred_path = pred_dir / "kmeans-4-10-50-200-full.xyz"
     assert pred_path.is_file()
     save_labels(
-        results, DATADIR, "test", NEIGHBORHOOD_SIZES, None,
+        results, DATADIR, "test", NEIGHBORHOOD_SIZES,
         algorithm="logreg", config_name="full", pp_neighbors=100, xyz=False
     )
     pred_path = pred_dir / "logreg-10-50-200-full-pp100.las"

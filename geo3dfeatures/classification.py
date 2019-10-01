@@ -185,7 +185,7 @@ def train_predictive_model(data, labels, seed=1337):
 
 
 def save_labels(
-        results, datapath, experiment, neighbors, radius, algorithm,
+        results, datapath, experiment, neighbors, algorithm,
         nb_clusters=None, config_name="full", pp_neighbors=0, xyz=False
 ):
     """Save the resulting dataframe into the accurate folder on the file system
@@ -200,9 +200,6 @@ def save_labels(
         Name of the experiment, used for identifying the accurate subfolder
     neighbors : int
         Number of neighbors used to compute the feature set
-    radius : float
-        Threshold that define the neighborhood, in order to compute the feature
-    set; used if neighbors is None
     algorithm : str
         Algorithm used in label prediction purpose ("kmeans", "logreg", etc)
     nb_clusters : int
@@ -231,7 +228,7 @@ def save_labels(
     output_file_path = Path(
         output_path,
         algo_str + "-"
-        + io.instance(neighbors, radius)
+        + io.instance(neighbors)
         + "-" + config_name + postprocess_suffix
         + "." + extension
     )

@@ -104,8 +104,8 @@ def featurize_parser(subparser, reference_func):
     parser.add_argument(
         '--label-scene', action="store_true",
         help=(
-            "If the scene is a sample of an existing "
-            "scene with the '_label.{las, xyz}' suffix?"
+            "If specified, the scene is a sample of an existing "
+            "scene with the '_label.{las, xyz}' suffix"
         )
     )
     parser.add_argument(
@@ -247,22 +247,15 @@ def add_kdtree_args(parser):
 
 
 def add_neighborhood_args(parser):
+    """Add a command argument for managing neighborhood sizes.
+
+    Parameters
+    ----------
+    parser : argparse.ArgumentParser
     """
-    """
-    neighbor_group = parser.add_mutually_exclusive_group()
-    neighbor_group.add_argument(
+    parser.add_argument(
         '-n', '--neighbors', nargs="+", type=int,
-        help=(
-            "List of neighborhood sizes to consider. "
-            "Alternative neighborhood definition: -r/--radius."
-        )
-    )
-    neighbor_group.add_argument(
-        '-r', '--radius', type=float,
-        help=(
-            "Radius that defines the neighboring ball. "
-            "Alternative neighborhood definition: -n/--neighbors."
-        )
+        help="List of neighborhood sizes to consider."
     )
 
 

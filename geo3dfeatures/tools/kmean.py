@@ -118,6 +118,6 @@ def main(opts):
     colored_results = colorize_labels(points, labels)
     save_labels(
         colored_results, opts.datapath, experiment, opts.neighbors,
-        opts.radius, "kmeans", opts.nb_clusters,
+        "kmeans", opts.nb_clusters,
         config_path.stem, opts.postprocessing_neighbors, opts.xyz
     )

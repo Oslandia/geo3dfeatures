@@ -85,7 +85,7 @@ def main(opts):
     model_dir = Path(opts.datapath, "trained_models")
     model_dir.mkdir(exist_ok=True)
     eval_filename = (
-        experiment + "-" + io.instance(opts.neighbors, None) + ".json"
+        experiment + "-" + io.instance(opts.neighbors) + ".json"
         )
     with open(model_dir / eval_filename, "w") as fobj:
         json.dump(evaluation, fobj)

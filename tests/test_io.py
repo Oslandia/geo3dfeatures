@@ -112,12 +112,7 @@ def test_read_config():
 
 
 def test_instance():
-    """Test the instance suffixing with respect to neighborhood definition
-    (neighbor amount or radius).
+    """Test the instance suffixing with respect to neighborhood sizes.
     """
-    with pytest.raises(ValueError):
-        io.instance(None, None)
-    inst = io.instance([10, 50, 200], None)
+    inst = io.instance([10, 50, 200])
     assert inst == "10-50-200"
-    inst = io.instance(None, 1.0)
-    assert inst == "r1.0"

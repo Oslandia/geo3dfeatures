@@ -148,9 +148,13 @@ def main(opts):
         logger.info("Exit program")
         sys.exit(0)
 
-    extra_columns = tuple(opts.extra_columns) if opts.extra_columns is not None else tuple()
+    extra_columns = (
+        tuple(opts.extra_columns)
+        if opts.extra_columns is not None
+        else tuple()
+        )
     extract(
-        data, tree, output_file, neighbors, opts.radius,
+        data, tree, output_file, neighbors,
         opts.nb_process, extra_columns,
         opts.chunksize
     )

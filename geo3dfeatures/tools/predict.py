@@ -28,9 +28,9 @@ def main(opts):
     logger.info("Load the trained classifier...")
     model_dir = Path(opts.datapath, "trained_models")
     if opts.generalized_model:
-        model_filename = "logreg-" + io.instance(opts.neighbors, None) + ".pkl"
+        model_filename = "logreg-" + io.instance(opts.neighbors) + ".pkl"
     else:
-        model_filename = experiment + "-" + io.instance(opts.neighbors, None) + ".pkl"
+        model_filename = experiment + "-" + io.instance(opts.neighbors) + ".pkl"
     with open(model_dir / model_filename, "rb") as fobj:
         clf = pickle.load(fobj)
 
@@ -54,7 +54,7 @@ def main(opts):
     logger.info("Save predictions on disk...")
     outdf = classification.colorize_labels(points, labels, GLOSSARY)
     classification.save_labels(
-        outdf, opts.datapath, experiment, opts.neighbors, opts.radius,
+        outdf, opts.datapath, experiment, opts.neighbors,
         algorithm="logreg", config_name="full",
         pp_neighbors=opts.postprocessing_neighbors, xyz=opts.xyz
     )
