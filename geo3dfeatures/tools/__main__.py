@@ -282,7 +282,7 @@ def add_label_prediction_args(parser):
     parser.add_argument(
         "-p", "--postprocessing-neighbors", type=int, default=PP_NEIGHBORS,
         help=(
-            "Clean the prediction output by postprocessing the result. ",
+            "Clean the prediction output by postprocessing the result. "
             "The parameter gives the postprocessing neighborhood definition, "
             "as a neighboring point quantity. If 0, no postprocessing."
             )
