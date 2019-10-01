@@ -145,6 +145,8 @@ may also generate `.xyz` if desired by adding the option `-xyz` to the command.
 
 ## Train
 
+### Train a model with a point cloud
+
 As an alternative to clustering, one can train supervised learning algorithms
 in order to do 3D point semantic segmentation. This is done through the following command:
 
@@ -159,7 +161,32 @@ geometric features have been computed (*i.e.* as a pre-requisite, the
 different local neighborhood sizes: 50, 200 and 1000 neighbors.
 
 The `train` command produces as an output a pickelized trained model save in
-`data/trained_models/Pombourg.pkl`.
+`data/trained_models/Pombourg-50-200-1000.pkl`.
+
+### Train a model with all available labelled point cloud samples
+
+As an alternative, one may also train a generalized model starting from all
+available labelled samples. The same commands must be run, without the
+`-i/--input-file` argument:
+
+```
+geo3d train -d data -n 50 200 1000
+```
+
+This second strategy will produce a pickelized trained model in
+`data/trained_models/logreg-50-200-1000.pkl`.
+
+### Model evaluation
+
+As a guarantee of genericity, 75% of the available labelled points are used for
+model traning, and the remaining 25% are used for model testing. The model
+evaluation is done with two metrics:
+- the accuracy on the testing set (between 0 and 1, 1 meaning a good accuracy),
+- and the confusion matrix `$A$` (where the coefficient `$a_{ij}$` indicates
+  how many points of class `i` are identified with the `j` label).
+
+In both cases, a model evaluation summary is stored as a `.json` file (same
+file basename as the pickelized model).
 
 ## Predict
 
@@ -178,9 +205,12 @@ reference point cloud, `-n 50 200 1000` the local neighborhood sizes and `-p
 500` the post-processing tuning.
 
 In such a configuration, we will recover the model stored as
-`data/trained_models/Pombourg.pkl`, and apply it on
+`data/trained_models/Pombourg-50-200-1000.pkl`, and apply it on
 `data/input/Pombourg.las`. The resulting predicted labels are stored in
-`data/output/Pombourg/prediction/logreg-50-200-1000-full-pp500.las`.
+`data/output/Pombourg/prediction/logreg-50-200-1000-full-pp500.las`. One may
+also specify the `-g/--generalized-model` in order to exploit a model trained
+with all the available point cloud samples
+(`data/trained_models/logreg-50-200-1000.pkl`).
 
 The whole feature set (except `(x, y, z)` coordinates) is used to train the
 model, and as a corollary, to predict labels. This modelling choice is set with
