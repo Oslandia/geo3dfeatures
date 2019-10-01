@@ -131,7 +131,6 @@ def kmean_parser(subparser, reference_func):
         "cluster", help="Cluster a set of 3D points with a k-means algorithm"
     )
     add_data_args(parser, by_dataset=True)
-    add_kdtree_args(parser)
     add_neighborhood_args(parser)
     add_label_prediction_args(parser)
     parser.add_argument(
@@ -184,7 +183,6 @@ def predict_parser(subparser, reference_func):
         help="Predict 3D point semantic class starting from a trained model"
     )
     add_data_args(parser, by_dataset=True)
-    add_kdtree_args(parser)
     add_neighborhood_args(parser)
     add_label_prediction_args(parser)
     parser.add_argument(

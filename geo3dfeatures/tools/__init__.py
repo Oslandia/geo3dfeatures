@@ -23,3 +23,5 @@ EXPERIMENTS = (
     "Reyvroz",
     "Tancarville"
     )
+POSTPROCESSING_BATCH = 10_000
+POSTPROCESSING_KDTREE_LEAFS = 500
