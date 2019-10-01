@@ -2,21 +2,30 @@
 
 Available choices::
     - geo3d sample [args]
+    - geo3d info [args]
+    - geo3d index [args]
     - geo3d featurize [args]
-    - geo3d profiling [args]
     - geo3d kmean [args]
     - geo3d train [args]
     - geo3d predict [args]
 """
 
 import argparse
+from pathlib import Path
 
 from geo3dfeatures.tools import (
     info, sample, featurize, kmean, index, train, predict
     )
 
-# default value for kd-tree
+
+DATADIR = Path("data")
+INPUT_DIR = DATADIR / "input"
 KD_TREE_LEAF_SIZE = 500
+N_JOBS = 2
+CHUNKSIZE = 20_000
+PP_NEIGHBORS = 0
+TRAIN_CONFIG_FILENAME = "base.ini"
+KMEAN_CONFIG_FILENAME = "base.ini"
 
 
 def info_parser(subparser, reference_func):
@@ -28,15 +37,15 @@ def info_parser(subparser, reference_func):
     reference_func : function
     """
     parser = subparser.add_parser(
-        "info",
-        help="Describe an input .las file"
+        "info", help="Describe an input .las file"
     )
-    parser.add_argument("-d", "--datapath",
-                        default="./data",
-                        help="Data folder on the file system")
-    parser.add_argument("-i", "--input-file",
-                        required=True,
-                        help="Input point cloud file")
+    parser.add_argument(
+        "-d", "--datapath", default=DATADIR, type=Path,
+        help="Data folder on the file system"
+    )
+    parser.add_argument(
+        "-i", "--input-file", required=True, help="Input point cloud file"
+    )
     parser.set_defaults(func=reference_func)
 
 
@@ -49,18 +58,19 @@ def sample_parser(subparser, reference_func):
     reference_func : function
     """
     parser = subparser.add_parser(
-        "sample",
-        help="Extract a sample of a .las file"
+        "sample", help="Extract a sample of a .las file"
     )
-    parser.add_argument("-d", "--datapath",
-                        default="./data/input",
-                        help="Data folder on the file system")
-    parser.add_argument("-i", "--input-file",
-                        required=True,
-                        help="Input point cloud file")
-    parser.add_argument('-p', '--sample-points',
-                        type=int, required=True,
-                        help="Number of sample points to evaluate")
+    parser.add_argument(
+        "-d", "--datapath", default=INPUT_DIR, type=Path,
+        help="Data folder on the file system"
+    )
+    parser.add_argument(
+        "-i", "--input-file", required=True, help="Input point cloud file"
+    )
+    parser.add_argument(
+        '-s', '--sample-points', type=int, required=True,
+        help="Number of sample points to evaluate"
+    )
     parser.set_defaults(func=reference_func)
 
 
@@ -78,14 +88,21 @@ def featurize_parser(subparser, reference_func):
     )
     add_instance_args(parser, by_dataset=True)
     add_kdtree_args(parser)
-    parser.add_argument('-c', '--extra-columns', nargs="+",
-                        help="Extra point cloud feature names (other than x,y,z)")
-    parser.add_argument('--label-scene', action="store_true",
-                        help=("If the scene is a sample of an existing "
-                              "scene with the '_label.{.las, .xyz}' suffix?"))
-    parser.add_argument("--chunksize",
-                        default=20_000, type=int,
-                        help="Number of points in each writing chunk")
+    parser.add_argument(
+        '-c', '--extra-columns', nargs="+",
+        help="Extra point cloud feature names (other than x,y,z)"
+    )
+    parser.add_argument(
+        '--label-scene', action="store_true",
+        help=(
+            "If the scene is a sample of an existing "
+            "scene with the '_label.{las, xyz}' suffix?"
+        )
+    )
+    parser.add_argument(
+        "--chunksize", default=CHUNKSIZE, type=int,
+        help="Number of points in each writing chunk"
+    )
     parser.set_defaults(func=reference_func)
 
 
@@ -102,32 +119,32 @@ def kmean_parser(subparser, reference_func):
     reference_func : function
     """
     parser = subparser.add_parser(
-        "cluster",
-        help="Cluster a set of 3D points with a k-means algorithm"
+        "cluster", help="Cluster a set of 3D points with a k-means algorithm"
     )
     add_instance_args(parser, by_dataset=True)
     add_kdtree_args(parser)
-    parser.add_argument("-k", "--nb-clusters",
-                        type=int, required=True,
-                        help="Desired amount of clusters")
-    parser.add_argument("-c", "--config-file",
-                        default="base.ini",
-                        type=str,
-                        help=(
-                            "Config file for clustering analysis, "
-                            "that summarizes feature coefficients"
-                        ))
     parser.add_argument(
-        "-p", "--postprocessing-neighbors", type=int, default=0,
+        "-k", "--nb-clusters", type=int, required=True,
+        help="Desired amount of clusters"
+    )
+    parser.add_argument(
+        "-c", "--config-file", default=KMEAN_CONFIG_FILENAME,
+        help="Clustering analysis config file; summarizes feature coefficients"
+    )
+    parser.add_argument(
+        "-p", "--postprocessing-neighbors", type=int, default=PP_NEIGHBORS,
         help=(
             "Clean the k-mean output by postprocessing the result.",
             "The parameter gives the postprocessing neighborhood definition, "
             "as a neighboring point quantity. If 0, no postprocessing."
             )
         )
-    parser.add_argument("-xyz", action="store_true",
-                        help=("Output file extension, xyz if true "
-                              "similar to output otherwise"))
+    parser.add_argument(
+        "-xyz", action="store_true",
+        help=(
+            "Output file extension, xyz if true similar to output otherwise"
+        )
+    )
     parser.set_defaults(func=reference_func)
 
 
@@ -143,17 +160,13 @@ def train_parser(subparser, reference_func):
     reference_func : function
     """
     parser = subparser.add_parser(
-        "train",
-        help="Train a semantic segmentation model"
+        "train", help="Train a semantic segmentation model"
+    )
+    parser.add_argument(
+        "-c", "--config-file", default=TRAIN_CONFIG_FILENAME,
+        help="Classification config file; summarizes used feature"
     )
     add_instance_args(parser, by_dataset=False)
-    parser.add_argument("-c", "--config-file",
-                        default="base.ini",
-                        type=str,
-                        help=(
-                            "Config file for clustering analysis, "
-                            "that summarizes feature coefficients"
-                        ))
     parser.set_defaults(func=reference_func)
 
 
@@ -174,13 +187,10 @@ def predict_parser(subparser, reference_func):
     )
     add_instance_args(parser, by_dataset=True)
     add_kdtree_args(parser)
-    parser.add_argument("-c", "--config-file",
-                        default="base.ini",
-                        type=str,
-                        help=(
-                            "Config file for clustering analysis, "
-                            "that summarizes feature coefficients"
-                        ))
+    parser.add_argument(
+        "-c", "--config-file", default=TRAIN_CONFIG_FILENAME,
+        help="Classification config file; summarizes used feature"
+    )
     parser.add_argument(
         "-g", "--generalized-model", action="store_true",
         help=(
@@ -189,16 +199,19 @@ def predict_parser(subparser, reference_func):
             )
         )
     parser.add_argument(
-        "-p", "--postprocessing-neighbors", type=int, default=0,
+        "-p", "--postprocessing-neighbors", type=int, default=PP_NEIGHBORS,
         help=(
             "Clean the prediction output by postprocessing the result.",
             "The parameter gives the postprocessing neighborhood definition, "
             "as a neighboring point quantity. If 0, no postprocessing."
             )
         )
-    parser.add_argument("-xyz", action="store_true",
-                        help=("Output file extension, xyz if true "
-                              "similar to output otherwise"))
+    parser.add_argument(
+        "-xyz", action="store_true",
+        help=(
+            "Output file extension, xyz if true similar to output otherwise"
+        )
+    )
     parser.set_defaults(func=reference_func)
 
 
@@ -211,16 +224,17 @@ def index_parser(subparser, reference_func):
     reference_func : function
     """
     parser = subparser.add_parser(
-        "index",
-        help="Index a point cloud file and serialize it"
+        "index", help="Index a point cloud file and serialize it"
     )
     add_kdtree_args(parser)
-    parser.add_argument("-d", "--datapath",
-                        default="./data",
-                        help="Data folder on the file system")
-    parser.add_argument("-i", "--input-file",
-                        required=True,
-                        help="Input point cloud file")
+    parser.add_argument(
+        "-d", "--datapath", default=DATADIR, type=Path,
+        help="Data folder on the file system"
+    )
+    parser.add_argument(
+        "-i", "--input-file", required=True,
+        help="Input point cloud file"
+    )
     parser.set_defaults(func=reference_func)
 
 
@@ -249,29 +263,33 @@ def add_instance_args(parser, by_dataset=True):
         True if the "input-file" argument is required; false otherwise
     ("featurize", "kmean" and "predict" programs)
     """
-    parser.add_argument("-d", "--datapath",
-                        default="./data",
-                        help="Data folder on the file system")
-    parser.add_argument("-i", "--input-file",
-                        required=by_dataset,
-                        help="Input point cloud file")
-    parser.add_argument("-m", "--nb-process",
-                        type=int, default=2,
-                        help="")
+    parser.add_argument(
+        "-d", "--datapath", default=DATADIR,
+        help="Data folder on the file system"
+    )
+    parser.add_argument(
+        "-i", "--input-file", required=by_dataset,
+        help="Input point cloud file"
+    )
+    parser.add_argument(
+        "-m", "--nb-process", type=int, default=N_JOBS,
+        help="Number of process used during the computation"
+    )
     neighbor_group = parser.add_mutually_exclusive_group()
-    neighbor_group.add_argument('-n', '--neighbors',
-                                nargs="+",
-                                type=int,
-                                help="List of neighbors numbers to consider. "
-                                "Alternative neighborhood definition: "
-                                "--radius.")
-    neighbor_group.add_argument('-r', '--radius',
-                                type=float,
-                                help=(
-                                    "Radius that defines the neighboring "
-                                    "ball. Alternative neighborhood "
-                                    "definition: --neighbors."
-                                ))
+    neighbor_group.add_argument(
+        '-n', '--neighbors', nargs="+", type=int,
+        help=(
+            "List of neighbors numbers to consider. "
+            "Alternative neighborhood definition: --radius."
+        )
+    )
+    neighbor_group.add_argument(
+        '-r', '--radius', type=float,
+        help=(
+            "Radius that defines the neighboring "
+            "ball. Alternative neighborhood definition: --neighbors."
+        )
+    )
 
 
 def main():
