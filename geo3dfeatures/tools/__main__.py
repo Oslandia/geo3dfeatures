@@ -245,11 +245,14 @@ def add_kdtree_args(parser):
     ----------
     parser : argparse.ArgumentParser
     """
-    parser.add_argument("--tree-file",
-                        help="kd-tree serialized file")
-    parser.add_argument('-t', '--kdtree-leafs',
-                        type=int, default=KD_TREE_LEAF_SIZE,
-                        help="Number of leafs in KD-tree")
+    kdtree_group = parser.add_mutually_exclusive_group()
+    kdtree_group.add_argument(
+        "--tree-file", type=Path, help="kd-tree serialized file"
+    )
+    kdtree_group.add_argument(
+        '-t', '--kdtree-leafs', type=int, default=KD_TREE_LEAF_SIZE,
+        help="Number of leafs in KD-tree"
+    )
 
 
 def add_instance_args(parser, by_dataset=True):
