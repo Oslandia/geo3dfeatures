@@ -30,8 +30,8 @@ def main(opts):
     output_path = Path(opts.datapath, "output", opts.input_file.split(".")[0])
     kdtrees = [f.name for f in output_path.glob("*.pkl")]
     features = [f.name for f in Path(output_path, "features").glob("*.h5")]
-    kmeans = [f.name for f in Path(output_path, "clustering").glob("*.xyz")]
-    kmeans = kmeans + [f.name for f in Path(output_path, "clustering").glob("*.las")]
+    pred = [f.name for f in Path(output_path, "predictions").glob("*.xyz")]
+    pred = pred + [f.name for f in Path(output_path, "predictions").glob("*.las")]
     if input_path.suffix == ".las":
         header = laspy.header.Header()
         reader = laspy.base.FileManager(input_path, mode="r")
@@ -71,6 +71,6 @@ def main(opts):
         f"\nz range : {zmax-zmin:.2f}\t[{zmin:.2f}; {zmax:.2f}]"
         f"\nkd-tree : {kdtrees}"
         f"\nfeatures : {features}"
-        f"\nk-mean : {kmeans}"
+        f"\nk-mean : {pred}"
         )
     logger.info("Generate info on an input file...\n%s", info_string)
