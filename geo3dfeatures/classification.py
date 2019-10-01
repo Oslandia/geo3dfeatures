@@ -119,8 +119,25 @@ def colorize_labels(points, labels, glossary=None):
 
 
 def split_dataset(df, test_part=0.25):
+    """Split the dataset in four parts, namely a training and a testing sets,
+    and explicative variables and explained labels for each set.
+
+    Based on scikit-learn API.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        Data to split; must contain a "label" feature
+    test_part : float
+        Testing set proportion (0 < p < 1)
+
+    Returns
+    -------
+    tuple of four pd.DataFrame
+        Splitted dataset
     """
-    """
+    if "label" not in df.columns:
+        raise ValueError("No 'label' column in the provided dataset.")
     train_dataset, test_dataset = train_test_split(
         df, test_size=test_part, shuffle=True
     )
