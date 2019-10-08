@@ -76,7 +76,7 @@ def featurize_parser(subparser, reference_func):
         "featurize",
         help="Extract the geometric feature associated to 3D points"
     )
-    add_instance_args(parser, featurized=False)
+    add_instance_args(parser, by_dataset=True)
     add_kdtree_args(parser)
     parser.add_argument('-c', '--extra-columns', nargs="+",
                         help="Extra point cloud feature names (other than x,y,z)")
@@ -105,7 +105,7 @@ def kmean_parser(subparser, reference_func):
         "cluster",
         help="Cluster a set of 3D points with a k-means algorithm"
     )
-    add_instance_args(parser, featurized=True)
+    add_instance_args(parser, by_dataset=True)
     add_kdtree_args(parser)
     parser.add_argument("-k", "--nb-clusters",
                         type=int, required=True,
@@ -146,7 +146,7 @@ def train_parser(subparser, reference_func):
         "train",
         help="Train a semantic segmentation model"
     )
-    add_instance_args(parser, featurized=True)
+    add_instance_args(parser, by_dataset=False)
     parser.add_argument("-c", "--config-file",
                         default="base.ini",
                         type=str,
@@ -172,7 +172,7 @@ def predict_parser(subparser, reference_func):
         "predict",
         help="Predict 3D point semantic class starting from a trained model"
     )
-    add_instance_args(parser, featurized=True)
+    add_instance_args(parser, by_dataset=True)
     add_kdtree_args(parser)
     parser.add_argument("-c", "--config-file",
                         default="base.ini",
@@ -181,6 +181,13 @@ def predict_parser(subparser, reference_func):
                             "Config file for clustering analysis, "
                             "that summarizes feature coefficients"
                         ))
+    parser.add_argument(
+        "-g", "--generalized-model", action="store_true",
+        help=(
+            "If true, one considers a generalized model, "
+            "otherwise it is a dataset-specific classifier."
+            )
+        )
     parser.add_argument(
         "-p", "--postprocessing-neighbors", type=int, default=0,
         help=(
@@ -231,22 +238,22 @@ def add_kdtree_args(parser):
                         help="Number of leafs in KD-tree")
 
 
-def add_instance_args(parser, featurized=True):
+def add_instance_args(parser, by_dataset=True):
     """Add a bunch of command arguments that permits to identify the instance
     of interest
 
     Parameters
     ----------
     parser : argparse.ArgumentParser
-    featurized : bool
-        True if the function is called by the featurization program, hence some
-        arguments are required; false otherwise
+    by_dataset : bool
+        True if the "input-file" argument is required; false otherwise
+    ("featurize", "kmean" and "predict" programs)
     """
     parser.add_argument("-d", "--datapath",
                         default="./data",
                         help="Data folder on the file system")
     parser.add_argument("-i", "--input-file",
-                        required=True,
+                        required=by_dataset,
                         help="Input point cloud file")
     parser.add_argument("-m", "--nb-process",
                         type=int, default=2,

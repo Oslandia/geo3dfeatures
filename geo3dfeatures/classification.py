@@ -13,6 +13,7 @@ import pandas as pd
 import seaborn as sns
 from sklearn.cluster import KMeans, MiniBatchKMeans
 from sklearn.linear_model import LogisticRegression
+from sklearn.model_selection import train_test_split
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import MinMaxScaler
 
@@ -115,6 +116,37 @@ def colorize_labels(points, labels, glossary=None):
     colors = np.array([palette[l] for l in labels]) * 255
     colors = pd.DataFrame(colors, columns=["r", "g", "b"], dtype=np.uint8)
     return points.join(colors)
+
+
+def split_dataset(df, test_part=0.25):
+    """Split the dataset in four parts, namely a training and a testing sets,
+    and explicative variables and explained labels for each set.
+
+    Based on scikit-learn API.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        Data to split; must contain a "label" feature
+    test_part : float
+        Testing set proportion (0 < p < 1)
+
+    Returns
+    -------
+    tuple of four pd.DataFrame
+        Splitted dataset
+    """
+    if "label" not in df.columns:
+        raise ValueError("No 'label' column in the provided dataset.")
+    train_dataset, test_dataset = train_test_split(
+        df, test_size=test_part, shuffle=True
+    )
+    return (
+        train_dataset.drop(columns=["label"]),
+        train_dataset["label"],
+        test_dataset.drop(columns=["label"]),
+        test_dataset["label"]
+        )
 
 
 def train_predictive_model(data, labels, seed=1337):

@@ -21,17 +21,22 @@ POSTPROCESSING_BATCH = 10_000
 
 def main(opts):
     experiment = opts.input_file.split(".")[0]
+    logger.info("Load data from %s dataset...", experiment)
     df = io.load_features(opts.datapath, experiment, opts.neighbors)
-    points = df[["x", "y", "z"]].copy()
 
     logger.info("Load the trained classifier...")
     model_dir = Path(opts.datapath, "trained_models")
-    model_filename = experiment + ".pkl"
+    if opts.generalized_model:
+        model_filename = "logreg-" + io.instance(opts.neighbors, None) + ".pkl"
+    else:
+        model_filename = experiment + "-" + io.instance(opts.neighbors, None) + ".pkl"
     with open(model_dir / model_filename, "rb") as fobj:
         clf = pickle.load(fobj)
 
     logger.info("Predict labels...")
-    labels = clf.predict(df.drop(columns=["x", "y", "z"]))
+    points = df[["x", "y", "z"]].copy()
+    df.drop(columns=["x", "y", "z"], inplace=True)
+    labels = clf.predict(df)
 
     # Postprocessing
     if opts.postprocessing_neighbors > 0:

@@ -11,3 +11,15 @@ GLOSSARY = {
     "beton": {"id": 4, "color": PALETTE[1]},  # Concrete: orange
     "sol": {"id": 5, "color": PALETTE[8]},  # Ground: yellow
     }
+EXPERIMENTS = (
+    "Beausoleil_1",
+    "Beausoleil_2",
+    "castillon",
+    "Chambon",
+    "escale",
+    "kansera",
+    "Malaussene",
+    "Pombourg",
+    "Reyvroz",
+    "Tancarville"
+    )

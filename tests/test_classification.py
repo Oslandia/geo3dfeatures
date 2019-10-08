@@ -8,7 +8,7 @@ import pandas as pd
 
 from geo3dfeatures.classification import (
     standard_normalization, normalize_features, compute_clusters,
-    colorize_labels, train_predictive_model, save_labels
+    colorize_labels, split_dataset, train_predictive_model, save_labels
     )
 from geo3dfeatures.io import load_features
 
@@ -81,6 +81,27 @@ def test_colorize_labels():
     assert len(df_color[["r", "g", "b"]].drop_duplicates()) == N_CLUSTERS
     unique_output_colors = df_color[["r", "g", "b"]].drop_duplicates().values
     assert np.all([c in unique_output_colors for c in colors])
+
+
+def test_split_dataset():
+    """Verify the train-test splitting; it must fails if one passes a dataframe
+    without "label" feature. The output structure shapes must correspond to the
+    input dataframe shape.
+    """
+    df = pd.DataFrame({
+        "a": np.random.rand(10),
+        "b": np.random.rand(10),
+        "c": np.random.randint(3, size=10)
+    })
+    with pytest.raises(ValueError):
+        split_dataset(df)
+    df.columns = ["a", "b", "label"]
+    test_size = 0.2
+    X_train, Y_train, X_test, Y_test = split_dataset(df, test_part=test_size)
+    assert X_train.shape == (int((1 - test_size) * df.shape[0]), df.shape[1] - 1)
+    assert Y_train.shape == (int((1 - test_size) * df.shape[0]),)
+    assert X_test.shape == (int(test_size * df.shape[0]), df.shape[1] - 1)
+    assert Y_test.shape == (int(test_size * df.shape[0]),)
 
 
 def test_train_predictive_model():
