@@ -55,11 +55,10 @@ def test_sequence_full(sphere):
     tree = compute_tree(sphere, leaf_size=500)
     gen = sequence_full(sphere, tree, nb_neighbors=[NB_NEIGHBORS])
     first_item = next(gen)
-    assert len(first_item) == 4
+    assert len(first_item) == 3
     assert first_item[0].shape == (NB_NEIGHBORS + 1, 3)
     assert first_item[1].shape == (NB_NEIGHBORS + 1,)
     assert isinstance(first_item[2], ExtraFeatures)
-    assert first_item[3] == "neighbors"
     assert len(list(gen)) == sphere.shape[0] - 1
 
 

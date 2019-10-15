@@ -39,7 +39,7 @@ from geo3dfeatures.features import (
 logger = daiquiri.getLogger(__name__)
 
 
-class NeighborFeatures(NamedTuple):
+class FeatureTuple(NamedTuple):
     """List of features for neighbor-based neighborhood
     """
     x: float
@@ -49,33 +49,6 @@ class NeighborFeatures(NamedTuple):
     alpha: float
     beta: float
     radius: float
-    z_range: float
-    std_dev: float
-    density: float
-    verticality: float
-    curvature_change: float
-    linearity: float
-    planarity: float
-    scattering: float
-    omnivariance: float
-    anisotropy: float
-    eigenentropy: float
-    eigenvalue_sum: float
-    radius_2D: float
-    density_2D: float
-    eigenvalue_sum_2D: float
-    eigenvalue_ratio_2D: float
-
-
-class RadiusFeatures(NamedTuple):
-    """List of features for radius-based neighborhood
-    """
-    x: float
-    y: float
-    z: float
-    alpha: float
-    beta: float
-    neighbor_nb: int
     z_range: float
     std_dev: float
     density: float
@@ -168,7 +141,7 @@ def fit_pca(point_cloud):
     return PCA().fit(point_cloud)
 
 
-def process_full(neighbors, neighborhood_extra, extra, mode="neighbors"):
+def process_full(neighbors, dist_to_neighbors, extra):
     """Build the full feature set for a single point
 
     Parameters
@@ -176,14 +149,10 @@ def process_full(neighbors, neighborhood_extra, extra, mode="neighbors"):
     neighbors : numpy.array
         Coordinates of all points within the point neighborhood; must be a
     2D-shaped array with `point_cloud.shape[1] == 3`
-    neighborhood_extra : numpy.array or int
-        If mode == "neighbors", gives distance between the point and all its
-    neighbors; otherwise (mode == "radius") gives the number of points in the
-    local sphere
+    dist_to_neighbors : numpy.array
+        Gives distance between the point and all its neighbors
     extra : ExtraFeatures
         Names and values of extra input features, e.g. the RGB color
-    mode : str
-        Gives the neighborhood definition, i.e. "neighbors" or "radius"
 
     Returns
     ------
@@ -192,32 +161,21 @@ def process_full(neighbors, neighborhood_extra, extra, mode="neighbors"):
     """
     num_neighbors = neighbors.shape[0] - 1
     x, y, z = neighbors[0]
-    extra_2D = radius_2D(neighbors[0, :2], neighbors[:, :2])
-    if mode == "neighbors":
-        FeatureTuple = NeighborFeatures
-        extra_3D = radius_3D(neighborhood_extra)
-        dens_3D = density_3D(extra_3D, len(neighbors))
-        dens_2D = density_2D(extra_2D, len(neighbors))
-    elif mode == "radius":
-        FeatureTuple = RadiusFeatures
-        extra_3D = len(neighbors)
-        dens_3D = density_3D(neighborhood_extra, extra_3D)
-        dens_2D = density_2D(neighborhood_extra, extra_2D)
-    else:
-        raise ValueError("Unknown neighboring mode.")
+    rad_2D = radius_2D(neighbors[0, :2], neighbors[:, :2])
+    rad_3D = radius_3D(dist_to_neighbors)
     if len(neighbors) <= 2:
         return (
             FeatureTuple(
                 x, y, z,
                 np.nan, np.nan,  # alpha, beta
-                extra_3D,  # radius3D
+                rad_3D,
                 val_range(neighbors[:, 2]),  # z_range
                 std_deviation(neighbors[:, 2]),  # std_dev
-                dens_3D,  # density3D
+                density_3D(rad_3D, len(neighbors)),
                 np.nan, np.nan, np.nan, np.nan, np.nan,
                 np.nan, np.nan, np.nan, np.nan,
-                extra_2D,  # radius2D
-                dens_2D,  # density2D
+                rad_2D,
+                density_2D(rad_2D, len(neighbors)),
                 np.nan,  # eigenvalue_sum_2D
                 np.nan,  # eigenvalue_ratio_2D
             ),
@@ -230,28 +188,31 @@ def process_full(neighbors, neighborhood_extra, extra, mode="neighbors"):
         alpha, beta = triangle_variance_space(norm_eigenvalues_3D)
         pca_2d = fit_pca(neighbors[:, :2])  # PCA just on the x,y coords
         eigenvalues_2D = pca_2d.singular_values_ ** 2
-        return (FeatureTuple(x, y, z,
-                             num_neighbors,
-                             alpha,
-                             beta,
-                             extra_3D,
-                             val_range(neighbors[:, 2]),  # z_range
-                             std_deviation(neighbors[:, 2]),  # std_dev
-                             dens_3D,
-                             verticality_coefficient(pca),
-                             curvature_change(norm_eigenvalues_3D),
-                             linearity(norm_eigenvalues_3D),
-                             planarity(norm_eigenvalues_3D),
-                             scattering(norm_eigenvalues_3D),
-                             omnivariance(norm_eigenvalues_3D),
-                             anisotropy(norm_eigenvalues_3D),
-                             eigenentropy(norm_eigenvalues_3D),
-                             val_sum(eigenvalues_3D),  # eigenvalue sum
-                             extra_2D,  # radius 2D
-                             dens_2D,
-                             val_sum(eigenvalues_2D),  # eigenvalue_sum_2D
-                             eigenvalue_ratio_2D(eigenvalues_2D)),
-                extra)
+        return (
+            FeatureTuple(
+                x, y, z,
+                num_neighbors,
+                alpha, beta,
+                rad_3D,
+                val_range(neighbors[:, 2]),  # z_range
+                std_deviation(neighbors[:, 2]),  # std_dev
+                density_3D(rad_3D, len(neighbors)),
+                verticality_coefficient(pca),
+                curvature_change(norm_eigenvalues_3D),
+                linearity(norm_eigenvalues_3D),
+                planarity(norm_eigenvalues_3D),
+                scattering(norm_eigenvalues_3D),
+                omnivariance(norm_eigenvalues_3D),
+                anisotropy(norm_eigenvalues_3D),
+                eigenentropy(norm_eigenvalues_3D),
+                val_sum(eigenvalues_3D),  # eigenvalue sum
+                rad_2D,
+                density_2D(rad_2D, len(neighbors)),
+                val_sum(eigenvalues_2D),  # eigenvalue_sum_2D
+                eigenvalue_ratio_2D(eigenvalues_2D)
+            ),
+            extra
+        )
 
 
 def _wrap_full_process(args):
@@ -261,9 +222,7 @@ def _wrap_full_process(args):
     return process_full(*args)
 
 
-def sequence_full(
-        scene, tree, nb_neighbors, radius=None, extra_columns=None
-):
+def sequence_full(scene, tree, nb_neighbors, extra_columns=None):
     """Build a data generator for getting neighborhoods, distances and
         accumulation features for each point
 
@@ -275,8 +234,6 @@ def sequence_full(
         Point cloud kd-tree for computing nearest neighborhoods
     nb_neighbors : list
         List of neighbors numbers in each point neighborhood
-    radius : float
-        Radius that defines the neighboring ball around a given point
     extra_columns : tuple
         Extra input data column names, reused for output dataframe
 
@@ -290,8 +247,6 @@ def sequence_full(
         Euclidian distance between the reference point and its neighbors
     ExtraFeature
         Extra input data column names, reused for output dataframe
-    str
-        radius or neigbors mode
     """
     if extra_columns is None:
         if scene.shape[1] != 3:
@@ -302,25 +257,17 @@ def sequence_full(
     num_max_neighbors = max(nb_neighbors)
     for point in scene:
         neighborhood_extra, neighbor_idx = request_tree(
-            point[:3], tree, num_max_neighbors, radius
+            point[:3], tree, num_max_neighbors
         )
-        mode = "neighbors"
         extra_features = (
             ExtraFeatures(extra_columns, tuple(point[3:]))
             if extra_columns else ExtraFeatures(tuple(), tuple())
         )
-        # XXX we have some issues with radius
-        # https://git.oslandia.net/Oslandia-data/geo3dfeatures/issues/46
-        # if neighborhood_extra is None:  # True if radius is not None
-        #     neighborhood_extra = radius
-        #     mode = "radius"
-        #     yield radius, tree.data[neighbor_idx], neighborhood_extra, extra_features, mode
-        # else:
         for num_neighbors in reversed(nb_neighbors):
             # add 1 neighbor because we have the reference point
             index = neighbor_idx[:num_neighbors + 1]
             neighbors = tree.data[index]
-            yield neighbors, neighborhood_extra, extra_features, mode
+            yield neighbors, neighborhood_extra, extra_features
 
 
 def _dump_results_by_chunk(iterable, h5path, chunksize, progress_bar):
@@ -349,7 +296,7 @@ def _dump_results_by_chunk(iterable, h5path, chunksize, progress_bar):
 
 
 def extract(
-        point_cloud, tree, h5path, nb_neighbors, radius=None,
+        point_cloud, tree, h5path, nb_neighbors,
         nb_processes=2, extra_columns=None,
         chunksize=20000
 ):
@@ -367,27 +314,21 @@ def extract(
         hdf5 output path (extracted features)
     nb_neighbors : list of ints
         Number of neighbors in each point neighborhood
-    radius : float
-        Radius that defines the neighboring ball around a given point
     nb_processes : int
         Number of parallel cores
     extra_columns : list
         Extra input data column names, reused for output (None by default)
     """
     logger.info("Computation begins!")
-    if nb_neighbors is None and radius is None:
-        logger.error("nb_neighbors and radius can't be both None.")
+    if nb_neighbors is None:
         raise ValueError(
-            "Error in input neighborhood definition: "
-            "nb_neighbors and radius can't be both None."
+            "Error in neighborhood definition: nb_neighbors can't be None."
         )
-    if radius is not None:
-        raise NotImplementedError("we have some issues with radius")
     if isinstance(nb_neighbors, int):
         nb_neighbors = [nb_neighbors]
     start = timer()
     gen = sequence_full(
-        point_cloud, tree, nb_neighbors, radius, extra_columns
+        point_cloud, tree, nb_neighbors, extra_columns
     )
     with Pool(processes=nb_processes) as pool:
         logger.info("Total number of points: %s", point_cloud.shape[0])

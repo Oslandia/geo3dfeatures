@@ -223,29 +223,17 @@ def read_config(config_path):
     return feature_config
 
 
-def instance(neighbors, radius):
-    """Build the instance name, depending on the input parameters
+def instance(neighbors):
+    """Build the instance name, depending on the neighborhood sizes
 
     Parameters
     ----------
     neighbors : list
         Numbers of neighbors used to compute the feature set
-    radius : float
-        Threshold that define the neighborhood, in order to compute the feature
-        set; used if neighbors is None
 
     Returns
     -------
     str
         Name of the instance
     """
-    if neighbors is not None:
-        return "-".join(str(x) for x in neighbors)
-    elif radius is not None:
-        neighborhood = "r" + str(radius)
-    else:
-        raise ValueError(
-            "Error in input neighborhood definition: "
-            "neighbors and radius arguments can't be both undefined"
-            )
-    return neighborhood
+    return "-".join(str(x) for x in neighbors)

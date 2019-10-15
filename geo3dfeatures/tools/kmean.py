@@ -14,13 +14,14 @@ from geo3dfeatures.features import accumulation_2d_neighborhood, max_normalize
 from geo3dfeatures.extract import compute_tree
 from geo3dfeatures import io
 from geo3dfeatures import postprocess
-
+from geo3dfeatures.tools import (
+    POSTPROCESSING_BATCH, POSTPROCESSING_KDTREE_LEAFS
+    )
 
 logger = daiquiri.getLogger(__name__)
 
 SEED = 1337
 KMEAN_BATCH = 10_000
-POSTPROCESSING_BATCH = 10_000
 KEY_H5_FORMAT = "/num_{:04d}"
 
 
@@ -107,15 +108,16 @@ def main(opts):
     # Postprocessing
     if opts.postprocessing_neighbors > 0:
         logger.info(f"Post-process point labels by batches of {KMEAN_BATCH}")
-        tree = compute_tree(points, opts.kdtree_leafs)
+        tree = compute_tree(points, POSTPROCESSING_KDTREE_LEAFS)
         gen = postprocess.batch_points(points, POSTPROCESSING_BATCH)
         labels = postprocess.postprocess_batch_labels(
-            gen, POSTPROCESSING_BATCH, labels, tree, opts.postprocessing_neighbors
+            gen, POSTPROCESSING_BATCH, labels, tree,
+            opts.postprocessing_neighbors
         )
 
     colored_results = colorize_labels(points, labels)
     save_labels(
         colored_results, opts.datapath, experiment, opts.neighbors,
-        opts.radius, "kmeans", opts.nb_clusters,
+        "kmeans", opts.nb_clusters,
         config_path.stem, opts.postprocessing_neighbors, opts.xyz
     )
