@@ -77,4 +77,4 @@ a [CANUPO](http://nicolas.brodu.net/en/recherche/canupo/) dataset (file `scene.x
 
 ___
 
-Oslandia, september 2019
+Oslandia – 2019-2020
