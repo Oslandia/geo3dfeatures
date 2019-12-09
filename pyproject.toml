@@ -2,7 +2,7 @@
 name = "geo3dfeatures"
 version = "0.3.0"
 description = "Extract geometry features from 3D point clouds"
-license = "MIT"
+license = "BSD-3-Clause"
 authors = ["Damien Garaud <damien.garaud@oslandia.com>", "Raphaël Delhome <raphael.delhome@oslandia.com>"]
 
 # see versions and constraints https://poetry.eustace.io/docs/versions/
