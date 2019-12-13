@@ -44,13 +44,16 @@ def add_accumulation_features(df, config):
     pd.DataFrame
         Updated set of features with bin-related information
     """
-    bin_size = float(config.get("clustering", "bin"))
-    logger.info(
-        "Computation of the accumulation features with bin_size=%s", bin_size
-    )
-    df = accumulation_2d_neighborhood(df, bin_size)
-    for c in ("bin_z_range", "bin_z_std", "bin_density"):
-        df[c] = max_normalize(df[c])
+    if config.has_option("clustering", "bin"):
+        bin_size = float(config.get("clustering", "bin"))
+        logger.info(
+            "Computation of the accumulation features with bin_size=%s",
+            bin_size
+        )
+        df = accumulation_2d_neighborhood(df, bin_size)
+        df.fillna(0, inplace=True)
+        for c in ("bin_z_range", "bin_z_std", "bin_density"):
+            df[c] = max_normalize(df[c])
     return df
 
 
