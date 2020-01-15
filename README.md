@@ -75,6 +75,10 @@ a [CANUPO](http://nicolas.brodu.net/en/recherche/canupo/) dataset (file `scene.x
 
 ![scene](./docs/images/scene_kmean.png)
 
+The example that is run in the test (`b9.ply`) comes from the [CGAL repository](https://github.com/CGAL/cgal/blob/master/Classification/examples/Classification/data/b9.ply). Thanks to their maintainers (for more details, please refer to CGAL, Computational Geometry Algorithms Library, https://www.cgal.org):
+
+![b9](./docs/images/cgal-classif-example.png)
+
 ___
 
 Oslandia – 2019-2020
